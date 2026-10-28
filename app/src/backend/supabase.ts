@@ -59,6 +59,11 @@ export function supabaseBackend(url: string, anonKey: string): Backend {
     return data ? fromRow(data as Row) : null;
   };
   const must = (error: { message: string } | null) => { if (error) throw new Error(error.message); };
+  // Saves run in order, and signing out waits for them, so a quick sign-out doesn't lose a change.
+  let saving: Promise<unknown> = Promise.resolve();
+  const settled = () => saving.catch(() => undefined);
+  // Signing in again waits for any sign-out still finishing, so it can't end the new session.
+  let leaving: Promise<unknown> = Promise.resolve();
 
   return {
     kind: 'supabase',
@@ -68,12 +73,14 @@ export function supabaseBackend(url: string, anonKey: string): Backend {
       const { data, error } = await db.rpc('username_taken', { name }); must(error); return !!data;
     },
     async signUp(username, password) {
+      await leaving;
       const { data, error } = await db.auth.signUp({ email: emailFor(username), password, options: { data: { username } } });
       if (error) return { ok: false, error: /registered|exists/i.test(error.message) ? 'That username is taken. Try another, or tap Suggest.' : TROUBLE };
       if (!data.session) return { ok: false, error: TROUBLE }; // "Confirm email" is still on in Supabase
       const p = await myProfile(); return p ? { ok: true, value: p } : { ok: false, error: TROUBLE };
     },
     async signIn(username, password) {
+      await leaving;
       const { error } = await db.auth.signInWithPassword({ email: emailFor(username), password });
       if (error) return { ok: false, error: error.status === 400 ? WRONG : TROUBLE };
       const p = await myProfile(); return p ? { ok: true, value: p } : { ok: false, error: TROUBLE };
@@ -81,6 +88,7 @@ export function supabaseBackend(url: string, anonKey: string): Backend {
     async passkeyAccount() { try { return await AsyncStorage.getItem(DEVICE_KEY); } catch { return null; } },
     async signInWithPasskey() {
       if (!webAuthnReady) return { ok: false, error: NO_PASSKEY };
+      await leaving;
       const { error } = await db.auth.signInWithPasskey();
       if (error) {
         const e = error as { code?: string; status?: number };
@@ -113,12 +121,15 @@ export function supabaseBackend(url: string, anonKey: string): Backend {
       return error ? { ok: false, error: TROUBLE } : { ok: true, value: null };
     },
     async saveProfile(patch) {
-      const id = await myId(); if (!id) return;
-      const { error } = await db.from('profiles').update(toRow(patch)).eq('id', id); must(error);
+      const run = settled().then(async () => {
+        const id = await myId(); if (!id) return;
+        const { error } = await db.from('profiles').update(toRow(patch)).eq('id', id); must(error);
+      });
+      saving = run; return run;
     },
     async blocked() { const { data, error } = await db.rpc('my_blocked'); must(error); return (data || []).map((r: { username: string }) => r.username); },
     async unblock(username) { const { error } = await db.rpc('unblock', { name: username }); must(error); },
-    async signOut() { await db.auth.signOut(); },
+    async signOut() { leaving = settled().then(() => db.auth.signOut()).catch(() => undefined); await leaving; },
     async deleteAccount() {
       const me = (await myProfile())?.username; const { error } = await db.rpc('delete_my_account'); must(error);
       if ((await this.passkeyAccount()) === me) await remember(null);

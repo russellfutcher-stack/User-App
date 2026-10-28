@@ -22,7 +22,7 @@ WS-05,Welcome & Sign in,Sign in,"Enter details, tap Sign in",Correct: opens Home
 WS-06,Welcome & Sign in,Demo account,QuietHeron / quiet heron walks,Signs in to the sample account.,Working,
 WS-07,Welcome & Sign in,Forgot password,Tap 'Forgot password?',"Explains: sign in with a passkey, then change the password. Without a passkey the password can't be reset, because User keeps no email or phone number.",Working,Password reset needs a server.
 WS-08,Welcome & Sign in,Create an anonymous account,Tap it under 'New here?',Starts sign-up at step 1.,Working,
-WS-09,Welcome & Sign in,Sign in with a passkey,Tap 'Sign in with a passkey',"If a passkey is saved on this device, confirm with face, fingerprint or PIN (simulated) and you're signed in. If not, says to use your username and password.",Simulated,Real passkeys need the WebAuthn standard on a real device and server.
+WS-09,Welcome & Sign in,Sign in with a passkey,Tap 'Sign in with a passkey',"If a passkey is saved on this device, confirm with face, fingerprint or PIN and you're signed in (simulated in the demo). If not, says to use your username and password.",Working,Real on the Supabase server (WebAuthn); checked with app/scripts/live-passkey.js.
 SN-01,Sign-up,Progress bar,Each step,"3 segments, filled up to the current step.",Working,
 SN-02,Sign-up,Back button,Tap Back,"Previous step; on step 1 back to Welcome, signed out.",Working,
 SN-03,Sign-up,18+ confirmation,Step 1,Required.,Working,
@@ -34,7 +34,7 @@ SN-08,Sign-up,Password,Step 2,At least 8 characters.,Working,
 SN-09,Sign-up,Password strength meter,Type a password,Bar and hint change with strength.,Working,
 SN-10,Sign-up,Confirm password,Type it again,Must match.,Working,
 SN-11,Sign-up,Passkey step,Step 3,'Protect your account with a passkey' explains passkeys. No recovery codes.,Working,
-SN-12,Sign-up,Create a passkey,Tap Create a passkey,Shows 'Passkey saved'. The button becomes Create account.,Simulated,Real passkey creation needs a device and server.
+SN-12,Sign-up,Create a passkey,Tap Create a passkey,"Creates the account, then the passkey. Shows 'Passkey saved', the button becomes Create account and Back is hidden.",Working,Real on the Supabase server (WebAuthn); checked with app/scripts/live-passkey.js.
 SN-13,Sign-up,Skip the passkey,Tap 'Create account without a passkey',Creates the account; a passkey can be added later on the Me page.,Working,
 SN-14,Sign-up,Create account,Tap Create account,"Creates the account with a salted hash (32-character salt, SHA-256) and opens profile setup.",Working,"Real accounts are stored on a server, with Argon2id hashing."
 SN-15,Sign-up,What is a salted hash?,Step 1: open the box,Plain-language explanation of salts and hashes.,Working,
@@ -71,7 +71,7 @@ M-14,Me,Disappearing messages,Toggle on,Hides chat messages older than 7 days an
 M-15,Me,App lock,Toggle,Saves the choice only.,Placeholder,App lock uses the phone's own security.
 M-16,Me,Change password,Tap Change,"Real app: asks for the current password, then a new one (8+ characters, typed twice) and saves it with a fresh salt. Wrong current password: 'That isn't your current password.' Prototype: message only.",Working in the real app,Password change needs a server.
 M-17,Me,Two-step verification,Tap Set up,Message only.,Placeholder,Two-step verification needs a server.
-M-18,Me,Passkey,Security section,"Shows whether a passkey is saved, with Add a passkey or Remove.",Simulated,Real passkeys need a device and server.
+M-18,Me,Passkey,Security section,"Shows whether a passkey is saved, with Add a passkey or Remove.",Working,Real on the Supabase server (WebAuthn); checked with app/scripts/live-passkey.js.
 M-19,Me,Blocked people list,Block someone,"Lists blocked people, or says nobody is blocked.",Working,
 M-20,Me,Unblock,Tap Unblock,Removes them from the list.,Working,
 M-21,Me,Page order,Scroll Me,"Username and byline, Peer support, My profile, Edit profile, Privacy & visibility, Security, Sign out, Delete account, disclaimer. No Usage section.",Working,

@@ -23,9 +23,9 @@ Each step ships with its own tests and is reviewed before the next one starts.
 
 ## Progress
 
-**Step 1 (in progress).** Built in `app/`: Welcome and sign-in, the 3-step sign-up, profile setup, the Me page, the header with Exit and Help now, and the tab bar. The database tables and security rules are in `supabase/migrations/`. 139 tests (at least 2 for each of the 69 functions in this step) pass against the in-browser version. Still to do in step 1:
+**Step 1 (built, waiting for Rusty's go-ahead).** Built in `app/`: Welcome and sign-in, the 3-step sign-up, profile setup, the Me page, the header with Exit and Help now, and the tab bar. The database tables and security rules are in `supabase/migrations/`. 139 tests (at least 2 for each of the 69 functions in this step) pass against the in-browser version. Still to do in step 1:
 - ~~Connect the real Supabase project and run the tests against it.~~ Done 28 Oct 2026: the Sydney project is connected, and sign-up, sign-in, saving the profile, changing the password and deleting the account all work on the real server.
-- Real passkeys (WebAuthn): built, using Supabase's passkeys. Waiting for passkeys to be switched on in Supabase (step 7 of `SUPABASE-SETUP.md`), then checked on the real server with `app/scripts/live-passkey.js`.
+- ~~Real passkeys (WebAuthn).~~ Done 28 Oct 2026, using Supabase's passkeys: create one at sign-up or on the Me page, sign in with it, remove it. Checked on the real server with `app/scripts/live-passkey.js`. The passkey settings in Supabase are for `localhost` until the app has its web address (step 6).
 - Until step 2 builds the matches screen, saving the profile opens Home.
 
 Agreed changes from the prototype: the sign-in error now says "Check for typos, or sign in with a passkey." (also fixed in the prototype), and Change password on the Me page really changes the password. On sign-up step 3, tapping Create a passkey now creates the account first (a passkey needs an account to belong to), so Back is hidden after that.
