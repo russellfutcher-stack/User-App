@@ -37,6 +37,17 @@ Supabase is where members' accounts and profiles will be stored. Do these steps 
    The sample members are fictional and nobody can sign in as them. Before the app goes public (step 6), remove them with:
    `delete from auth.users where email like '%@samples.user-app.invalid';`
 
+## Letting Max run Supabase for you
+
+Once this is set up, Max can add tables and run checks on Supabase himself, so you don't need to paste SQL.
+
+10. **Make an access token.** Open https://supabase.com/dashboard/account/tokens (or click your account picture → **Account preferences** → **Access Tokens**) and click **Generate new token**. Name it `Max`, choose an expiry date (for example 30 days), and copy the token. It starts with `sbp_`.
+    This token can change anything in your Supabase account, so treat it like a password: never paste it into the chat. You can delete it on the same page at any time, and Max stops having access.
+11. **Give it to Max safely.** In this Claude session, open the environment menu in the title bar, then **Edit**:
+    - add an environment variable `SUPABASE_ACCESS_TOKEN` = the token
+    - under **Network access**, add `api.supabase.com` to **Allowed domains** (leave the package managers box ticked)
+    Save, then start a new session and tell Max it's done.
+
 ## Deleting a test account
 
 If deleting a user under **Authentication → Users** fails, delete it in **SQL Editor** instead, using its exact email. For example:

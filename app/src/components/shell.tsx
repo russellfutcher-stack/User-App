@@ -24,7 +24,7 @@ export function Bar({ back, title }: { back?: () => void; title?: string }) {
 
 const TABS: [Tab, string][] = [['home', 'Home'], ['me', 'Me'], ['find', 'Search'], ['chat', 'Chats'], ['rooms', 'Rooms'], ['support', 'Support']];
 export function Tabs() {
-  const { tab, setTab } = useApp();
+  const { tab, setTab, unread } = useApp();
   const bottom = useSafeAreaInsets().bottom;
   return (
     <View role="navigation" aria-label="Main" id="tabs" style={[s.tabs, { paddingBottom: bottom }]}>
@@ -34,6 +34,7 @@ export function Tabs() {
           <Pressable key={k} role="tab" aria-selected={on} aria-label={l} onPress={() => setTab(k)} style={s.tab}>
             <View style={[s.tabIc, on && { backgroundColor: C.hl }]}><TabIcon name={k} color={on ? C.hlInk : C.muted} /></View>
             <Text style={[s.tabText, on && { color: C.ink, fontFamily: F.bold }]}>{l}</Text>
+            {k === 'chat' && unread ? <View aria-label="unread" id="unread-dot" style={{ position: 'absolute', top: 6, right: '28%', width: 8, height: 8, borderRadius: 4, backgroundColor: C.danger }} /> : null}
           </Pressable>
         );
       })}
@@ -56,9 +57,17 @@ export function SheetHost() {
 }
 
 export function ToastHost() {
-  const { toastMsg } = useApp();
+  const { toastMsg, toast } = useApp();
   if (!toastMsg) return null;
-  return <View style={s.toast} pointerEvents="none"><Text key={toastMsg.n} role="status" id="toast" style={s.toastText}>{toastMsg.text}</Text></View>;
+  const { undo } = toastMsg;
+  return (
+    <View style={s.toast} pointerEvents="box-none">
+      <View key={toastMsg.n} role="status" id="toast" style={[s.toastBox, { flexDirection: 'row', alignItems: 'center', gap: 12 }]}>
+        <Text style={s.toastText}>{toastMsg.text}</Text>
+        {undo ? <Pressable role="button" aria-label="Undo" onPress={() => { toast(''); undo(); }}><Text style={[s.toastText, { color: C.hl, fontFamily: F.bold }]}>Undo</Text></Pressable> : null}
+      </View>
+    </View>
+  );
 }
 
 export const SheetBody = ({ children }: { children: ReactNode }) => <View style={{ gap: 14 }}>{children}</View>;
@@ -78,5 +87,6 @@ const s = StyleSheet.create({
   sheet: { backgroundColor: C.surface, maxHeight: '88%', borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 16, paddingTop: 18, paddingBottom: 18, gap: 14, boxShadow: '0 -10px 40px rgba(10,30,61,.18)' },
   grab: { width: 42, height: 5, borderRadius: 4, backgroundColor: C.line, alignSelf: 'center' },
   toast: { position: 'absolute', left: 0, right: 0, bottom: 84, alignItems: 'center', zIndex: 30 },
-  toastText: { backgroundColor: C.ink, color: C.surface, paddingVertical: 9, paddingHorizontal: 14, borderRadius: R.md, fontFamily: F.body, fontSize: 13.5, maxWidth: '86%', textAlign: 'center', overflow: 'hidden' },
+  toastBox: { backgroundColor: C.ink, paddingVertical: 9, paddingHorizontal: 14, borderRadius: R.md, maxWidth: '86%' },
+  toastText: { color: C.surface, fontFamily: F.body, fontSize: 13.5, textAlign: 'center', flexShrink: 1 },
 });

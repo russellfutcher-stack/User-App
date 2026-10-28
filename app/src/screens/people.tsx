@@ -28,19 +28,23 @@ function PathIcon({ k, color }: { k: PathKey; color: string }) {
 
 // On Home each tile shows how many people have tags in that choice and opens Search. On Search it turns the choice on or off.
 export function ThreeTiles({ members, on, onPress }: { members?: Member[] | null; on?: PathKey[]; onPress: (k: PathKey) => void }) {
+  const count = (k: PathKey) => { const p = PATHS.find(x => x.key === k)!; return members ? `${members.filter(m => m.tags.some(x => p.cats.includes(TAG_CAT[x]))).length} people` : '…'; };
+  return <PathTiles label="Three ways to connect" on={on} foot={k => (on ? (on.includes(k) ? '✓ On' : '✕ Off') : count(k))} onPress={onPress} dim={!!on} />;
+}
+// The three coloured tiles. `on` marks pressed tiles; with `dim`, tiles that are off fade (Search). Rooms shows one type at a time.
+export function PathTiles({ label, on, foot, onPress, dim, idPrefix = 'tile' }:
+  { label: string; on?: PathKey[]; foot: (k: PathKey) => string; onPress: (k: PathKey) => void; dim?: boolean; idPrefix?: string }) {
   return (
-    <View role="group" aria-label="Three ways to connect" style={{ flexDirection: 'row', gap: 10 }}>
+    <View role="group" aria-label={label} style={{ flexDirection: 'row', gap: 10 }}>
       {PATHS.map(p => {
-        const t = TILE[p.g], pressed = on ? on.includes(p.key) : undefined;
-        const n = members ? members.filter(m => m.tags.some(x => p.cats.includes(TAG_CAT[x]))).length : null;
-        const foot = on ? (pressed ? '✓ On' : '✕ Off') : n === null ? '…' : `${n} people`;
+        const t = TILE[p.g], pressed = on ? on.includes(p.key) : undefined, f = foot(p.key);
         return (
-          <Pressable key={p.key} role="button" aria-pressed={pressed} aria-label={`${choiceName(p.key)}, ${foot.replace(/^[✓✕] /, '')}`} id={`tile-${p.key}`} onPress={() => onPress(p.key)}
-            style={{ flex: 1, minWidth: 0, backgroundColor: t.bg, borderWidth: 2, borderColor: C.frame, paddingVertical: 10, paddingHorizontal: 9, gap: 6, opacity: pressed === false ? 0.45 : 1 }}>
+          <Pressable key={p.key} role="button" aria-pressed={pressed} aria-label={`${choiceName(p.key)}, ${f.replace(/^[✓✕] /, '')}`} id={`${idPrefix}-${p.key}`} onPress={() => onPress(p.key)}
+            style={{ flex: 1, minWidth: 0, backgroundColor: t.bg, borderWidth: 2, borderColor: C.frame, paddingVertical: 10, paddingHorizontal: 9, gap: 6, opacity: pressed === false && (dim || on?.length === 1) ? 0.45 : 1 }}>
             <View style={{ width: 30, height: 30, borderWidth: 2, borderColor: t.ink, alignItems: 'center', justifyContent: 'center' }}><PathIcon k={p.key} color={t.ink} /></View>
             <Text style={{ fontFamily: F.display, fontSize: 20, lineHeight: 20, color: t.ink }}>{choiceName(p.key)}</Text>
             <Text style={{ fontFamily: F.body, fontSize: 11.5, lineHeight: 14, color: t.ink, opacity: 0.92 }}>{EXAMPLES[p.key]}</Text>
-            <Text style={{ fontFamily: F.bold, fontSize: 11, letterSpacing: 0.66, textTransform: 'uppercase', color: t.ink, borderTopWidth: 1, borderTopColor: t.ink, paddingTop: 5, marginTop: 'auto' }}>{foot}</Text>
+            <Text style={{ fontFamily: F.bold, fontSize: 11, letterSpacing: 0.66, textTransform: 'uppercase', color: t.ink, borderTopWidth: 1, borderTopColor: t.ink, paddingTop: 5, marginTop: 'auto' }}>{f}</Text>
           </Pressable>
         );
       })}
@@ -91,7 +95,7 @@ export function PersonRow({ m }: { m: Member }) {
 }
 
 export function ProfileSheet({ m }: { m: Member }) {
-  const { profile, closeSheet, setTab, setMatches, toast, membersChanged } = useApp();
+  const { profile, closeSheet, setTab, setView, setMatches, toast, membersChanged } = useApp();
   if (!profile) return null;
   const both = shared(profile, m);
   const block = async () => {
@@ -118,8 +122,8 @@ export function ProfileSheet({ m }: { m: Member }) {
         );
       })}
       <View style={{ gap: 8 }}><Label>Looking for</Label><View style={ui.chips}>{m.looking.map(l => <PlainTag key={l} text={LOOKING.find(x => x.id === l)?.label || l} />)}</View></View>
-      {/* Chats arrive in step 3 and reports in step 4. */}
-      <Btn variant="primary" block label="Say hi" onPress={() => { closeSheet(); setMatches(false); setTab('chat'); }} />
+      {/* Reports arrive in step 4. */}
+      <Btn variant="primary" block label="Say hi" onPress={() => { closeSheet(); setMatches(false); setTab('chat'); setView({ name: 'chat', with: m.username }); }} />
       <Row>
         <Btn variant="danger" sm label="Block" onPress={block} />
         <Btn sm label="Report" onPress={() => toast('Reporting opens here.')} />

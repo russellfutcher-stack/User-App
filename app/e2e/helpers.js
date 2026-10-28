@@ -53,4 +53,14 @@ async function editStore(page, fn) {
   await page.reload(); await expect(page.getByRole('heading', { name: WELCOME })).toBeVisible();
 }
 
-module.exports = { expect, WELCOME, KEY, open, screen, tab, btn, chip, toggle, toast, sheet, stored, signIn, signInDemo, startSignup, passRules, passCredentials, createAccount, finishSetup, signOut, editStore };
+// Drag a swipe row to the left with the mouse (by `px`), as a finger would.
+async function swipe(page, row, px = 140) {
+  await row.scrollIntoViewIfNeeded(); const b = await row.boundingBox(); const y = b.y + b.height / 2;
+  await page.mouse.move(b.x + b.width - 20, y); await page.mouse.down();
+  await page.mouse.move(b.x + b.width - 20 - px, y, { steps: 8 }); await page.mouse.up();
+}
+const chatRow = (page, name) => page.getByRole('button', { name: `Chat with ${name}`, exact: true });
+async function openChat(page, name) { await tab(page, 'Chats').click(); await chatRow(page, name).click(); await expect(page.locator('#msg')).toBeVisible(); }
+async function send(page, text) { await page.fill('#msg', text); await btn(page, 'Send').click(); }
+
+module.exports = { swipe, chatRow, openChat, send, expect, WELCOME, KEY, open, screen, tab, btn, chip, toggle, toast, sheet, stored, signIn, signInDemo, startSignup, passRules, passCredentials, createAccount, finishSetup, signOut, editStore };

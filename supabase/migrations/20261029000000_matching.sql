@@ -10,10 +10,13 @@ alter table public.profiles
   add column if not exists region text not null default '',
   add column if not exists active text not null default '';
 
--- People who chat with each other. Chats arrive in step 3, which replaces this function.
-create or replace function public.chat_partners(a uuid, b uuid) returns boolean language sql stable set search_path = '' as $$
-  select false;
-$$;
+-- People who chat with each other. Chats arrive in step 3, which replaces this function,
+-- so it is only made here if it doesn't exist yet.
+do $do$ begin
+  if not exists (select 1 from pg_proc where proname = 'chat_partners' and pronamespace = 'public'::regnamespace) then
+    create function public.chat_partners(a uuid, b uuid) returns boolean language sql stable set search_path = '' as $$ select false; $$;
+  end if;
+end $do$;
 
 -- Tags by choice: I = interests, D = mental health, M, S and O = drug use.
 create or replace function public.tags_in(tags text[], kinds text[]) returns text[] language sql immutable set search_path = '' as $$
@@ -87,7 +90,7 @@ grant execute on function public.find_members() to authenticated;
 
 create or replace function public.block(name text) returns void language sql security definer set search_path = '' as $$
   insert into public.blocks (blocker, blocked)
-  select auth.uid(), id from public.profiles where username = name::public.citext and id <> auth.uid()
+  select auth.uid(), id from public.profiles where username operator(public.=) name::public.citext and id <> auth.uid()
   on conflict do nothing;
 $$;
 revoke execute on function public.block(text) from public;

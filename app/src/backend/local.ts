@@ -3,16 +3,24 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Crypto from 'expo-crypto';
 import { SAMPLE_HANDLES } from '../data/reference';
 import { SAMPLES } from '../data/people';
+import { DEMO_CHATS, DEMO_JOINED, ROOMS, repliesFor } from '../data/community';
 import { score } from '../lib/match';
-import { Backend, Profile, blankProfile } from './types';
+import { roomRequestError } from '../lib/rooms';
+import { Backend, Msg, Profile, Room, RoomRequest, blankProfile } from './types';
 
 const KEY = 'user-app-v1';
-type Account = { salt: string; hash: string; passkey: boolean; profile: Profile; blocked: string[] };
+type Stored = { f: 'me' | 'them'; t: string; ts: number };
+type Chat = { msgs: Stored[]; unread: boolean };
+type MyRoom = { id: string; cat: Room['cat']; name: string; desc: string };
+type Rooms = { joined: string[]; posts: Record<string, Stored[]>; custom: MyRoom[]; requests: RoomRequest[] };
+type Account = { salt: string; hash: string; passkey: boolean; profile: Profile; blocked: string[]; chats?: Record<string, Chat>; rooms?: Rooms };
 type Store = { accounts: Record<string, Account>; device: string | null; current: string | null };
 
 const DEMO = 'quietheron';
 const demoAccount = (): Account => ({
   salt: '', hash: 'demo', passkey: true, blocked: [],
+  chats: Object.fromEntries(DEMO_CHATS.map(c => [c.with, { unread: c.unread, msgs: c.msgs.map(([f, t, ago]) => ({ f, t, ts: Date.now() - ago })) }])),
+  rooms: { joined: [...DEMO_JOINED], posts: {}, custom: [], requests: [] },
   profile: {
     username: 'QuietHeron', byline: 'New here. Anxious in person, easier in text. Like slow walks and long books.',
     stage: 'early', looking: ['chat', 'walk', 'pets'], wantsPeer: true, isPeer: false,
@@ -48,6 +56,15 @@ export function localBackend(): Backend {
     });
     queue = run; return run;
   };
+  const listeners = new Set<() => void>();
+  const changed = () => listeners.forEach(fn => fn());
+  const chatsOf = (a: Account) => (a.chats = a.chats || {});
+  const roomsOf = (a: Account) => (a.rooms = a.rooms || { joined: [], posts: {}, custom: [], requests: [] });
+  const me = async () => { await queue.catch(() => undefined); const s = await load(); return (current && s.accounts[current]) || null; };
+  const msg = (m: Stored, i: number, who?: string): Msg => ({ id: String(i), mine: m.f === 'me', text: m.t, at: m.ts, who: m.f === 'me' ? undefined : who });
+  const allRooms = (a: Account) => [...ROOMS.map(r => ({ id: r.id, cat: r.cat, name: r.name, desc: r.desc, members: r.members, mine: false })),
+    ...roomsOf(a).custom.map(r => ({ ...r, members: 1, mine: true }))];
+
   return {
     kind: 'local',
     passkeysReady: true,
@@ -96,6 +113,75 @@ export function localBackend(): Backend {
     async block(username) { await withMe(a => { if (!a.blocked.includes(username)) a.blocked.push(username); }); },
     async blocked() { const s = await load(); return (current && s.accounts[current]?.blocked) || []; },
     async unblock(username) { await withMe(a => { a.blocked = a.blocked.filter(x => x !== username); }); },
+    async chats() {
+      const a = await me(); if (!a) return [];
+      return Object.entries(chatsOf(a)).filter(([w, c]) => c.msgs.length && !a.blocked.includes(w))
+        .map(([w, c]) => ({ with: w, last: msg(c.msgs[c.msgs.length - 1], c.msgs.length - 1), unread: c.unread }))
+        .sort((x, y) => y.last.at - x.last.at);
+    },
+    async messages(w) {
+      let out: Msg[] = [];
+      await withMe(a => { const c = chatsOf(a)[w]; if (!c) return; c.unread = false; out = c.msgs.map((m, i) => msg(m, i)); });
+      return out;
+    },
+    async send(w, text) {
+      let out: Msg | null = null;
+      await withMe(a => { const c = (chatsOf(a)[w] = chatsOf(a)[w] || { msgs: [], unread: false }); c.msgs.push({ f: 'me', t: text, ts: Date.now() }); out = msg(c.msgs[c.msgs.length - 1], c.msgs.length - 1); });
+      return out ? { ok: true, value: out } : { ok: false, error: 'Please sign in again.' };
+    },
+    async sampleReply(w) {
+      if (!SAMPLES.some(m => m.username === w)) return null;
+      let out: Msg | null = null;
+      await withMe(a => {
+        const c = chatsOf(a)[w]; if (!c || a.blocked.includes(w)) return;
+        const replies = repliesFor(w), n = c.msgs.filter(m => m.f === 'them').length;
+        c.msgs.push({ f: 'them', t: replies[n % replies.length], ts: Date.now() }); c.unread = true; out = msg(c.msgs[c.msgs.length - 1], c.msgs.length - 1);
+      });
+      changed(); return out;
+    },
+    async deleteChat(w) {
+      let kept: Chat | undefined;
+      await withMe(a => { kept = chatsOf(a)[w]; delete chatsOf(a)[w]; });
+      return async () => { await withMe(a => { if (kept) chatsOf(a)[w] = kept; }); };
+    },
+    onChange(fn) { listeners.add(fn); return () => { listeners.delete(fn); }; },
+    async rooms() {
+      const a = await me(); if (!a) return [];
+      const j = roomsOf(a).joined; return allRooms(a).map(r => ({ ...r, joined: j.includes(r.id) }));
+    },
+    async roomPosts(id) {
+      const a = await me(); if (!a) return [];
+      const seed = ROOMS.find(r => r.id === id)?.seed || [];
+      const mine = roomsOf(a).posts[id] || [];
+      const custom = roomsOf(a).custom.find(r => r.id === id);
+      return [...(custom ? [{ f: 'them' as const, t: `Welcome to ${custom.name}. This room has just been created. Say hello!`, ts: 0, who: 'User' }] : []),
+        ...seed.map(([who, t]) => ({ f: 'them' as const, t, ts: 0, who })), ...mine.map(m => ({ ...m, who: undefined }))]
+        .map((m, i) => msg(m, i, m.who));
+    },
+    async joinRoom(id) { await withMe(a => { const r = roomsOf(a); if (!r.joined.includes(id)) r.joined.push(id); }); },
+    async post(id, text) {
+      let out: Msg | null = null;
+      await withMe(a => { const r = roomsOf(a); const l = (r.posts[id] = r.posts[id] || []); l.push({ f: 'me', t: text, ts: Date.now() }); out = msg(l[l.length - 1], 1000 + l.length); });
+      return out ? { ok: true, value: out } : { ok: false, error: 'Please sign in again.' };
+    },
+    async leaveRoom(id) {
+      let was: Rooms | undefined;
+      await withMe(a => {
+        const r = roomsOf(a); was = JSON.parse(JSON.stringify(r));
+        r.joined = r.joined.filter(x => x !== id);
+        if (r.custom.some(x => x.id === id)) { r.custom = r.custom.filter(x => x.id !== id); r.requests = r.requests.filter(q => q.id !== id); }
+      });
+      return async () => { await withMe(a => { if (was) a.rooms = was; }); };
+    },
+    async roomRequests() { const a = await me(); return a ? roomsOf(a).requests : []; },
+    async requestRoom(name, cat, desc) {
+      const a = await me(); if (!a) return { ok: false, error: 'Please sign in again.' };
+      const err = roomRequestError(name, desc, [...allRooms(a).map(r => r.name), ...roomsOf(a).requests.map(q => q.name)]);
+      if (err) return { ok: false, error: err };
+      const room: MyRoom = { id: 'c' + Date.now().toString(36), cat, name, desc };
+      await withMe(x => { const r = roomsOf(x); r.custom.push(room); r.requests.push({ id: room.id, name, cat, status: 'Approved' }); if (!r.joined.includes(room.id)) r.joined.push(room.id); });
+      return { ok: true, value: { ...room, members: 1, joined: true, mine: true } };
+    },
     async signOut() { current = null; },
     async deleteAccount() {
       const s = await load();

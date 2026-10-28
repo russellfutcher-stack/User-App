@@ -122,14 +122,16 @@ test('DS-13 Block removes them and lists them on Me', async ({ page }) => {
   await expect(count(page)).toHaveText('99 people'); expect(await names(page)).not.toContain('JuniperWren');
   await H.tab(page, 'Me').click(); await expect(page.locator('#blocked')).toContainText('JuniperWren');
 });
-test('DS-14 Say hi opens Chats', async ({ page }) => {
+test('DS-14 Say hi opens a chat with them', async ({ page }) => {
   await people(page).first().click(); await H.btn(page, 'Say hi').click();
-  await expect(H.sheet(page)).toHaveCount(0); await expect(H.tab(page, 'Chats')).toHaveAttribute('aria-selected', 'true');
+  await expect(H.sheet(page)).toHaveCount(0); await expect(page.locator('#bar')).toContainText('JuniperWren');
+  await expect(page.getByPlaceholder('Message JuniperWren')).toBeVisible();
 });
 test('DS-14 Say hi from the matches screen opens Chats', async ({ page }) => {
   await H.signOut(page); await H.createAccount(page, 'Greeter_1'); await H.finishSetup(page, 'Music', { toHome: false });
   await page.locator('#match-list [data-testid="person"]').first().click(); await H.btn(page, 'Say hi').click();
-  await expect(H.tab(page, 'Chats')).toHaveAttribute('aria-selected', 'true');
+  await expect(page.locator('#msgs')).toContainText("You're both anonymous");
+  await H.btn(page, 'Back').click(); await expect(H.tab(page, 'Chats')).toHaveAttribute('aria-selected', 'true');
 });
 test('DS-15 A notice shows until you tap Search', async ({ page }) => {
   await pick(page, 'Pets & dog walking');

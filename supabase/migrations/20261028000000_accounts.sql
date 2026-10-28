@@ -54,7 +54,7 @@ create trigger on_auth_user_created after insert on auth.users for each row exec
 
 -- Sign-up checks whether a username is free before creating the account.
 create function public.username_taken(name text) returns boolean language sql stable security definer set search_path = '' as $$
-  select exists (select 1 from public.profiles where username = name::public.citext);
+  select exists (select 1 from public.profiles where username operator(public.=) name::public.citext);
 $$;
 revoke execute on function public.username_taken(text) from public;
 grant execute on function public.username_taken(text) to anon, authenticated;
@@ -82,7 +82,7 @@ grant execute on function public.my_blocked() to authenticated;
 
 create function public.unblock(name text) returns void language sql security definer set search_path = '' as $$
   delete from public.blocks where blocker = auth.uid()
-    and blocked = (select id from public.profiles where username = name::public.citext);
+    and blocked = (select id from public.profiles where username operator(public.=) name::public.citext);
 $$;
 revoke execute on function public.unblock(text) from public;
 grant execute on function public.unblock(text) to authenticated;

@@ -2,7 +2,8 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { createClient } from '@supabase/supabase-js';
 import { SAMPLE_HANDLES } from '../data/reference';
-import { Backend, Member, Profile } from './types';
+import { TAKEN_ROOM } from '../lib/rooms';
+import { Backend, Member, Msg, Profile, Room } from './types';
 
 // Supabase Auth needs an email address, but members never give one. The app makes a
 // placeholder from the username. No email is sent ("Confirm email" is off in Supabase).
@@ -136,6 +137,69 @@ export function supabaseBackend(url: string, anonKey: string): Backend {
       }));
     },
     async block(username) { const { error } = await db.rpc('block', { name: username }); must(error); },
+    async chats() {
+      const { data, error } = await db.rpc('my_chats'); must(error);
+      return (data || []).map((r: { with_name: string; last_body: string; last_mine: boolean; last_at: string; unread: boolean }) => ({
+        with: r.with_name, unread: r.unread, last: { id: 'last', mine: r.last_mine, text: r.last_body, at: Date.parse(r.last_at) },
+      }));
+    },
+    async messages(w) {
+      const { data, error } = await db.rpc('chat_messages', { name: w }); must(error);
+      return (data || []).map((r: { id: number; mine: boolean; body: string; created_at: string }): Msg => ({ id: String(r.id), mine: r.mine, text: r.body, at: Date.parse(r.created_at) }));
+    },
+    async send(w, text) {
+      const { data, error } = await db.rpc('send_message', { name: w, body: text });
+      if (error) return { ok: false, error: /blocked/.test(error.message) ? "You can't message this person." : TROUBLE };
+      const r = data[0]; return { ok: true, value: { id: String(r.id), mine: true, text, at: Date.parse(r.created_at) } };
+    },
+    async sampleReply(w) {
+      const { data, error } = await db.rpc('sample_reply', { name: w }); if (error || !data?.length) return null;
+      const all = await this.messages(w); return all.find(m => m.id === String(data[0].id)) || null;
+    },
+    async deleteChat(w) {
+      const { error } = await db.rpc('hide_chat', { name: w, hide: true }); must(error);
+      return async () => { const r = await db.rpc('hide_chat', { name: w, hide: false }); must(r.error); };
+    },
+    onChange(fn) {
+      // Realtime only sends rows this member may read (see the read rules in the migration).
+      const ch = db.channel('user-' + Math.random().toString(36).slice(2))
+        .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages' }, () => fn())
+        .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'room_posts' }, () => fn())
+        .subscribe();
+      return () => { db.removeChannel(ch); };
+    },
+    async rooms() {
+      const { data, error } = await db.rpc('my_rooms'); must(error);
+      return (data || []).map((r: { id: string; cat: Room['cat']; name: string; descr: string; members: number; joined: boolean; mine: boolean }): Room => ({
+        id: r.id, cat: r.cat, name: r.name, desc: r.descr, members: r.members, joined: r.joined, mine: r.mine,
+      }));
+    },
+    async roomPosts(id) {
+      const { data, error } = await db.rpc('room_posts_of', { room: id }); must(error);
+      return (data || []).map((r: { id: number; who: string; mine: boolean; body: string; created_at: string }): Msg => ({
+        id: String(r.id), mine: r.mine, text: r.body, at: Date.parse(r.created_at), who: r.mine ? undefined : r.who,
+      }));
+    },
+    async joinRoom(id) { const { error } = await db.rpc('join_room', { room: id }); must(error); },
+    async post(id, text) {
+      const { data, error } = await db.rpc('post_in_room', { room: id, body: text });
+      if (error) return { ok: false, error: TROUBLE };
+      const r = data[0]; return { ok: true, value: { id: String(r.id), mine: true, text, at: Date.parse(r.created_at) } };
+    },
+    async leaveRoom(id) {
+      const { error } = await db.rpc('leave_room', { room: id }); must(error);
+      return async () => { const r = await db.rpc('undo_leave_room', { room: id }); must(r.error); };
+    },
+    async roomRequests() {
+      const { data, error } = await db.rpc('my_room_requests'); must(error);
+      return (data || []).map((r: { id: string; name: string; cat: Room['cat']; status: 'Approved' }) => ({ id: r.id, name: r.name, cat: r.cat, status: r.status }));
+    },
+    async requestRoom(name, cat, desc) {
+      const { data, error } = await db.rpc('request_room', { name, cat, descr: desc });
+      if (error) return { ok: false, error: /taken/.test(error.message) ? TAKEN_ROOM : /too many/.test(error.message) ? "You've asked for 5 rooms today. Try again tomorrow." : TROUBLE };
+      const room = (await this.rooms()).find(r => r.id === data);
+      return room ? { ok: true, value: room } : { ok: false, error: TROUBLE };
+    },
     async blocked() { const { data, error } = await db.rpc('my_blocked'); must(error); return (data || []).map((r: { username: string }) => r.username); },
     async unblock(username) { const { error } = await db.rpc('unblock', { name: username }); must(error); },
     async signOut() { leaving = settled().then(() => db.auth.signOut()).catch(() => undefined); await leaving; },
