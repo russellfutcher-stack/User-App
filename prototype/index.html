@@ -1,0 +1,1468 @@
+<title>User Connection and Recovery</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:wght@400;700&family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700;12..96,800&display=swap">
+<style>
+/* Layout: a single phone-sized app column, centred on large screens, full-bleed on phones.
+   v2: a dark-blue to light-blue scale, square framed panels with hard edges, raised buttons,
+   and three colour-coded ways to connect: Interests (light blue), Drug use (mid blue), Mental health (dark blue). */
+:root{
+  --bg:#D7E9F8; --bg-2:#A9CFEE; --surface:#FFFFFF; --surface-2:#EDF5FC; --ink:#0A1E3D; --muted:#3E5878; --line:#9DBBDA; --frame:#0A1E3D;
+  --accent:#0D3B7A; --accent-strong:#072A5C; --accent-ink:#FFFFFF; --accent-soft:#D3E6F8;
+  --sage:#1C6CB8; --sage-soft:#D4E8FA; --danger:#B42318; --danger-soft:#FDE4E1; --focus:#E07B00;
+  --hl:#FFD43B; --hl-ink:#0A1E3D; --hl-soft:#FFF4C2;
+  --grad-a:#0A2A5E; --grad-b:#4E9FE0; --bar-ink:#FFFFFF;
+  --c-int:#8CC8F2; --c-int-ink:#0A1E3D; --c-drug:#2A78C8; --c-drug-ink:#FFFFFF; --c-mh:#0D2F66; --c-mh-ink:#FFFFFF;
+  --shadow:8px 8px 0 #0A1E3D;
+  --f-display:"Bricolage Grotesque", "Segoe UI", system-ui, sans-serif;
+  --f-body:"Atkinson Hyperlegible", "Segoe UI", system-ui, -apple-system, sans-serif;
+  color-scheme:light;
+}
+
+html,body{height:100%}
+[hidden]{display:none!important}
+body{background:linear-gradient(160deg,var(--bg-2),var(--bg) 60%);color:var(--ink);font-family:var(--f-body);font-size:15px;line-height:1.45;
+  padding-left:max(16px, env(safe-area-inset-left, 0px));padding-right:max(16px, env(safe-area-inset-right, 0px));
+  padding-block:16px;box-sizing:border-box;display:flex;justify-content:center;align-items:center;gap:40px}
+*,*::before,*::after{box-sizing:border-box}
+button,input,select,textarea{font:inherit;color:inherit}
+:focus-visible{outline:3px solid var(--focus);outline-offset:2px;border-radius:8px}
+@media (prefers-reduced-motion: reduce){*{animation:none!important;transition:none!important}}
+
+.aside{max-width:300px;display:flex;flex-direction:column;gap:14px}
+.aside h1{font-family:var(--f-display);font-weight:800;font-size:44px;line-height:1;margin:0;letter-spacing:-.02em}
+.aside .by{font-family:var(--f-display);font-weight:500;font-size:18px;color:var(--accent-strong);margin:0}
+.aside p{margin:0;color:var(--muted);text-wrap:pretty}
+.aside .note{font-size:13px;border-top:1px solid var(--line);padding-top:12px}
+@media (max-width: 820px){.aside{display:none} body{padding-block:0;padding-left:0;padding-right:0}}
+
+.device{position:relative;width:400px;height:min(860px,100%);background:var(--surface-2);border-radius:34px;
+  box-shadow:var(--shadow);border:1px solid var(--line);overflow:hidden;display:flex;flex-direction:column}
+@media (max-width: 820px){.device{width:100%;height:100%;border-radius:0;border:0;box-shadow:none}}
+
+/* app bar */
+.bar{display:flex;align-items:center;gap:10px;padding:14px 16px 10px;background:var(--surface);border-bottom:1px solid var(--line);flex:none}
+@media (max-width: 820px){.bar{padding-left:max(16px, env(safe-area-inset-left, 0px));padding-right:max(16px, env(safe-area-inset-right, 0px))}}
+.brand{font-family:var(--f-display);font-weight:800;font-size:22px;letter-spacing:-.02em;line-height:1}
+.brand small{display:block;font-family:var(--f-body);font-weight:400;font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin-top:3px}
+.bar .grow{flex:1;min-width:0}
+.bar .title{font-family:var(--f-display);font-weight:700;font-size:18px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.iconbtn{border:1px solid var(--line);background:var(--surface);border-radius:999px;padding:7px 12px;font-size:13px;font-weight:700;cursor:pointer;white-space:nowrap}
+.iconbtn:hover{background:var(--surface-2)}
+.help{background:var(--danger-soft);color:var(--danger);border-color:transparent}
+.exit{color:var(--muted)}
+
+.screen{flex:1;overflow-y:auto;overflow-x:hidden;padding:16px;display:flex;flex-direction:column;gap:16px}
+.screen.flush{padding:0;gap:0}
+
+/* tabs */
+.tabs{flex:none;display:grid;grid-template-columns:repeat(6,1fr);background:var(--surface);border-top:1px solid var(--line);padding-bottom:env(safe-area-inset-bottom,0px)}
+.tab{background:none;border:0;padding:9px 2px 10px;display:flex;flex-direction:column;align-items:center;gap:3px;font-size:11.5px;color:var(--muted);cursor:pointer;position:relative}
+.tab svg{width:22px;height:22px}
+.tab[aria-current="page"]{color:var(--ink);font-weight:700}
+.tab[aria-current="page"] svg{color:var(--accent)}
+.tab .dot{position:absolute;top:6px;right:calc(50% - 16px);width:8px;height:8px;border-radius:50%;background:var(--accent)}
+
+/* type */
+h2{font-family:var(--f-display);font-weight:700;font-size:21px;line-height:1.15;margin:0;letter-spacing:-.01em;text-wrap:balance}
+h3{font-family:var(--f-display);font-weight:700;font-size:16px;margin:0}
+.label{font-size:11.5px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);font-weight:700}
+.muted{color:var(--muted)}
+.small{font-size:13px}
+p{margin:0}
+
+.card{background:var(--surface);border:1px solid var(--line);border-radius:18px;padding:16px;display:flex;flex-direction:column;gap:12px}
+.card.warm{background:var(--accent-soft);border-color:transparent}
+.card.calm{background:var(--sage-soft);border-color:transparent}
+.section{display:flex;flex-direction:column;gap:10px}
+.row{display:flex;align-items:center;gap:10px}
+.row.wrap{flex-wrap:wrap}
+.between{justify-content:space-between}
+
+.btn{border:1px solid var(--line);background:var(--surface);border-radius:12px;padding:10px 14px;font-weight:700;cursor:pointer;text-align:center}
+.btn:hover{background:var(--surface-2)}
+.btn.primary{background:var(--accent);color:var(--accent-ink);border-color:transparent}
+.btn.primary:hover{background:var(--accent-strong)}
+.btn.quiet{border-color:transparent;background:transparent;color:var(--muted)}
+.btn.danger{color:var(--danger);border-color:var(--danger-soft)}
+.btn.block{width:100%}
+.btn:disabled{opacity:.5;cursor:not-allowed}
+.btn.sm{padding:6px 10px;font-size:13px;border-radius:10px}
+
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chip{border:1px solid var(--line);background:var(--surface);border-radius:999px;padding:5px 11px;font-size:13px;cursor:pointer;line-height:1.3}
+.chip[aria-pressed="true"]{background:var(--ink);color:var(--surface);border-color:var(--ink)}
+.tag{display:inline-flex;align-items:center;gap:5px;border-radius:999px;padding:3px 9px;font-size:12.5px;background:var(--surface-2);border:1px solid var(--line)}
+.tag.shared{background:var(--hl);border-color:var(--frame);color:var(--ink);font-weight:700}
+.tag i{font-style:normal;font-size:10px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted)}
+.pill{font-size:11.5px;font-weight:700;border-radius:999px;padding:2px 8px;background:var(--sage-soft);color:var(--sage);white-space:nowrap}
+.pill.amber{background:var(--accent-soft);color:var(--accent-strong)}
+
+.person{display:flex;gap:12px;align-items:flex-start;padding:12px;background:var(--surface);border:1px solid var(--line);border-radius:16px;cursor:pointer;text-align:left;width:100%}
+.person:hover{border-color:var(--muted)}
+.person .body{flex:1;min-width:0;display:flex;flex-direction:column;gap:6px}
+.person .name{font-weight:700;font-size:15.5px}
+.match{font-family:var(--f-display);font-weight:800;font-size:20px;color:var(--sage);line-height:1;text-align:right}
+.match small{display:block;font-family:var(--f-body);font-size:10px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+.online{width:9px;height:9px;border-radius:50%;background:var(--sage);display:inline-block}
+
+.field{display:flex;flex-direction:column;gap:6px}
+.field label{font-weight:700;font-size:13.5px}
+.input{border:1px solid var(--line);background:var(--surface);border-radius:12px;padding:11px 12px;width:100%}
+.input:focus{border-color:var(--focus);outline:none}
+select.input{appearance:auto}
+.hint{font-size:12.5px;color:var(--muted)}
+.meter{height:6px;border-radius:6px;background:var(--line);overflow:hidden}
+.meter span{display:block;height:100%;background:var(--sage);transition:width .2s}
+
+.checkin{display:grid;grid-template-columns:repeat(5,1fr);gap:6px}
+.checkin button{border:1px solid var(--line);background:var(--surface);border-radius:12px;padding:8px 2px;cursor:pointer;font-size:11.5px;display:flex;flex-direction:column;align-items:center;gap:4px;line-height:1.15}
+.checkin button b{font-family:var(--f-display);font-size:18px}
+.checkin button:hover{border-color:var(--accent)}
+
+.stats{display:grid;grid-template-columns:repeat(2,1fr);gap:8px}
+.stat{background:var(--surface-2);border-radius:14px;padding:12px}
+.stat b{display:block;font-family:var(--f-display);font-size:26px;font-weight:800;line-height:1.05;font-variant-numeric:tabular-nums}
+.stat span{font-size:12.5px;color:var(--muted)}
+
+/* chat */
+.msgs{flex:1;overflow-y:auto;padding:16px;display:flex;flex-direction:column;gap:8px}
+.bubble{max-width:80%;padding:9px 12px;border-radius:16px;font-size:14.5px;white-space:pre-wrap;overflow-wrap:anywhere}
+.bubble.me{align-self:flex-end;background:var(--accent);color:var(--accent-ink);border-bottom-right-radius:5px}
+.bubble.them{align-self:flex-start;background:var(--surface);border:1px solid var(--line);border-bottom-left-radius:5px}
+.bubble.sys{align-self:center;background:transparent;color:var(--muted);font-size:12.5px;text-align:center;max-width:92%}
+.bubble .who{display:block;font-size:11.5px;font-weight:700;color:var(--muted);margin-bottom:2px}
+.typing{align-self:flex-start;color:var(--muted);font-size:13px;padding:4px 8px}
+.composer{flex:none;display:flex;gap:8px;padding:10px 12px;background:var(--surface);border-top:1px solid var(--line)}
+.composer .input{border-radius:999px}
+.ice{display:flex;gap:6px;overflow-x:auto;padding:8px 12px 0;background:var(--surface);flex:none}
+.ice .chip{white-space:nowrap;font-size:12.5px}
+.warnbox{margin:0 12px;padding:10px 12px;border-radius:12px;background:var(--danger-soft);color:var(--ink);font-size:13px;display:flex;flex-direction:column;gap:6px}
+.warnbox b{color:var(--danger)}
+
+/* sheet */
+.scrim{position:absolute;inset:0;background:rgba(10,16,22,.45);display:flex;align-items:flex-end;z-index:20}
+.sheet{background:var(--surface);width:100%;max-height:88%;overflow-y:auto;border-radius:22px 22px 0 0;padding:18px 16px calc(18px + env(safe-area-inset-bottom,0px));display:flex;flex-direction:column;gap:14px}
+.sheet .grab{width:42px;height:5px;border-radius:5px;background:var(--line);align-self:center}
+.lines{display:flex;flex-direction:column;gap:8px}
+.line{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:10px 12px;border-radius:12px;background:var(--surface-2)}
+.line .num{font-family:var(--f-display);font-weight:700;font-size:16px;user-select:all;white-space:nowrap}
+.toast{position:absolute;left:50%;bottom:84px;transform:translateX(-50%);background:var(--ink);color:var(--surface);padding:9px 14px;border-radius:12px;font-size:13.5px;z-index:30;max-width:86%;text-align:center}
+
+.steps{display:flex;gap:4px}
+.steps span{flex:1;height:4px;border-radius:4px;background:var(--line)}
+.steps span.on{background:var(--accent)}
+.codes{display:grid;grid-template-columns:1fr 1fr;gap:6px;font-family:ui-monospace,Menlo,Consolas,monospace;font-size:14px}
+.codes span{background:var(--surface-2);border-radius:8px;padding:6px 8px;text-align:center;user-select:all}
+.optrow{display:flex;gap:6px;flex-wrap:wrap}
+.optrow button{border:2px solid transparent;border-radius:12px;background:var(--surface-2);padding:3px;cursor:pointer;line-height:0}
+.optrow button[aria-pressed="true"]{border-color:var(--accent)}
+.toggle{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid var(--line)}
+.toggle:last-child{border-bottom:0}
+.toggle input[type=checkbox]{width:20px;height:20px;accent-color:var(--accent)}
+.welcome-hero{display:flex;flex-direction:column;gap:10px;padding-top:12px}
+.welcome-hero .big{font-family:var(--f-display);font-weight:800;font-size:56px;letter-spacing:-.03em;line-height:.9}
+.welcome-hero .by{font-family:var(--f-display);font-weight:500;font-size:20px;color:var(--accent-strong)}
+.lamp{width:100%;height:120px;border-radius:20px;background:
+  radial-gradient(circle at 78% 30%, var(--accent-soft) 0 22%, transparent 23%),
+  radial-gradient(circle at 78% 30%, var(--accent) 0 7%, transparent 8%), var(--sage-soft)}
+.fake{background:#fff;color:#222;flex:1;padding:24px;font-family:Georgia,serif}
+.fake h1{font-size:22px;margin:0 0 12px}
+.fake li{margin:6px 0}
+.bighead{font-size:28px;letter-spacing:-.02em}
+
+/* ---------- v2 frame: straight lines, square corners, obvious borders ---------- */
+.device,.card,.btn,.chip,.tag,.pill,.person,.input,.bubble,.sheet,.line,.toast,.stat,.codes span,.optrow button,
+.iconbtn,.checkin button,.warnbox,.lamp,.meter,.meter span,.steps span,.sheet .grab,:focus-visible{border-radius:0}
+.device{border:3px solid var(--frame);box-shadow:none}
+@media (max-width: 820px){.device{border:0;box-shadow:none}}
+.bar{background:linear-gradient(90deg,var(--grad-a),var(--grad-b));color:var(--bar-ink);border-bottom:3px solid var(--frame)}
+.bar .brand small{color:var(--bar-ink);opacity:.85}
+.bar .iconbtn{border:2px solid var(--frame);background:var(--surface);color:var(--ink)}
+.bar .iconbtn.help{background:var(--danger);color:#fff}
+.bar .iconbtn.exit{color:var(--ink)}
+.tabs{border-top:3px solid var(--frame)}
+.tab{border-right:1px solid var(--line)}
+.tab:last-child{border-right:0}
+.tab[aria-current="page"]{background:var(--hl)}
+.tab[aria-current="page"] svg{color:var(--accent)}
+.card{border:2px solid var(--frame)}
+.card.warm,.card.calm{border:2px solid var(--frame)}
+.person{border:2px solid var(--frame)}
+.person:hover{border-color:var(--frame);background:var(--surface-2)}
+.sheet{border-top:3px solid var(--frame)}
+.sheet .grab{background:var(--frame)}
+.input{border:2px solid var(--frame)}
+.input:focus{border-color:var(--accent);outline:none}
+.line{border:1px solid var(--line)}
+.stat{border:2px solid var(--frame);background:var(--surface-2)}
+.bubble.them{border:2px solid var(--frame)}
+.bubble.me{border:2px solid var(--frame)}
+.composer,.ice{border-top:2px solid var(--frame)}
+.ice{border-top:0}
+.warnbox{border:2px solid var(--danger)}
+.codes span{border:1px solid var(--frame)}
+.chip{border:2px solid var(--frame);font-weight:700}
+.chip[aria-pressed="true"]{background:var(--hl);color:var(--hl-ink);border-color:var(--frame)}
+.chip[aria-pressed="true"]::before{content:"✓ "}
+.card.night{background:var(--hl-soft)}
+.toggle .th,.line .th{display:block;font-size:12.5px;color:var(--muted);margin-top:2px}
+.tag{border:1px solid var(--line)}
+.pill{border:1px solid currentColor}
+.checkin button{border:2px solid var(--frame);padding:8px 2px 9px}
+.checkin .emo{font-size:26px;line-height:1}
+.pill .emo{font-size:15px;vertical-align:-2px}
+.checkin button:hover{background:var(--accent-soft)}
+.checkin button:active{transform:translateY(1px)}
+
+/* Buttons that stand out: solid fill, hard border, offset shadow, press-down motion */
+.btn{border:3px solid var(--frame);background:var(--accent-soft);color:var(--ink);transition:transform .08s, background .08s;text-transform:uppercase;letter-spacing:.05em;font-size:13.5px}
+.btn:hover{background:var(--c-int)}
+.btn:active{transform:translateY(1px)}
+.btn.primary{background:var(--accent);color:var(--accent-ink);border-color:var(--frame);font-size:14.5px;padding:12px 16px}
+.btn.primary:hover{background:var(--accent-strong)}
+.btn.danger{color:var(--danger);border-color:var(--danger);background:var(--danger-soft)}
+.btn.quiet{border-color:transparent;background:transparent;text-transform:none;letter-spacing:0;text-decoration:underline}
+.btn.sm{font-size:12px;padding:7px 10px;border-width:2px}
+.btn.quiet:hover{background:transparent}
+
+/* The three ways to connect */
+.three{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+.path{border:2px solid var(--frame);padding:10px 9px 11px;text-align:left;display:flex;flex-direction:column;gap:6px;cursor:pointer;min-width:0;font:inherit;transition:transform .08s}
+div.path{cursor:default}
+.path:active{transform:translateY(1px)}
+.path[aria-pressed="false"]{opacity:.45}
+.room-path[aria-pressed="true"]{outline:3px solid var(--hl);outline-offset:2px}
+.room-path .pc::before{content:none!important}
+.path[aria-pressed="false"] .pc::before{content:"✕ "}
+.path[aria-pressed="true"] .pc::before{content:"✓ "}
+.path .ic{width:30px;height:30px;border:2px solid currentColor;display:grid;place-items:center}
+.path .ic svg{width:18px;height:18px}
+.path .pn{font-family:var(--f-display);font-weight:800;font-size:20px;line-height:1;letter-spacing:-.01em;overflow-wrap:anywhere}
+.path .pe{font-size:11.5px;line-height:1.25;opacity:.92}
+.path .pc{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;border-top:1px solid currentColor;padding-top:5px;margin-top:auto}
+.p-int{background:var(--c-int);color:var(--c-int-ink)}
+.p-drug{background:var(--c-drug);color:var(--c-drug-ink)}
+.p-mh{background:var(--c-mh);color:var(--c-mh-ink)}
+.tag.g-int{border-left:5px solid var(--c-int)}
+.tag.g-drug{border-left:5px solid var(--c-drug)}
+.tag.g-mh{border-left:5px solid var(--c-mh)}
+.ghead{display:flex;align-items:center;gap:8px}
+.label.ghead{font-family:var(--f-display);font-size:18px;font-weight:800;text-transform:none;letter-spacing:-.01em;color:var(--ink)}
+.label.ghead::before{width:18px;height:18px}
+.ghead::before{content:"";width:14px;height:14px;border:2px solid var(--frame);flex:none}
+.ghead.g-int::before{background:var(--c-int)} .ghead.g-drug::before{background:var(--c-drug)} .ghead.g-mh::before{background:var(--c-mh)}
+.choice{display:inline-block;align-self:flex-start;font-size:14px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;padding:4px 8px;border:2px solid var(--frame)}
+.lamp{height:96px;background:linear-gradient(90deg,var(--c-mh) 0 33.33%,var(--c-drug) 33.33% 66.66%,var(--c-int) 66.66%);border:2px solid var(--frame)}
+.aside h1{color:var(--ink)}
+.aside .by{color:var(--accent)}
+.aside .note{border-top:2px solid var(--frame)}
+.online{border-radius:50%}
+
+/* ---------- v14 modern: slim borders, soft corners and shadows, same blues ---------- */
+:root{ --r-sm:10px; --r-md:14px; --r-lg:20px; --soft:0 1px 2px rgba(10,30,61,.06),0 4px 14px rgba(10,30,61,.07); --line-soft:#D6E4F2; }
+:focus-visible{border-radius:8px}
+.device{border:1px solid var(--line-soft);border-radius:32px;box-shadow:0 24px 60px rgba(10,30,61,.18)}
+@media (max-width: 820px){.device{border:0;border-radius:0;box-shadow:none}}
+.bar{border-bottom:0;position:relative;z-index:25} /* Exit and Help now stay tappable above open sheets */
+.bar .iconbtn{border:0;border-radius:999px;background:rgba(255,255,255,.92);box-shadow:none}
+.bar .iconbtn.help{background:var(--danger);color:#fff}
+.tabs{border-top:1px solid var(--line-soft)}
+.tab{border-right:0}
+.tab[aria-current="page"]{background:transparent;color:var(--ink)}
+.tab[aria-current="page"] svg{color:var(--hl-ink);background:var(--hl);border-radius:999px;padding:3px 14px;width:52px;box-sizing:border-box}
+.card,.card.warm,.card.calm{border:1px solid var(--line-soft);border-radius:var(--r-lg);box-shadow:var(--soft)}
+.card.warm,.card.calm{border-color:transparent}
+.person{border:1px solid var(--line-soft);border-radius:var(--r-md);box-shadow:var(--soft)}
+.person:hover{border-color:var(--line);background:var(--surface)}
+.sheet{border-top:0;border-radius:24px 24px 0 0;box-shadow:0 -10px 40px rgba(10,30,61,.18)}
+.sheet .grab{border-radius:4px;background:var(--line)}
+.input{border:1px solid var(--line);border-radius:var(--r-sm)}
+.input:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(13,59,122,.15)}
+.line{border:0;border-radius:var(--r-sm)}
+.stat{border:0;border-radius:var(--r-md)}
+.bubble.them,.bubble.me{border:0;border-radius:18px}
+.bubble.them{box-shadow:var(--soft)}
+.bubble.me{border-bottom-right-radius:6px} .bubble.them{border-bottom-left-radius:6px}
+.composer{border-top:1px solid var(--line-soft)}
+.composer .input{border-radius:999px}
+.warnbox{border:0;border-radius:var(--r-md)}
+.codes span{border:0;border-radius:8px}
+.chip{border:1px solid var(--line);border-radius:999px;font-weight:700}
+.chip[aria-pressed="true"]{border-color:#E7B800}
+.tag{border:0;border-radius:999px}
+.tag.shared{border:0}
+.tag.g-int,.tag.g-drug,.tag.g-mh{border-left-width:0}
+.tag.g-int::before,.tag.g-drug::before,.tag.g-mh::before{content:"";width:8px;height:8px;border-radius:50%;flex:none;background:var(--c-int)}
+.tag.g-drug::before{background:var(--c-drug)} .tag.g-mh::before{background:var(--c-mh)}
+.pill{border:0;border-radius:999px}
+.toast{border-radius:var(--r-md)}
+.checkin button{border:1px solid var(--line-soft);border-radius:var(--r-md);background:var(--surface)}
+.btn{border:1px solid var(--line);border-radius:12px;background:var(--surface);text-transform:none;letter-spacing:0;font-size:14.5px;box-shadow:var(--soft)}
+.btn:hover{background:var(--accent-soft)}
+.btn.primary{border-color:transparent;background:linear-gradient(180deg,#1A4E96,var(--accent));color:#fff;box-shadow:0 2px 6px rgba(13,59,122,.3)}
+.btn.primary:hover{background:var(--accent-strong)}
+.btn.danger{border-color:#F3B7AF;background:var(--danger-soft);box-shadow:none}
+.btn.sm{border-width:1px;border-radius:10px;font-size:13px}
+.btn.quiet{box-shadow:none}
+.path{border:0;border-radius:var(--r-lg);box-shadow:var(--soft)}
+.path .ic{border:0;border-radius:10px;background:rgba(255,255,255,.22)}
+.p-int .ic{background:rgba(255,255,255,.55)}
+.path .pc{border-top:1px solid currentColor;border-top-color:color-mix(in srgb, currentColor 35%, transparent)}
+.path[aria-pressed="false"]{opacity:.5}
+.room-path[aria-pressed="true"]{outline:3px solid var(--hl);outline-offset:3px}
+.ghead::before{border:0;border-radius:5px}
+.choice{border:0;border-radius:999px}
+.welcome-hero{padding-top:6px}
+.welcome-hero .big{font-size:60px}
+.welcome-hero p{font-size:16px}
+.benefits{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:10px}
+.benefits li{padding-left:28px;position:relative}
+.benefits li::before{content:"";position:absolute;left:0;top:3px;width:18px;height:18px;border-radius:50%;background:var(--c-drug) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M6 12.5l4 4 8-9' fill='none' stroke='white' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") center/12px no-repeat}
+.howto{margin:0;padding-left:22px;display:flex;flex-direction:column;gap:8px}
+.howto li::marker{font-family:var(--f-display);font-weight:800;color:var(--accent)}
+.divider{display:flex;align-items:center;gap:10px;color:var(--muted);font-size:13px}
+.divider::before,.divider::after{content:"";flex:1;height:1px;background:var(--line-soft)}
+.me-head{display:flex;flex-direction:column;gap:4px;padding:6px 2px 2px}
+.me-name{font-family:var(--f-display);font-weight:800;font-size:32px;line-height:1.05;margin:0;letter-spacing:-.02em;overflow-wrap:anywhere}
+.me-byline{font-size:16px;color:var(--ink);margin:0}
+.label.sub{font-size:11px;margin-top:2px}
+.pending{color:var(--accent);font-weight:700}
+.search-btn{font-size:16px;padding:14px 16px}
+.success{display:flex;flex-direction:column;align-items:center;text-align:center;gap:8px;padding:8px 0}
+.success .tick{width:56px;height:56px;border-radius:50%;background:#17663A;color:#fff;font-size:30px;display:grid;place-items:center;font-weight:800}
+details.salt{background:var(--surface-2);border-radius:var(--r-md);padding:10px 12px}
+details.salt summary{cursor:pointer;font-weight:700;color:var(--accent)}
+details.salt p{margin-top:8px}
+.bar .iconbtn:not(.help):not(.exit){font-size:13px}
+.pill.peer{background:#E3F4EA;color:#17663A}
+.peer-on{display:flex;gap:8px;align-items:center;flex-wrap:wrap;font-size:13.5px;margin:0}
+.byline-row{align-items:flex-start;justify-content:space-between}
+.byline-row .me-byline{flex:1;min-width:0}
+.disclaimer{text-align:center;font-size:13px;color:var(--muted);margin:4px 0 0}
+fieldset.ask{border:0;padding:0;margin:0;display:flex;flex-direction:column;gap:8px}
+fieldset.ask legend{font-weight:700;margin-bottom:4px}
+label.radio{display:flex;gap:10px;align-items:center;padding:10px 12px;border:1px solid var(--line-soft);border-radius:var(--r-sm);cursor:pointer}
+label.radio input{width:18px;height:18px;accent-color:var(--accent)}
+.uplift{background:linear-gradient(135deg,#E8F2FC,#FFF6D6);border-color:transparent}
+.uplift-text{font-family:var(--f-display);font-weight:700;font-size:19px;line-height:1.3;margin:0}
+.line.em{background:var(--danger-soft)}
+.line .num{font-size:14px;text-align:right;white-space:normal}
+details.all-countries summary{cursor:pointer;font-weight:700;color:var(--accent)}
+.country-block{display:flex;flex-direction:column;gap:6px;margin-top:12px}
+.od h3{font-size:15px;margin-top:4px}
+.od ul,.od ol{margin:0;padding-left:20px;display:flex;flex-direction:column;gap:4px}
+.peer-row{cursor:default}
+.ghead.g-look::before{background:#17663A}
+.tab{font-size:10.5px}
+.figs{display:grid;grid-template-columns:repeat(2,1fr);gap:8px}
+.fig{background:var(--surface-2);border-radius:var(--r-md);padding:10px 12px;display:flex;flex-direction:column;gap:2px}
+.fig b{font-family:var(--f-display);font-size:22px;font-weight:800;line-height:1.1;font-variant-numeric:tabular-nums}
+.fig span{font-size:12.5px;color:var(--muted)}
+.hbars{display:flex;flex-direction:column;gap:8px}
+.hbar{display:grid;grid-template-columns:minmax(0,1.2fr) minmax(0,1fr) auto;gap:8px;align-items:center;font-size:13px}
+.hbar .hk{min-width:0;overflow-wrap:anywhere}
+.hbar .ht{height:12px;background:var(--surface-2);border-radius:4px;overflow:hidden}
+.hbar .ht i{display:block;height:100%;background:#2A78C8;border-radius:0 4px 4px 0}
+.hbar:hover .ht i{background:#0D3B7A}
+.hbar .hv{font-variant-numeric:tabular-nums;font-weight:700;min-width:44px;text-align:right}
+.spark text{fill:var(--muted);font-size:10px;font-family:var(--f-body)}
+.spark .sv{fill:var(--ink);font-weight:700;font-size:12px}
+.tbl{overflow-x:auto;border:1px solid var(--line-soft);border-radius:var(--r-md)}
+.tbl table{border-collapse:collapse;width:100%;min-width:520px;font-size:13px}
+.tbl th,.tbl td{text-align:left;padding:8px 10px;border-bottom:1px solid var(--line-soft);vertical-align:middle}
+.tbl th{font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);background:var(--surface-2)}
+.tbl tr:last-child td{border-bottom:0}
+.tbl tr.urgent td:first-child{box-shadow:inset 4px 0 0 var(--danger)}
+.tbl td.num{font-variant-numeric:tabular-nums}
+.mono{font-family:ui-monospace,Menlo,Consolas,monospace;white-space:nowrap}
+.pill.sample{background:var(--surface-2);color:var(--muted);font-family:var(--f-body);font-size:11px;vertical-align:middle}
+.kpis .fig{background:var(--surface);box-shadow:var(--soft)}
+.arb-note{background:var(--surface-2);border-radius:var(--r-sm);padding:8px 10px;margin:0}
+.ai-rec{background:#F3F0FF;border-color:transparent}
+.pk-list{margin:0;padding-left:18px;display:flex;flex-direction:column;gap:4px}
+.swipe{position:relative;overflow:hidden;border-radius:var(--r-md)}
+.swipe-act{position:absolute;top:0;right:0;bottom:0;width:96px;border:0;background:var(--danger);color:#fff;font-weight:700;cursor:pointer;border-radius:0 var(--r-md) var(--r-md) 0}
+.swipe-row{position:relative;touch-action:pan-y;transition:transform .18s ease;background:var(--surface-2)}
+.swipe-row.dragging{transition:none}
+.swipe-row>.person{width:100%}
+.swipe-act:focus-visible+.swipe-row{transform:translateX(-96px)}
+.toast{display:flex;align-items:center;gap:12px}
+.toast-undo{background:none;border:0;color:var(--hl);font-weight:700;cursor:pointer;padding:0 2px;text-decoration:underline}
+</style>
+
+<aside class="aside" aria-label="About this prototype">
+  <h1>User</h1>
+  <p class="by">Connection and Recovery</p>
+  <p>A clickable prototype of an anonymous companion app for people who use substances, are in recovery, or live with a mental health condition, and who feel alone.</p>
+  <p>Everything is built around three choices: <b>Interests</b>, <b>Drug use</b> and <b>Mental health</b>. Sign in or create an account, then pick a choice on Home or the Search page to find people who share it. Help is always one tap away.</p>
+  <p class="note">Prototype only. All 100 members are fictional sample profiles and replies are simulated. Your data stays in this browser. Demo account: <b>QuietHeron</b> / password <b>quiet heron walks</b>. Arbitrator dashboard: <b>Arbitrator</b> / <b>fair review</b></p>
+</aside>
+
+<div class="device" id="device">
+  <div class="bar" id="bar"></div>
+  <main class="screen" id="screen" tabindex="-1"></main>
+  <nav class="tabs" id="tabs" aria-label="Main"></nav>
+</div>
+
+<script>
+/* ---------- Reference data (mirrors db/reference_data.json) ---------- */
+const REF = {
+  interests:[
+    {id:'I01',label:'Walking & hiking'},{id:'I02',label:'Pets & dog walking'},{id:'I03',label:'Movies & TV'},
+    {id:'I04',label:'Books & reading'},{id:'I05',label:'Music'},{id:'I06',label:'Gaming'},
+    {id:'I07',label:'Art & crafts'},{id:'I08',label:'Cooking & food'},{id:'I09',label:'Fitness, yoga & sport'},
+    {id:'I10',label:'Gardening & nature'},
+    {id:'I11',label:'Cycling'},{id:'I12',label:'Running'},{id:'I13',label:'Swimming'},{id:'I14',label:'Photography'},
+    {id:'I15',label:'Writing & poetry'},{id:'I16',label:'Podcasts & radio'},{id:'I17',label:'Board games & puzzles'},
+    {id:'I18',label:'Fishing'},{id:'I19',label:'Watching sport'},{id:'I20',label:'Volunteering & community'}],
+  mh:[
+    {id:'D01',label:'Depression'},{id:'D02',label:'Generalised anxiety'},{id:'D03',label:'Social anxiety'},
+    {id:'D04',label:'PTSD / C-PTSD'},{id:'D05',label:'Bipolar disorder'},{id:'D06',label:'ADHD'},
+    {id:'D07',label:'OCD'},{id:'D08',label:'Borderline personality disorder'},{id:'D09',label:'Schizophrenia & psychosis'},
+    {id:'D10',label:'Eating disorders'},
+    {id:'D11',label:'Panic disorder'},{id:'D12',label:'Agoraphobia'},{id:'D13',label:'Insomnia & sleep problems'},{id:'D14',label:'Autism'},
+    {id:'D15',label:'Dissociative disorders'},{id:'D16',label:'Perinatal / postnatal depression'},{id:'D17',label:'Seasonal affective disorder'},
+    {id:'D18',label:'Body dysmorphic disorder'},{id:'D19',label:'Schizoaffective disorder'},{id:'D20',label:'Self-harm'}],
+  meds:[
+    {id:'M01',label:'Oxycodone'},{id:'M02',label:'Hydrocodone'},{id:'M03',label:'Codeine'},{id:'M04',label:'Tramadol'},
+    {id:'M05',label:'Alprazolam (Xanax)'},{id:'M06',label:'Diazepam (Valium)'},{id:'M07',label:'Amphetamine salts (Adderall)'},
+    {id:'M08',label:'Methylphenidate (Ritalin)'},{id:'M09',label:'Zolpidem & Z-drugs'},{id:'M10',label:'Pregabalin / gabapentin'},
+    {id:'M11',label:'Morphine'},{id:'M12',label:'Fentanyl (prescribed)'},{id:'M13',label:'Methadone'},{id:'M14',label:'Buprenorphine (Subutex, Suboxone)'},
+    {id:'M15',label:'Clonazepam (Klonopin)'},{id:'M16',label:'Lorazepam (Ativan)'},{id:'M17',label:'Lisdexamfetamine (Vyvanse, Elvanse)'},
+    {id:'M18',label:'Promethazine'},{id:'M19',label:'Dextromethorphan (cough medicine)'},{id:'M20',label:'Quetiapine (Seroquel)'}],
+  subs:[
+    {id:'S01',label:'Cannabis'},{id:'S02',label:'Cocaine'},{id:'S03',label:'Crack cocaine'},{id:'S04',label:'Methamphetamine'},
+    {id:'S05',label:'Heroin'},{id:'S06',label:'Illicit fentanyl / nitazenes'},{id:'S07',label:'MDMA / ecstasy'},
+    {id:'S08',label:'Ketamine'},{id:'S09',label:'Hallucinogens (LSD, psilocybin)'},{id:'S10',label:'GHB / GBL'}],
+  other:[{id:'O01',label:'Alcohol'},{id:'O02',label:'Nicotine & vaping'},{id:'O03',label:'Kratom'},{id:'O04',label:'Gambling'}]
+};
+const CATS = [
+  {key:'interests',name:'Interests',short:'Interest'},
+  {key:'mh',name:'Mental health',short:'Mental health'},
+  {key:'meds',name:'Medications',short:'Rx'},
+  {key:'subs',name:'Other Substances',short:'Substance'},
+  {key:'other',name:'Alcohol, nicotine & gambling',short:'Alcohol & more'}];
+const TAG = {}; CATS.forEach(c=>REF[c.key].forEach(t=>TAG[t.id]={...t,cat:c.key}));
+const STAGES = [
+  {id:'using',label:'Using, not looking to change right now'},{id:'thinking',label:'Thinking about change'},
+  {id:'cutting',label:'Cutting down / harm reduction'},{id:'quit',label:'I just gave up'},{id:'early3',label:'Early recovery (under 3 months)'},{id:'early6',label:'Early recovery (under 6 months)'},{id:'early',label:'Early recovery (under a year)'},
+  {id:'long',label:'Long-term recovery'},{id:'help',label:'Ready to help someone'},{id:'support',label:'Supporting someone I love'},{id:'na',label:'Prefer not to say'}];
+const STAGE_ORDER = ['using','thinking','cutting','quit','early3','early6','early','long'];
+const LOOKING = [
+  {id:'chat',label:'Someone to chat with'},{id:'walk',label:'A walking buddy'},{id:'pets',label:'Pet walks'},
+  {id:'accountability',label:'An accountability partner'},{id:'groups',label:'Group chats'},{id:'listen',label:'I can listen to others'},
+  {id:'checkin',label:'A daily check-in buddy'},{id:'mentor',label:'A peer mentor'},{id:'mentoring',label:'To mentor someone'},
+  {id:'night',label:'Late-night company'},{id:'exercise',label:'An exercise or gym partner'},{id:'watch',label:'Film or TV watch-along'},
+  {id:'games',label:'Someone to game with'},{id:'books',label:'A book buddy'}];
+const VIS = [{id:'everyone',label:'Everyone'},{id:'matches',label:'People I chat with'},{id:'me',label:'Only me (still used for matching)'}];
+
+/* ---------- Sample people (fictional) ---------- */
+const PEOPLE = [
+ {id:'p1',handle:'MossyOtter',av:{bg:0,face:1,shape:0,eyes:1,acc:3},region:'North-west',active:'Online',stage:'early',
+  tags:['I01','I02','I05','D02','O01'],looking:['walk','pets','chat'],
+  bio:'Five months off the drink. My spaniel Biscuit gets me out the door every morning. Always up for a slow walk and bad music recommendations.',
+  replies:['Ha, that sounds like my mornings too. Biscuit dragged me through the park in the rain today.','Evenings are the hardest bit for me. Having someone to message helps more than I expected.','Do you have a dog, or are you more of a cat person?','There\'s a walk-along in the Dog Walkers\' Bench room on Saturday if you fancy it. Public park, daytime.']},
+ {id:'p2',wantsPeer:true,handle:'NightLark',av:{bg:5,face:3,shape:2,eyes:2,acc:3},region:'Online only',active:'Online',stage:'cutting',
+  tags:['I05','I06','D01','M05','M06'],looking:['chat','groups'],
+  bio:'Tapering off benzos with my GP. I sleep badly so I\'m up late a lot. Synth music, co-op games, long chats at 2am.',
+  replies:['Hey! Sorry, I reply slowly. Taper brain is real.','What are you listening to lately?','The nights are long. Having someone to message really helps.','Honestly just saying hi to someone helps.']},
+ {id:'p3',handle:'PaperFern',av:{bg:4,face:0,shape:1,eyes:0,acc:4},region:'Midlands',active:'2h ago',stage:'thinking',
+  tags:['I04','I07','D04','S01'],looking:['chat','groups'],
+  bio:'Reader, sketcher, slowly working things out. Thinking about whether weed still helps me or just numbs me. No judgement either way.',
+  replies:['Oh, what are you reading right now?','I like that this place doesn\'t make you pick a side about using.','I\'ve been sketching birds from my window. Small things.']},
+ {id:'p4',peer:true,handle:'SteadyBadger',av:{bg:1,face:2,shape:0,eyes:3,acc:1},region:'North-east',active:'Online',stage:'long',
+  tags:['I01','I08','I09','M01','S05','D01'],looking:['listen','accountability','walk'],
+  bio:'Four years clear of opioids. Peer mentor. I cook too much and I walk a lot. Happy to just listen, whatever stage you\'re at.',
+  replies:['Good to meet you. No pressure here, talk about whatever you like.','What does a good day look like for you at the moment?','The first year I was so lonely. Connection was the thing that actually changed it for me.','I made a huge pot of soup today. Cooking keeps my hands busy.']},
+ {id:'p5',handle:'QuietComet',av:{bg:2,face:4,shape:2,eyes:0,acc:2},region:'South-east',active:'35m ago',stage:'cutting',
+  tags:['I03','I06','D06','D03','M07'],looking:['chat'],
+  bio:'ADHD, social anxiety, and a complicated relationship with my prescription. Film nerd. Texting is way easier than talking for me.',
+  replies:['Hi! Texting I can do.','Have you seen anything good lately? I\'m on a 90s thriller kick.','Movie Night Fridays is fun, nobody has to talk, you just react in chat.']},
+ {id:'p6',handle:'WillowTide',av:{bg:6,face:5,shape:1,eyes:1,acc:4},region:'South-west',active:'Online',stage:'early',
+  tags:['I10','I02','I08','D05','O01'],looking:['walk','pets','chat'],
+  bio:'Bipolar, eight months sober, two cats and an allotment. The garden is my therapy on the off-days.',
+  replies:['Hello! I\'m elbow-deep in compost but I\'m here.','What grows well near you? My tomatoes were a disaster this year.','Do you find routines help? Mine keep me steady.']},
+ {id:'p7',wantsPeer:true,handle:'EmberFinch',av:{bg:3,face:1,shape:0,eyes:2,acc:0},region:'Online only',active:'1d ago',stage:'thinking',
+  tags:['I05','I07','D08','S04'],looking:['chat','groups'],
+  bio:'Musician, messy, honest. Trying to figure out what I want. Please be kind, I am trying.',
+  replies:['hey. thanks for messaging, honestly.','I\'ve been writing songs again, that\'s a good sign for me.','Some days are a lot. Today is okay.']},
+ {id:'p8',wantsPeer:true,handle:'HarborMoth',av:{bg:7,face:0,shape:2,eyes:3,acc:2},region:'Wales',active:'4h ago',stage:'early',
+  tags:['I04','I03','D01','M04','M03'],looking:['chat','accountability'],
+  bio:'Came off tramadol after a back injury. Lots of books, lots of old films. Looking for a daily check-in buddy.',
+  replies:['Hi there. Do you want to try a daily check-in? Just one message a day.','I\'m rereading Le Guin. Comfort books.','The withdrawal was rough but it does pass.']},
+ {id:'p9',peer:true,handle:'CedarRook',av:{bg:4,face:2,shape:1,eyes:0,acc:1},region:'Scotland',active:'Online',stage:'long',
+  tags:['I01','I10','D04','O01','S01'],looking:['walk','listen'],
+  bio:'Ex-forces. PTSD. Six years sober. Hills are my church. I\'ll listen if you need someone.',
+  replies:['Aye, hello.','Got out in the hills at dawn today. Clears the head.','No rush. Talk when you\'re ready.']},
+ {id:'p10',wantsPeer:true,handle:'PixelHare',av:{bg:2,face:3,shape:0,eyes:1,acc:3},region:'Online only',active:'10m ago',stage:'using',
+  tags:['I06','I03','D03','D01','S08'],looking:['chat','groups'],
+  bio:'Not ready to stop, but I don\'t want to be on my own with it. Gamer. Mostly online. Harm reduction person.',
+  replies:['hi :) mostly just gaming tonight','I like that nobody here lectures me.','do you play anything?']},
+ {id:'p11',peer:true,handle:'JuniperWren',av:{bg:0,face:5,shape:2,eyes:1,acc:0},region:'Ireland',active:'3h ago',stage:'support',
+  tags:['I02','I04','I01','D02'],looking:['chat','walk','groups'],
+  bio:'My brother is in recovery. Supporting someone is lonely too. Dog mum, big reader.',
+  replies:['Hi! Thank you for saying hello.','The Family & Friends room has been a lifeline for me.','How are you doing, really?']},
+ {id:'p12',handle:'BrambleOwl',av:{bg:5,face:4,shape:1,eyes:2,acc:2},region:'East of England',active:'Yesterday',stage:'cutting',
+  tags:['I08','I10','D07','M09','M10'],looking:['chat','accountability'],
+  bio:'Cutting down on sleepers with support from my doctor. OCD. I bake when I can\'t settle.',
+  replies:['Hello! I\'ve just put bread in, so I have 40 minutes to chat.','Sleep without pills is hard but it is getting a little easier.','What helps you settle at night?']},
+];
+/* ---------- Sample community: 88 more fictional members, 100 in all, for trial and testing ---------- */
+const GENERIC_REPLIES = ['Hi, thanks for messaging!','That sounds really familiar to me.','How has your week been?','I hear you. Some days are just like that.','What helps you on the hard days?','Good to have someone to talk to.','I\'m around most evenings if you want to chat.','That\'s a real win, well done.'];
+(function(){
+  let seed=20261026;
+  const rnd=()=>{ seed=(seed+0x6D2B79F5)|0; let t=Math.imul(seed^(seed>>>15),1|seed); t=(t+Math.imul(t^(t>>>7),61|t))^t; return ((t^(t>>>14))>>>0)/4294967296; };
+  const pick=a=>a[Math.floor(rnd()*a.length)];
+  const some=(a,min,max)=>{ const n=min+Math.floor(rnd()*(max-min+1)), c=[...a], out=[]; while(out.length<n&&c.length) out.push(c.splice(Math.floor(rnd()*c.length),1)[0]); return out; };
+  const A=['Quiet','Steady','Gentle','Mossy','Amber','Little','Brave','Calm','Paper','Willow','Cedar','Misty','Bright','Soft','River','Silver','Hollow','Golden','Rusty','Meadow'];
+  const N=['Heron','Otter','Fox','Wren','Badger','Lark','Moth','Hare','Finch','Owl','Seal','Robin','Newt','Vole','Crane','Kestrel','Plover','Stoat','Swift','Dove'];
+  const REGIONS=['North-west','North-east','Midlands','South-east','South-west','London','Scotland','Wales','Northern Ireland','Ireland','Yorkshire','East of England','Online only'];
+  const STAGE_MIX=['using','thinking','thinking','cutting','cutting','quit','early3','early6','early','early','long','long','help','support','na'];
+  const OPEN={using:'Not ready to stop, but I don\'t want to be alone with it.',thinking:'Working out what I want to change.',cutting:'Cutting down, one day at a time.',quit:'I just gave up and it\'s all very new.',
+    early3:'A couple of months in and taking it slowly.',early6:'A few months in and finding my feet.',early:'Under a year in recovery.',long:'Years into recovery and happy to share what helped.',help:'Been there, and ready to help someone else.',
+    support:'Supporting someone I love through it.',na:'Here to meet people.'};
+  const taken=new Set(PEOPLE.map(p=>p.handle.toLowerCase()).concat(['quietheron','arbitrator']));
+  const drugIds=[...REF.meds,...REF.subs,...REF.other].map(t=>t.id);
+  for(let i=13;i<=100;i++){
+    let h; do { h=pick(A)+pick(N); if(taken.has(h.toLowerCase())) h+=String(10+Math.floor(rnd()*89)); } while(taken.has(h.toLowerCase())); taken.add(h.toLowerCase());
+    const stage=pick(STAGE_MIX), ints=some(REF.interests.map(t=>t.id),1,4), mh=some(REF.mh.slice(0,12).map(t=>t.id),0,2), dr=some(drugIds,0,2);
+    const peer = ['long','help','early'].includes(stage) ? rnd()<.4 : rnd()<.05;
+    const r=rnd(), active = r<.25 ? 'Online' : pick(['5m ago','20m ago','1h ago','3h ago','Yesterday','2d ago']);
+    PEOPLE.push({id:'m'+i, handle:h, peer, wantsPeer: !peer && rnd()<.3, region:pick(REGIONS), active, stage,
+      tags:[...ints,...mh,...dr], looking:some(LOOKING.map(l=>l.id),1,3),
+      bio: OPEN[stage]+' Into '+ints.map(t=>TAG[t].label.toLowerCase()).slice(0,2).join(' and ')+'.', replies:GENERIC_REPLIES});
+  }
+})();
+const ROOMS = [
+ // Interest
+ {id:'r1',cat:'interests',name:'Dog Walkers\' Bench',members:128,desc:'Share walks and routes, and plan daytime walk-alongs in public places.',
+  seed:[['MossyOtter','Biscuit found the biggest puddle in the park again.'],['WillowTide','Saturday walk-along at the botanical gardens, 11am, by the main gate. Anyone?'],['JuniperWren','I\'m in! Bringing Pepper.']]},
+ {id:'r5',cat:'interests',name:'Book Nook',members:143,desc:'Monthly read plus whatever you\'re into. This month: The Left Hand of Darkness.',
+  seed:[['PaperFern','Chapter 4 finally clicked for me.'],['HarborMoth','The sledge journey section is my favourite part of any book.']]},
+ {id:'r6',cat:'interests',name:'Movie Night Fridays',members:188,desc:'Watch-along every Friday at 8pm. React in chat, no cameras, no pressure.',
+  seed:[['QuietComet','Vote for this week: Paddington 2 or Heat?'],['PixelHare','paddington 2 every time']]},
+ {id:'r9',cat:'interests',name:'Gamers\' Lounge',members:102,desc:'Co-op games, what you\'re playing, finding a squad. No gambling or loot-box trading.',
+  seed:[['PixelHare','anyone up for some co-op later?'],['NightLark','After 11 I\'m free.']]},
+ {id:'r10',cat:'interests',name:'Green Fingers',members:67,desc:'Gardens, allotments, houseplants and getting outside.',
+  seed:[['WillowTide','First frost forecast. Bringing the chillies in.'],['BrambleOwl','My basil gave up weeks ago.']]},
+ // Drug use
+ {id:'r3',cat:'drugs',name:'Early Days',members:96,desc:'First 90 days of any change: cutting down, stopping, starting over.',
+  seed:[['HarborMoth','Day 41. Boring day. Boring is good.'],['SteadyBadger','Boring is excellent. Well done.']]},
+ {id:'r4',cat:'drugs',name:'Taper Together',members:74,desc:'Tapering benzos, opioids or sleepers with your prescriber. Share what helps. No dosing advice.',
+  seed:[['NightLark','Week 6 of my taper. The anxiety spikes are less sharp than last month.'],['BrambleOwl','That\'s real progress. Week 3 for me.']]},
+ {id:'r11',cat:'drugs',name:'Alcohol-Free Evenings',members:131,desc:'Getting through evenings without a drink. Swaps, recipes, and company.',
+  seed:[['MossyOtter','Ginger beer and a podcast tonight.'],['CedarRook','Six years and evenings still need a plan. That\'s normal.']]},
+ {id:'r12',cat:'drugs',name:'Harm Reduction Space',members:58,desc:'For people still using. Safer use, naloxone, testing services. No sourcing, ever.',
+  seed:[['User','Reminder: never use alone, and carry naloxone if you can.'],['PixelHare','thanks, picked up a kit from the pharmacy']]},
+ {id:'r8',cat:'drugs',name:'Family & Friends',members:59,desc:'For people supporting someone who uses substances.',
+  seed:[['JuniperWren','Learning that I can\'t fix him, only be there. Hard lesson.']]},
+ // Mental health
+ {id:'r7',cat:'mh',name:'Anxiety Corner',members:167,desc:'Generalised, social anxiety and panic. Grounding tips, wins and bad days.',
+  seed:[['MossyOtter','Made a phone call I\'d been avoiding for 2 weeks.'],['QuietComet','Huge. Phone calls are my boss level.']]},
+ {id:'r13',cat:'mh',name:'Low Mood & Depression',members:149,desc:'Gentle space for heavy days. Small wins count here.',
+  seed:[['HarborMoth','Got dressed and opened the curtains. That\'s today\'s win.'],['SteadyBadger','That counts. Proud of you.']]},
+ {id:'r14',cat:'mh',name:'PTSD Peer Space',members:63,desc:'Trauma survivors and veterans. No details of trauma required or expected.',
+  seed:[['CedarRook','Rough night. Walked it off at dawn.'],['PaperFern','Glad you got out. Sketching helps me.']]},
+ {id:'r15',cat:'mh',name:'ADHD Hangout',members:88,desc:'Body-doubling, focus sprints, and people whose brains work like yours.',
+  seed:[['QuietComet','25-minute focus sprint starting now, who\'s in?'],['NightLark','In. Laundry, finally.']]},
+];
+// Bring sample members into every room: three extra posts per room from members whose tags fit the room's type.
+(function(){
+  const POOL={interests:['Just joined, hello everyone!','This room is my favourite part of the app.','Going to try this at the weekend.','Love seeing what everyone is up to.','Anyone else find this helps on the hard days?'],
+    drugs:['Day 12 today. Small wins.','Had a craving this afternoon but rode it out.','Thanks for the tips yesterday, they helped.','Anyone got ideas for getting through Friday nights?','Proud of everyone in here.'],
+    mh:['Rough morning but feeling a bit better now.','The breathing exercise from last week really helped.','Just checking in, hope everyone is OK.','Small win: went for a walk today.','It helps knowing I\'m not the only one.']};
+  const cat=t=>TAG[t].cat, fits={interests:t=>cat(t)==='interests',drugs:t=>['meds','subs','other'].includes(cat(t)),mh:t=>cat(t)==='mh'};
+  ROOMS.forEach((r,k)=>{ const fans=PEOPLE.filter(p=>p.id[0]==='m'&&p.tags.some(fits[r.cat]));
+    for(let i=0;i<3;i++){ const p=fans[(k*3+i)%fans.length]; r.seed.push([p.handle, POOL[r.cat][(k+i)%POOL[r.cat].length]]); } });
+})();
+
+const ICEBREAKERS = ['What made you smile this week?','What\'s something you\'re into lately?','Dog, cat, or no pets?','What does a good evening look like for you?','What\'s a film or book you could revisit forever?','If you could walk anywhere tomorrow, where?'];
+const EMO = ['😞','😔','😐','🙂','😊'];
+const REFRAMES = {
+  1:'Feeling very alone can make other people seem further away than they are. A short "hi" to one person is enough for today.',
+  2:'Loneliness tends to make us expect rejection. If someone is slow to reply, they are usually just busy.',
+  3:'In-between days count. A room like Book Nook or Movie Night lets you be around people without much pressure.',
+  4:'Nice. Could you pass some of that on? Someone in Early Days or Low Mood & Depression might appreciate a hello.',
+  5:'Glad you\'re feeling connected. Notice what helped today so you can come back to it.'};
+
+/* ---------- State ---------- */
+const KEY='user-app-prototype-v1';
+const dayKey = n => { const d=new Date(); d.setDate(d.getDate()-n); return d.toISOString().slice(0,10); };
+function seedState(){
+  return {
+    loggedIn:true,
+    account:{handle:'QuietHeron',passHash:'demo',passkey:true},
+    me:{handle:'QuietHeron',av:{bg:6,face:0,shape:0,eyes:1,acc:2},bio:'New here. Anxious in person, easier in text. Like slow walks and long books.',
+      tags:['I01','I02','I04','D02','D03','O01','M05'],stage:'early',looking:['chat','walk','pets'],region:'North-west',wantsPeer:true,peer:false},
+    vis:{interests:'everyone',mh:'matches',subs:'matches'},
+    prefs:{searchable:true,disappearing:false,lock:false,theme:'system'},
+    checkins:[{d:dayKey(6),v:2},{d:dayKey(5),v:2},{d:dayKey(4),v:3},{d:dayKey(3),v:2},{d:dayKey(2),v:3},{d:dayKey(1),v:4}],
+    days:[dayKey(9),dayKey(6),dayKey(5),dayKey(4),dayKey(3),dayKey(2),dayKey(1),dayKey(0)],
+    convos:{
+      p1:[{f:'me',t:'Hi! Saw you walk a spaniel. I\'ve been trying to get out more in the mornings.',ts:Date.now()-86400000*2},
+          {f:'them',t:'Hello! Yes, Biscuit is the boss of my schedule. Where do you usually go?',ts:Date.now()-86400000*2+600000},
+          {f:'me',t:'Just round the reservoir. It\'s quiet, which I like.',ts:Date.now()-86400000},
+          {f:'them',t:'Sounds lovely. Maybe a walk-along sometime, in daylight, somewhere public?',ts:Date.now()-86000000}],
+      p4:[{f:'them',t:'Welcome to User. No pressure here, talk about whatever you like.',ts:Date.now()-86400000*3},
+          {f:'me',t:'Thanks. Still figuring out how this works.',ts:Date.now()-86400000*3+300000}],
+      m13:[{f:'them',t:'Hi! We matched on a few things. How are you doing today?',ts:Date.now()-3600000*5}],
+      m14:[{f:'me',t:'Hello, saw you like books too. Reading anything good?',ts:Date.now()-3600000*30},{f:'them',t:'Just started a crime novel. You?',ts:Date.now()-3600000*7}],
+      m15:[{f:'them',t:'Thanks for saying hi in the room yesterday.',ts:Date.now()-86400000*4},{f:'me',t:'No problem, it was nice to chat.',ts:Date.now()-86400000*4+600000}],
+      m16:[{f:'me',t:'How did the weekend go?',ts:Date.now()-86400000*5},{f:'them',t:'Better than I expected, thanks for asking.',ts:Date.now()-86400000*5+900000}]},
+    unread:{p1:1,m13:1,m14:1},
+    rooms:{joined:['r1','r5'],posts:{}},
+    stats:{sent:14,started:3,roomPosts:5,helped:2},
+    blocked:[],reported:0,
+    ui:{roomCat:'interests',tab:'home',q:'',cats:['interests','drugs','mh'],f:[],look:[],peerOnly:false},
+    cases:[], country:'United Kingdom'
+  };
+}
+let S = load() || seedState();
+S.ui.q=''; // word search removed in v4
+S.ui.tab='home'; // Home is the landing page after sign-in
+S.arbMode=false; S.arb=S.arb||{decided:{}};
+Object.keys(S.arb.decided).forEach(k=>{ if(typeof S.arb.decided[k]==='string') S.arb.decided[k]={status:S.arb.decided[k],note:''}; });
+if(!S.ui.roomCat) S.ui.roomCat='interests';
+S.rooms.joined=S.rooms.joined.filter(id=>allRooms().some(r=>r.id===id));
+S.loggedIn=false; // prototype always opens on the new-user sign-up page
+if(!Array.isArray(S.ui.cats)){ S.ui.cats=['interests','drugs','mh']; S.ui.f=[]; }
+if(!Array.isArray(S.ui.look)) S.ui.look=S.ui.look?[S.ui.look]:[];
+S.ui.peerOnly=!!S.ui.peerOnly; S.cases=S.cases||[]; S.country=S.country||'United Kingdom';
+S.ui.applied={cats:[...S.ui.cats].sort(),f:[...S.ui.f].sort(),look:[...S.ui.look].sort(),peerOnly:S.ui.peerOnly};
+function load(){ try{ const r=localStorage.getItem(KEY); return r?JSON.parse(r):null; }catch(e){ return null; } }
+function save(){ try{ localStorage.setItem(KEY, JSON.stringify(S)); }catch(e){} }
+function markDay(){ const k=dayKey(0); if(!S.days.includes(k)) S.days.push(k); }
+
+/* ---------- Helpers ---------- */
+const $ = s => document.querySelector(s);
+const esc = s => String(s).replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const person = id => PEOPLE.find(p=>p.id===id);
+const stageLabel = id => (STAGES.find(s=>s.id===id)||{}).label||'';
+const catOf = id => TAG[id] ? TAG[id].cat : null;
+const visKey = cat => cat==='interests' ? 'interests' : cat==='mh' ? 'mh' : 'subs';
+/* The three ways to connect. Every tag belongs to exactly one. */
+const PATHS = [
+  {key:'interests',g:'int',name:'Interests',cats:['interests'],eg:'Walks, pets, films, books, music',
+   ic:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20s-7-4.4-7-10a4 4 0 0 1 7-2.6A4 4 0 0 1 19 10c0 5.6-7 10-7 10z"/></svg>'},
+  {key:'drugs',g:'drug',name:'Drug use',cats:['meds','subs','other'],eg:'Prescription, other substances, alcohol',
+   ic:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linejoin="round"><rect x="3" y="9" width="18" height="6" transform="rotate(-35 12 12)"/><path d="M9.6 8.6l4.8 6.8"/></svg>'},
+  {key:'mh',g:'mh',name:'Mental health',cats:['mh'],eg:'Depression, anxiety, PTSD, ADHD',
+   ic:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 4a3 3 0 0 0-3 3 3 3 0 0 0-2 5 3 3 0 0 0 2 5 3 3 0 0 0 6 0V5a1 1 0 0 0-3-1zM15 4a3 3 0 0 1 3 3 3 3 0 0 1 2 5 3 3 0 0 1-2 5 3 3 0 0 1-6 0"/></svg>'}];
+const grp = id => { const c=catOf(id); return c==='interests'?'int':c==='mh'?'mh':'drug'; };
+const pathOf = key => PATHS.find(p=>p.key===key);
+const dName = p => p.key==='interests' ? 'Interest' : p.name; // singular on Home, Search and Rooms
+function threeTiles(mode){
+  const tag = mode==='static' ? 'div' : 'button';
+  return `<div class="three" role="group" aria-label="Three ways to connect">${PATHS.map(p=>{
+    const n=PEOPLE.filter(visible).filter(x=>x.tags.some(t=>p.cats.includes(catOf(t)))).length;
+    const attrs = mode==='static' ? '' : `type="button" onclick="App.path('${p.key}')" ${mode==='filter'?`aria-pressed="${S.ui.cats.includes(p.key)}"`:''}`;
+    return `<${tag} class="path p-${p.g}" ${attrs}><span class="ic">${p.ic}</span><span class="pn">${mode==='static'?p.name:dName(p)}</span><span class="pe">${p.eg}</span>${mode==='static'?'':`<span class="pc">${mode==='filter'?(S.ui.cats.includes(p.key)?'On':'Off'):n+' people'}</span>`}</${tag}>`;
+  }).join('')}</div>`;
+}
+function toast(msg,undo){ const d=$('#device'); const t=document.createElement('div'); t.className='toast'; t.setAttribute('role','status'); t.textContent=msg;
+  if(undo){ const b=document.createElement('button'); b.className='toast-undo'; b.textContent='Undo'; b.onclick=()=>{ t.remove(); undo(); }; t.appendChild(b); }
+  d.appendChild(t); setTimeout(()=>t.remove(),undo?5000:2400); }
+/* ---------- Swipe left to delete (chats) or leave (rooms) ---------- */
+const SWIPE_OPEN=-96, SWIPE_MIN=-60;
+function swipeWrap(kind,id,action,label,html){
+  return `<div class="swipe" data-kind="${kind}" data-id="${id}"><button class="swipe-act" onclick="App.swipeDelete('${kind}','${id}')" aria-label="${esc(label)}">${action}</button><div class="swipe-row">${html}</div></div>`;
+}
+function setSwipe(row,open){
+  document.querySelectorAll('.swipe-row').forEach(r=>{ if(r!==row&&r._open){ r._open=false; r.style.transform=''; r.parentNode.classList.remove('open'); } });
+  row._open=open; row.style.transform=open?`translateX(${SWIPE_OPEN}px)`:''; row.parentNode.classList.toggle('open',open);
+}
+let sw=null;
+document.addEventListener('pointerdown',e=>{ const row=e.target.closest('.swipe-row'); sw=row?{row,x:e.clientX,y:e.clientY,dx:row._open?SWIPE_OPEN:0,start:row._open?SWIPE_OPEN:0,moved:false}:null; });
+document.addEventListener('pointermove',e=>{ if(!sw) return; const dx=e.clientX-sw.x, dy=e.clientY-sw.y;
+  if(!sw.moved&&Math.abs(dx)>8&&Math.abs(dx)>Math.abs(dy)){ sw.moved=true; sw.row.classList.add('dragging'); }
+  if(!sw.moved) return; sw.dx=Math.max(-120,Math.min(0,sw.start+dx)); sw.row.style.transform=`translateX(${sw.dx}px)`; });
+const endSwipe=()=>{ if(!sw) return; const s=sw; sw=null; s.row.classList.remove('dragging'); if(!s.moved) return;
+  setSwipe(s.row, s.dx<SWIPE_MIN); s.row._justSwiped=true; setTimeout(()=>{ s.row._justSwiped=false; },60); };
+document.addEventListener('pointerup',endSwipe); document.addEventListener('pointercancel',endSwipe);
+// A swipe is not a tap: don't open the chat or room, and a tap on an open row just closes it
+document.addEventListener('click',e=>{ const row=e.target.closest('.swipe-row'); if(!row) return;
+  if(row._justSwiped||row._open){ e.preventDefault(); e.stopPropagation(); if(!row._justSwiped) setSwipe(row,false); } },true);
+function timeAgo(ts){ const m=Math.round((Date.now()-ts)/60000); if(m<1)return'now'; if(m<60)return m+'m'; const h=Math.round(m/60); if(h<24)return h+'h'; return Math.round(h/24)+'d'; }
+
+/* ---------- Matching (weighted Jaccard; see TECH_SPEC §7) ---------- */
+function jac(a,b){ const A=new Set(a),B=new Set(b); if(!A.size&&!B.size) return null; let i=0; A.forEach(x=>{if(B.has(x))i++}); return i/(A.size+B.size-i); }
+function stageCompat(a,b){
+  if(a==='na'||b==='na') return .5;
+  if(a==='help'||b==='help') return a===b?.6:.85; // helpers suit anyone who wants support
+  if(a==='support'||b==='support') return a===b?1:.5;
+  const i=STAGE_ORDER.indexOf(a), j=STAGE_ORDER.indexOf(b); return Math.max(0,1-Math.abs(i-j)*.15);
+}
+// "Looking for" fit: what share of one list the other person can meet. Mentor and mentee complement each other.
+const LOOK_PAIRS={mentor:['mentoring'],mentoring:['mentor'],listen:['chat','checkin','night'],chat:['listen']};
+const meets=(want,offer)=>offer.includes(want)||(LOOK_PAIRS[want]||[]).some(x=>offer.includes(x));
+function lookFit(mine,theirs){ return mine.length ? mine.filter(l=>meets(l,theirs)).length/mine.length : 0; }
+function match(p){
+  const me=S.me, by=cat=>me.tags.filter(t=>catOf(t)&&cat.includes(catOf(t))), pb=cat=>p.tags.filter(t=>cat.includes(catOf(t)));
+  const parts=[ [.35, jac(by(['interests']),pb(['interests']))], [.20, jac(by(['mh']),pb(['mh']))],
+                [.20, jac(by(['meds','subs','other']),pb(['meds','subs','other']))], [.10, stageCompat(me.stage,p.stage)],
+                [.15, me.looking.length ? lookFit(me.looking,p.looking) : null] ];
+  let w=0,s=0; parts.forEach(([wt,v])=>{ if(v!==null){w+=wt;s+=wt*v;} });
+  const shared=p.tags.filter(t=>me.tags.includes(t));
+  // peer support: people who want it are matched with peer supporters (and the other way round)
+  const peerBoost = (me.wantsPeer&&p.peer ? .12 : 0) + (me.peer&&p.wantsPeer ? .08 : 0);
+  return {pct:Math.min(99,Math.round((w?s/w:0)*100+peerBoost*100)), shared};
+}
+function whyMatched(p,m){
+  const bits=[];
+  const si=m.shared.filter(t=>catOf(t)==='interests').map(t=>TAG[t].label.toLowerCase());
+  if(si.length) bits.push('you both like '+si.slice(0,2).join(' and '));
+  if(m.shared.some(t=>catOf(t)==='mh')) bits.push('you share a mental health experience');
+  if(m.shared.some(t=>['meds','subs','other'].includes(catOf(t)))) bits.push('you have a similar substance history');
+  const lk=p.looking.filter(l=>S.me.looking.includes(l)).map(l=>LOOKING.find(x=>x.id===l).label.toLowerCase());
+  if(lk.length) bits.push('you\'re both looking for '+lk[0].replace(/^an? /,'a '));
+  if(S.me.wantsPeer&&p.peer) bits.push('they are a peer supporter and you asked for peer support');
+  if(S.me.peer&&p.wantsPeer) bits.push('they would like peer support');
+  return bits.length ? 'Matched because '+bits.join(', ')+'.' : 'A different perspective can help too.';
+}
+function visible(p){ return !S.blocked.includes(p.id); }
+
+/* ---------- Filters (see SAFETY spec §4) ---------- */
+const DEALING = /(\b(sell|selling|sold|for sale|plug|supplier|supply you|re-?up|hook (me|you) up|sort (me|you) out|got any|anyone holding|holding|gram|grams|\d+\s?g\b|half ?o|ounce|oz\b|eighth|price|how much for|deliver|drop ?off|cash ?app|venmo|paypal|bitcoin|crypto|telegram|wickr|whats ?app|snap ?chat|kik|dm me on|insta(gram)?)\b)|[$£€]\s?\d+|https?:\/\/|www\.|🔌|❄️|💊|🍃|🍁|💉|🧊|❄/i;
+// Recovery and harm-reduction context: "I used to sell", "I never deal", "naloxone". Allowed unless it also has prices, links, other apps or drug emojis.
+const RECOVERY = /\b(used to|use to|stopped|quit|gave up|no longer|never|don'?t|won'?t|not)\s+(sell|selling|deal|dealing|supply|supplying)\b|\bnaloxone\b|\bharm reduction\b/i;
+const HARD = /[$£€]\s?\d+|https?:|www\.|\b(telegram|wickr|whats ?app|snap ?chat|kik)\b|🔌|💊|❄|💉/i;
+const blocked = t => DEALING.test(t) && !(RECOVERY.test(t) && !HARD.test(t));
+const CRISIS = /(kill myself|suicid|end it all|want to die|don'?t want to (be here|live|wake up)|better off without me|overdos|\bod\b|took too many|self[- ]?harm|hurt myself|cutting myself)/i;
+
+/* ---------- Icons ---------- */
+const IC = {
+ home:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11l9-7 9 7v9a1 1 0 0 1-1 1h-5v-6h-6v6H4a1 1 0 0 1-1-1z"/></svg>',
+ find:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>',
+ chat:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M4 5h16v11H9l-5 4z"/></svg>',
+ rooms:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="8" cy="9" r="3"/><circle cx="16.5" cy="9" r="3"/><path d="M2.5 19c.8-3 3-4.5 5.5-4.5s4.7 1.5 5.5 4.5M12 15.2c1.2-.5 2.8-.7 4.5-.7 2.5 0 4.7 1.5 5.5 4.5"/></svg>',
+ support:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s-7.5-4.6-9.3-9.4C1.4 8 3.6 4.5 7.2 4.5c2 0 3.4 1.1 4.8 2.8 1.4-1.7 2.8-2.8 4.8-2.8 3.6 0 5.8 3.5 4.5 7.1C19.5 16.4 12 21 12 21z"/><path d="M8.5 12.5h2l1.2-2.5 1.6 4 1.2-1.5h1.5"/></svg>',
+ me:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="8" r="4"/><path d="M4 21c1-4 4.5-6 8-6s7 2 8 6"/></svg>'};
+
+/* ---------- Shell ---------- */
+let view = {name:null}; let quickExit=false; let ob=null;
+function bar(left, title){
+  $('#bar').innerHTML = `${left||`<div class="brand">User<small>Connection and Recovery</small></div>`}
+    <div class="grow">${title?`<div class="title">${title}</div>`:''}</div>
+    <button class="iconbtn exit" onclick="App.exit()" aria-label="Quick exit: hide the app">Exit</button>
+    <button class="iconbtn help" onclick="App.help()">Help now</button>`;
+}
+function tabs(show){
+  const n=$('#tabs'); n.hidden=!show; if(!show) return;
+  const unread=Object.values(S.unread||{}).reduce((a,b)=>a+b,0);
+  const T=[['home','Home'],['me','Me'],['find','Search'],['chat','Chats'],['rooms','Rooms'],['support','Support']];
+  n.innerHTML=T.map(([k,l])=>`<button class="tab" ${S.ui.tab===k?'aria-current="page"':''} onclick="App.tab('${k}')">${IC[k]}${l}${k==='chat'&&unread?'<span class="dot" aria-label="unread"></span>':''}</button>`).join('');
+}
+function render(){
+  const sc=$('#screen'); sc.className='screen';
+  if(quickExit){ bar('<div class="brand" style="font-family:Georgia,serif">Notes</div>',''); $('#bar').innerHTML='<div class="brand" style="font-family:Georgia,serif;font-weight:400">Notes</div>'; tabs(false); sc.className='screen flush';
+    sc.innerHTML=`<div class="fake" onclick="App.unexit(event)"><h1>Shopping list</h1><ul><li>Milk</li><li>Bread</li><li>Dog food</li><li>Batteries (AA)</li><li>Call about boiler</li></ul><p style="color:#999;font-size:12px;margin-top:40px">Tap this note three times to return.</p></div>`; return; }
+  if(S.arbMode) return renderDashboard();
+  if(!S.loggedIn){ return ob ? renderOnboard() : renderWelcome(); }
+  if(S.me.setupDone===false) return renderSetup();
+  if(view.name==='matches') return renderMatches();
+  if(view.name==='chat') return renderChat(view.id);
+  if(view.name==='room') return renderRoom(view.id);
+  tabs(true);
+  ({support:renderSupport,home:renderHome,find:renderFind,chat:renderChats,rooms:renderRooms,me:renderMe})[S.ui.tab]();
+}
+
+/* ---------- Daily check-in and late-night prompt (moved from the old Home screen) ---------- */
+function renderHome(){
+  bar();
+  const h=new Date().getHours(), greet=h<5?'Still up':h<12?'Good morning':h<18?'Good afternoon':'Good evening';
+  const unread=Object.keys(S.unread||{}).filter(id=>S.convos[id]&&visible(person(id)));
+  $('#screen').innerHTML=`
+   <div class="row"><div style="flex:1;min-width:0"><h2>${greet}, ${esc(S.me.handle)}.</h2><p class="small muted">${esc(stageLabel(S.me.stage))}</p></div></div>
+   <div class="section"><span class="label">Find people using these three choices</span>${threeTiles('nav')}</div>
+   ${unread.length?`<div class="section"><span class="label">New messages</span>${unread.map(id=>{const p=person(id),l=last(id);
+     return `<button class="person" onclick="App.openChat('${id}')"><div class="body"><span class="name">${esc(p.handle)}</span><div class="small" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(l.t)}</div></div><span class="pill amber">New</span></button>`}).join('')}</div>`:''}
+   ${aboutUser('h')}
+   <div class="card calm help-card"><h3>Help is always here</h3><p class="small">Tap <b>Help now</b> at the top of any screen, or open the <b>Support</b> page for help services in your country, overdose information and peer supporters.</p></div>
+   ${DISCLAIMER}`;
+}
+function personRow(p,m){
+  const tagHtml=p.tags.filter(t=>catOf(t)==='interests'||m.shared.includes(t)).slice(0,4).map(t=>`<span class="tag g-${grp(t)} ${m.shared.includes(t)?'shared':''}">${esc(TAG[t].label)}</span>`).join('');
+  return `<button class="person" onclick="App.profile('${p.id}')">
+    <div class="body"><div class="row"><span class="name">${esc(p.handle)}</span>${p.peer?'<span class="pill peer">Peer supporter</span>':''}${p.active==='Online'?'<span class="online" aria-label="online"></span>':`<span class="small muted">${esc(p.active)}</span>`}</div>
+    <div class="small muted">${esc(stageLabel(p.stage))} · ${esc(p.region)}</div><div class="chips">${tagHtml}</div></div>
+    <div class="match">${m.pct}%<small>match</small></div></button>`;
+}
+function allRooms(){ return ROOMS.concat((S.rooms&&S.rooms.custom)||[]); }
+function roomRow(r){
+  const j=S.rooms.joined.includes(r.id), g=pathOf(r.cat);
+  return `<button class="person" onclick="App.room('${r.id}')"><div class="body"><div class="row wrap"><span class="tag g-${g.g}">${dName(g)}</span><span class="name">${esc(r.name)}</span>${j?'<span class="pill amber">Joined</span>':''}</div>
+    <div class="small muted">${esc(r.desc)}</div><div class="small muted">${r.members} members</div></div></button>`;
+}
+
+/* ---------- Matches (shown straight after profile setup) ---------- */
+function renderMatches(){
+  tabs(false); bar(' ', 'Your matches');
+  const list=PEOPLE.filter(visible).map(p=>({p,m:match(p)})).sort((a,b)=>b.m.pct-a.m.pct);
+  $('#screen').innerHTML=`<div class="section"><h2>Here are your matches, ${esc(S.me.handle)}</h2>
+     <p class="muted">Based on your interests, drug use, mental health and what you're looking for.${S.me.wantsPeer?' Peer supporters are marked, because you asked for peer support.':''} Tap anyone to see their profile and say hi.</p></div>
+   <div class="section" id="match-list">${list.map(({p,m})=>personRow(p,m)).join('')}</div>
+   <button class="btn primary block" onclick="App.leaveMatches('home')">Continue to Home</button>
+   <button class="btn block" onclick="App.leaveMatches('find')">Refine on the Search page</button>`;
+}
+
+/* ---------- Search page ---------- */
+function renderFind(){
+  bar();
+  const on = PATHS.filter(p=>S.ui.cats.includes(p.key));
+  const picked = S.ui.f.map(t=>`<span class="tag g-${grp(t)}">${esc(TAG[t].label)}</span>`).concat(S.ui.look.map(l=>`<span class="tag">${esc(LOOKING.find(x=>x.id===l).label)}</span>`)).concat(S.ui.peerOnly?['<span class="tag">Peer supporters only</span>']:[]).join('');
+  const changed = JSON.stringify(draft())!==JSON.stringify(S.ui.applied);
+  $('#screen').innerHTML = `
+   <div class="section"><h2 style="font-size:24px">Search/Find a Companion</h2></div>
+   <div class="section" id="results" aria-live="polite"></div>
+   <div class="section">
+     <span class="label">1. Choose</span>
+     ${threeTiles('filter')}
+     <p class="hint">${on.length===3?"All three are on. ":""}Tap a choice to turn it off or on, then pick items in each to combine them.</p>
+     ${on.map((path,i)=>`<div class="section"><span class="label ghead g-${path.g}">${i+2}. ${dName(path)}</span>${path.cats.map(c=>`${path.cats.length>1?`<span class="label sub">${CATS.find(x=>x.key===c).name}</span>`:''}<div class="chips" role="group" aria-label="${dName(path)}: ${CATS.find(x=>x.key===c).name}">${REF[c].map(t=>`<button class="chip" aria-pressed="${S.ui.f.includes(t.id)}" onclick="App.f('${t.id}')">${esc(t.label)}</button>`).join('')}</div>`).join('')}</div>`).join('')}
+     ${S.ui.f.length||S.ui.look.length||S.ui.peerOnly?`<div class="card calm"><span class="label">Finding people with</span><div class="chips">${picked}</div><p class="hint">Matches at least one pick in each choice you used.</p><button class="btn sm" style="align-self:flex-start" onclick="App.clearAll()">Clear all filters</button></div>`:''}
+     <div class="section"><span class="label ghead g-look">${on.length+2}. Looking for</span><p class="hint">Find people who can meet what you're looking for. These also count towards the match score.</p>
+       <div class="chips" role="group" aria-label="Looking for">${LOOKING.map(l=>`<button class="chip" aria-pressed="${S.ui.look.includes(l.id)}" onclick="App.look('${l.id}')">${esc(l.label)}</button>`).join('')}
+       <button class="chip" aria-pressed="${S.ui.peerOnly}" onclick="App.peerOnly()">Peer supporters only</button></div></div>
+     ${changed?'<p class="hint pending" role="status">You have changed your search. Tap Search to update Your Matches.</p>':''}
+     <button class="btn primary block search-btn" onclick="App.search()">Search</button>
+   </div>`;
+  renderResults();
+}
+function aliasHit(q,t){ // light synonym support for natural search
+  const AL={dog:'I02',dogs:'I02',pet:'I02',cat:'I02',walk:'I01',hike:'I01',film:'I03',movie:'I03',tv:'I03',book:'I04',read:'I04',game:'I06',gaming:'I06',art:'I07',cook:'I08',bake:'I08',gym:'I09',yoga:'I09',garden:'I10',
+    anxiety:'D02',anxious:'D02',social:'D03',depress:'D01',ptsd:'D04',trauma:'D04',bipolar:'D05',adhd:'D06',ocd:'D07',bpd:'D08',psychosis:'D09',eating:'D10',
+    benzo:['M05','M06'],xanax:'M05',valium:'M06',opioid:['M01','M02','M03','M04','S05','S06'],oxy:'M01',painkiller:['M01','M02','M03','M04'],adderall:'M07',ritalin:'M08',sleep:'M09',gabapentin:'M10',pregabalin:'M10',
+    weed:'S01',cannabis:'S01',coke:'S02',crack:'S03',meth:'S04',heroin:'S05',fentanyl:'S06',mdma:'S07',ket:'S08',acid:'S09',shroom:'S09',ghb:'S10',drink:'O01',alcohol:'O01',booze:'O01',vape:'O02',gambl:'O04'};
+  return Object.entries(AL).some(([k,v])=>q.includes(k)&&[].concat(v).includes(t));
+}
+const draft = () => ({cats:[...S.ui.cats].sort(), f:[...S.ui.f].sort(), look:[...S.ui.look].sort(), peerOnly:!!S.ui.peerOnly});
+function renderResults(){
+  const q=S.ui.q.trim().toLowerCase();
+  let list=PEOPLE.filter(visible).map(p=>({p,m:match(p)}));
+  // Combine the three choices: within a choice any pick counts (OR); across choices every used choice must match (AND).
+  const A=S.ui.applied; // the last search the person ran with the Search button
+  PATHS.filter(g=>A.cats.includes(g.key)).forEach(g=>{ const picks=A.f.filter(t=>g.cats.includes(catOf(t)));
+    if(picks.length) list=list.filter(({p})=>picks.some(t=>p.tags.includes(t))); });
+  const scope=PATHS.filter(g=>A.cats.includes(g.key)).flatMap(g=>g.cats);
+  // Looking for: keep people who can meet at least one pick, and rank those who meet more of them higher
+  if(A.look.length) list=list.filter(({p})=>A.look.some(l=>meets(l,p.looking))).map(x=>({...x,fit:A.look.filter(l=>meets(l,x.p.looking)).length}));
+  if(A.peerOnly) list=list.filter(({p})=>p.peer);
+  if(q) list=list.filter(({p})=>p.handle.toLowerCase().includes(q)||p.bio.toLowerCase().includes(q)||p.tags.some(t=>scope.includes(catOf(t))&&(TAG[t].label.toLowerCase().includes(q)||aliasHit(q,t))));
+  list.sort((a,b)=>((b.fit||0)-(a.fit||0))||(b.m.pct-a.m.pct));
+  const shown = S.ui.all ? list : list.slice(0,3);
+  $('#results').innerHTML = `<div class="row between"><h2>Your Matches</h2><span class="pill" id="match-count">${list.length} ${list.length===1?'person':'people'}</span></div>`+
+    (list.length?shown.map(({p,m})=>personRow(p,m)).join('')+(list.length>3?`<button class="btn sm" style="align-self:flex-start" onclick="App.showAll()">${S.ui.all?'Show top 3':'Show all '+list.length+' matches'}</button>`:''):`<div class="card"><p>No one matches all of those yet. Try removing a filter, or join a room to meet people more broadly.</p></div>`);
+}
+
+/* ---------- Profile sheet ---------- */
+function sheet(html){ closeSheet(); const d=document.createElement('div'); d.className='scrim'; d.id='scrim'; d.onclick=e=>{if(e.target===d)closeSheet()};
+  d.innerHTML=`<div class="sheet" role="dialog" aria-modal="true"><div class="grab"></div>${html}</div>`; $('#device').appendChild(d); d.querySelector('button,input,select')?.focus(); }
+function closeSheet(){ $('#scrim')?.remove(); }
+function profileSheet(id){
+  const p=person(id), m=match(p);
+  const groups=PATHS.map(g=>{ const t=p.tags.filter(x=>g.cats.includes(catOf(x))); return `<div class="section"><span class="label ghead g-${g.g}">${g.name}</span><div class="chips">${t.length?t.map(x=>`<span class="tag g-${g.g} ${m.shared.includes(x)?'shared':''}">${esc(TAG[x].label)}</span>`).join(''):'<span class="small muted">Not shared</span>'}</div></div>`; }).join('');
+  sheet(`<div class="row"><div class="grow" style="flex:1;min-width:0"><h2>${esc(p.handle)}</h2><div class="small muted">${esc(p.active)} · ${esc(p.region)}</div></div><div class="match">${m.pct}%<small>match</small></div></div>
+    ${p.peer?'<p class="peer-on"><span class="pill peer">Peer supporter</span> Offers to listen to people who want peer support.</p>':''}
+    <p>${esc(p.bio)}</p>
+    <div class="card calm"><p class="small">${esc(whyMatched(p,m))}</p></div>
+    <div class="section"><span class="label">Where they're at</span><p>${esc(stageLabel(p.stage))}</p></div>
+    ${groups}
+    <div class="section"><span class="label">Looking for</span><div class="chips">${p.looking.map(l=>`<span class="tag">${esc(LOOKING.find(x=>x.id===l).label)}</span>`).join('')}</div></div>
+    <button class="btn primary block" onclick="App.openChat('${p.id}')">Say hi</button>
+    <div class="row"><button class="btn danger sm" onclick="App.block('${p.id}')">Block</button><button class="btn sm" onclick="App.report('${p.id}')">Report</button></div>`);
+}
+
+/* ---------- Chats ---------- */
+function renderChats(){
+  bar();
+  const ids=Object.keys(S.convos).filter(id=>visible(person(id))).sort((a,b)=>last(b).ts-last(a).ts);
+  $('#screen').innerHTML=`<div class="section"><h2>Chats</h2><p class="muted small">Messages are private between you and the other person. ${S.prefs.disappearing?'Disappearing messages are on (7 days).':''}</p></div>
+   ${ids.length?ids.map(id=>{const p=person(id),l=last(id),u=S.unread[id];
+     return swipeWrap('chat',id,'Delete','Delete chat with '+p.handle,`<button class="person" onclick="App.openChat('${id}')"><div class="body"><div class="row between"><span class="name">${esc(p.handle)}</span><span class="small muted">${timeAgo(l.ts)}</span></div>
+     <div class="small ${u?'':'muted'}" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${l.f==='me'?'You: ':''}${esc(l.t)}</div></div>${u?'<span class="pill amber">New</span>':''}</button>`)}).join('')+'<p class="hint">Swipe a chat to the left to delete it.</p>'
+   :`<div class="card"><p>No chats yet. Find someone who shares an interest and say hi.</p><button class="btn primary" onclick="App.tab('find')">Search for people</button></div>`}
+   ${S.blocked.length?`<div class="section"><span class="label">Blocked (${S.blocked.length})</span><div class="lines">${S.blocked.map(id=>`<div class="line"><span><b>${esc(person(id).handle)}</b> <span class="small muted">can't message you</span></span><button class="btn sm" onclick="App.unblock('${id}')">Unblock</button></div>`).join('')}</div></div>`:''}`;
+}
+const last = id => S.convos[id][S.convos[id].length-1];
+function renderChat(id){
+  const p=person(id); tabs(false); delete S.unread[id]; save();
+  bar(`<button class="iconbtn" onclick="App.back()" >Back</button>`, esc(p.handle));
+  const sc=$('#screen'); sc.className='screen flush';
+  const week=Date.now()-7*86400000;
+  const msgs=(S.convos[id]||[]).filter(m=>!S.prefs.disappearing||m.ts>week);
+  sc.innerHTML=`<div class="msgs" id="msgs">
+     <div class="bubble sys">You're both anonymous, and every message is checked for safety. Never share your real name or address. <button class="btn sm quiet" onclick="App.chatMenu('${id}')">Safety &amp; options</button></div>
+     ${S.prefs.disappearing?'<div class="bubble sys">Disappearing messages are on. Messages are deleted 7 days after they are sent.</div>':''}
+     ${msgs.map(bubble).join('')}</div>
+   <div id="warn"></div>
+   ${msgs.length<3?`<div class="ice" aria-label="Conversation starters">${ICEBREAKERS.map(i=>`<button class="chip" onclick="App.ice(this.textContent)">${esc(i)}</button>`).join('')}</div>`:''}
+   <form class="composer" onsubmit="App.send(event,'${id}')"><label for="msg" hidden>Message</label><input class="input" id="msg" placeholder="Message ${esc(p.handle)}" autocomplete="off" maxlength="1000"><button class="btn primary" type="submit">Send</button></form>`;
+  scrollMsgs();
+}
+const bubble = m => m.f==='sys' ? `<div class="bubble sys">${esc(m.t)}</div>` : `<div class="bubble ${m.f==='me'?'me':'them'}">${m.who?`<span class="who">${esc(m.who)}</span>`:''}${esc(m.t)}</div>`;
+function scrollMsgs(){ const m=$('#msgs'); if(m) m.scrollTop=m.scrollHeight; }
+function guard(text){
+  if(blocked(text)){ $('#warn').innerHTML=`<div class="warnbox" role="alert"><b>Message not sent</b>It looks like it could be about buying or selling, or sharing links or other apps' contact details. User doesn't allow sourcing or off-app contact, to keep everyone safe. If you're struggling with cravings, the Help button has people to talk to right now. <button class="btn sm quiet" onclick="App.humanReview('A message that was blocked')">Think this is wrong? Ask for a review</button></div>`; return false; }
+  $('#warn').innerHTML=''; return true;
+}
+
+/* ---------- Rooms ---------- */
+function renderRooms(){
+  bar();
+  const g=pathOf(S.ui.roomCat), rooms=allRooms(), mine=rooms.filter(r=>S.rooms.joined.includes(r.id));
+  $('#screen').innerHTML=`<div class="section"><h2>Rooms</h2><p class="muted small">Small group chats in three choices. Every message is checked for safety.</p></div>
+     <div class="section"><span class="label">Choose a type of room</span>
+    <div class="three" role="group" aria-label="Room types">${PATHS.map(p=>`<button type="button" class="path p-${p.g} room-path" aria-pressed="${S.ui.roomCat===p.key}" onclick="App.roomCat('${p.key}')"><span class="ic">${p.ic}</span><span class="pn">${dName(p)}</span><span class="pc">${rooms.filter(r=>r.cat===p.key).length} rooms</span></button>`).join('')}</div></div>
+    <div class="section"><span class="label ghead g-${g.g}">${dName(g)} rooms</span>${rooms.filter(r=>r.cat===g.key).map(roomRow).join('')}</div>
+    <div class="section"><span class="label">Your rooms</span>${mine.length?mine.map(r=>{ const own=r.id[0]==='c'; return swipeWrap('room',r.id,own?'Delete':'Leave',(own?'Delete ':'Leave ')+r.name,roomRow(r)); }).join('')+'<p class="hint">Swipe a room to the left to leave it. Rooms you created can be deleted.</p>':''}${mine.length?'':'<p class="muted small">You haven\'t joined any rooms yet.</p>'}</div>
+    <div class="card"><h3>Start a new room</h3><p class="small muted">Can't find the room you need? Suggest one.</p>
+      <button class="btn primary" style="align-self:flex-start" onclick="App.roomRequest()">Request a new room</button>
+      ${(S.rooms.requests||[]).length?`<div class="lines" aria-label="Your room requests">${S.rooms.requests.map(q=>`<div class="line"><span class="small"><b>${esc(q.name)}</b> · ${dName(pathOf(q.cat))}</span><span class="pill ${q.status==='Approved'?'':'amber'}">${esc(q.status)}</span></div>`).join('')}</div>`:''}</div>
+`;
+}
+function renderRoom(id){
+  const r=allRooms().find(x=>x.id===id), j=S.rooms.joined.includes(id); tabs(false);
+  bar(`<button class="iconbtn" onclick="App.back()" >Back</button>`, esc(r.name));
+  const sc=$('#screen'); sc.className='screen flush';
+  const msgs=[...r.seed.map(([who,t])=>({f:'them',who,t})), ...(S.rooms.posts[id]||[])];
+  sc.innerHTML=`<div class="msgs" id="msgs"><div class="bubble sys">${esc(r.desc)} Every message is checked for safety. ${r.members} members.</div>${msgs.map(bubble).join('')}</div>
+    <div id="warn"></div>
+    ${j?`<form class="composer" onsubmit="App.post(event,'${id}')"><label for="msg" hidden>Message</label><input class="input" id="msg" placeholder="Say something to the room" autocomplete="off" maxlength="1000"><button class="btn primary" type="submit">Post</button></form>`
+       :`<div class="composer"><button class="btn primary block" onclick="App.join('${id}')">Join room to post</button></div>`}`;
+  scrollMsgs();
+}
+
+/* ---------- Three-choice profile card (Me page and first-login setup) ---------- */
+function profileCard(foot){
+  const me=S.me;
+  return `<div class="card"><div class="row between"><h2 class="bighead">My profile</h2><span class="hint">Tap to add or remove</span></div>
+     ${PATHS.map(g=>{ const n=me.tags.filter(t=>g.cats.includes(catOf(t))).length;
+       return `<div class="section"><div class="row between"><span class="label ghead g-${g.g}">${g.name}</span><span class="pill" id="cnt-${g.key}">${n} added</span></div>
+       ${g.cats.map(c=>`${g.cats.length>1?`<span class="label">${CATS.find(x=>x.key===c).name}</span>`:''}<div class="chips" role="group" aria-label="${g.name}: ${CATS.find(x=>x.key===c).name}">${REF[c].map(t=>`<button class="chip" aria-pressed="${me.tags.includes(t.id)}" onclick="App.meTag('${t.id}',this)">${esc(t.label)}</button>`).join('')}</div>`).join('')}</div>`; }).join('')}
+     <p class="hint">${foot}</p></div>`;
+}
+
+/* ---------- Bio, stage and looking-for fields (Me page and first-login setup) ---------- */
+function aboutFields(withBio=true){
+  const me=S.me;
+  return `${withBio?'':'<!--'}<div class="field"><label for="su-bio">Your byline: one line about you (optional)</label><textarea class="input" id="su-bio" rows="3" maxlength="240" oninput="App.meField('bio',this.value)" placeholder="e.g. Dog person, three months into cutting down.">${esc(me.bio||'')}</textarea></div>${withBio?'':'-->'}
+     <div class="field"><label for="su-stage">Where are you at?</label><select class="input" id="su-stage" onchange="App.meField('stage',this.value)">${STAGES.map(st=>`<option value="${st.id}" ${me.stage===st.id?'selected':''}>${esc(st.label)}</option>`).join('')}</select></div>
+     <div class="section"><span class="label">I'm looking for</span><div class="chips">${LOOKING.map(l=>`<button class="chip" aria-pressed="${me.looking.includes(l.id)}" onclick="App.meLook('${l.id}',this)">${esc(l.label)}</button>`).join('')}</div></div>`;
+}
+
+/* ---------- Peer support ---------- */
+function peerCard(){
+  const me=S.me;
+  return `<div class="card peer-card"><h2>Peer support</h2>
+    <p class="small muted">Peer supporters are members with lived experience who offer to listen. People who ask for peer support are matched with them first.</p>
+    <label class="toggle" for="pe-want"><span>I would like peer support<span class="th">You'll see peer supporters at the top of your matches.</span></span><input type="checkbox" id="pe-want" ${me.wantsPeer?'checked':''} onchange="App.setPeer('wantsPeer',this.checked)"></label>
+    <label class="toggle" for="pe-be"><span>Nominate myself as a peer supporter<span class="th">You agree to listen without judgement, never give medical or dosing advice, and point people to Help now if they're at risk.</span></span><input type="checkbox" id="pe-be" ${me.peer?'checked':''} onchange="App.setPeer('peer',this.checked)"></label>
+    ${me.peer?'<p class="peer-on" role="status"><span class="pill peer">Peer supporter</span> People who want peer support can now be matched with you.</p>':''}</div>`;
+}
+
+/* ---------- First-login profile setup ---------- */
+function renderSetup(){
+  tabs(false); bar(' ', 'Set up your profile');
+  const me=S.me, sel=(k)=>`<select class="input" id="vis-${k}" onchange="App.vis('${k}',this.value)">${VIS.map(v=>`<option value="${v.id}" ${S.vis[k]===v.id?'selected':''}>${v.label}</option>`).join('')}</select>`;
+  $('#screen').innerHTML=`
+   <div class="section"><h2>Welcome, ${esc(me.handle)}. Let's set up your profile.</h2>
+     <p class="muted">This is what other people see. Fill in only what you're comfortable sharing. You can change any of it later on the Me page.</p></div>
+   <div class="card"><h3>1. About you</h3>
+     ${aboutFields()}</div>
+   <div class="card"><h3>2. Peer support</h3>
+     <fieldset class="ask"><legend>Would you like peer support?</legend>
+       <p class="small muted">A peer supporter is a member who has been through similar things and offers to listen.</p>
+       <label class="radio"><input type="radio" name="su-peer" value="yes" ${me.wantsPeer===true?'checked':''} onchange="App.setPeer('wantsPeer',true)"> Yes, match me with peer supporters</label>
+       <label class="radio"><input type="radio" name="su-peer" value="no" ${me.wantsPeer===false?'checked':''} onchange="App.setPeer('wantsPeer',false)"> Not right now</label>
+     </fieldset></div>
+   ${profileCard('Pick at least one interest. Drug use and mental health are optional.').replace('<h2 class="bighead">My profile</h2>','<h3>3. Your three choices</h3>')}
+   <div class="card"><h3>4. Who can see what</h3>
+     <div class="field"><label for="vis-interests">Who sees my interests</label>${sel('interests')}</div>
+     <div class="field"><label for="vis-subs">Who sees my drug use</label>${sel('subs')}</div>
+     <div class="field"><label for="vis-mh">Who sees my mental health</label>${sel('mh')}</div></div>
+   <div id="su-err" class="hint" role="alert"></div>
+   <button class="btn primary block" onclick="App.finishSetup()">Save profile and see my matches</button>`;
+}
+
+/* ---------- Me ---------- */
+function renderMe(){
+  bar();
+  const me=S.me, sel=(k)=>`<select class="input" id="vis-${k}" onchange="App.vis('${k}',this.value)">${VIS.map(v=>`<option value="${v.id}" ${S.vis[k]===v.id?'selected':''}>${v.label}</option>`).join('')}</select>`;
+  $('#screen').innerHTML=`
+   <div class="me-head" id="me-head"><h1 class="me-name">${esc(me.handle)}</h1>
+     <div class="row byline-row"><p class="me-byline" id="me-byline">${me.bio?esc(me.bio):'<span class="muted">No byline yet.</span>'}</p><button class="btn sm" onclick="App.editByline()">${me.bio?'Change byline':'Add byline'}</button></div></div>
+   ${peerCard()}
+   ${profileCard('Who can see these is set under Privacy &amp; visibility below.')}
+   <div class="card"><h2>Edit profile</h2>
+     ${aboutFields(false)}
+     <p class="hint">Changes save as you type.</p></div>
+   <div class="card"><h3>Privacy &amp; visibility</h3>
+     <div class="field"><label for="vis-interests">Who sees my interests</label>${sel('interests')}</div>
+     <div class="field"><label for="vis-mh">Who sees my mental health tags</label>${sel('mh')}</div>
+     <div class="field"><label for="vis-subs">Who sees my substance tags</label>${sel('subs')}</div>
+     <div>
+     ${toggle('searchable','Show me in Search results')}
+     ${toggle('disappearing','Disappearing messages (7 days)','Chat messages are deleted for both of you 7 days after they are sent, from the app and our servers. Room posts are not affected.')}
+     ${toggle('lock','App lock with PIN or Face ID')}
+     </div></div>
+   <div class="card"><h3>Security</h3>
+     <div class="lines">
+      <div class="line"><span>Password</span><button class="btn sm" onclick="App.stub('Password change opens here in the full app.')">Change</button></div>
+      <div class="line"><span>Two-step verification</span><button class="btn sm" onclick="App.stub('Authenticator-app setup (TOTP) opens here.')">Set up</button></div>
+      <div class="line"><span>Passkey<span class="th">${S.account&&S.account.passkey?'Saved on this device. Sign in with your face, fingerprint or PIN.':'Not set up. Add one so you can sign in without your password.'}</span></span>${S.account&&S.account.passkey?'<button class="btn sm" onclick="App.removePasskey()">Remove</button>':'<button class="btn sm" onclick="App.addPasskey()">Add a passkey</button>'}</div>
+     </div>
+     <div class="section"><span class="label">Blocked people (${S.blocked.length})</span>
+      ${S.blocked.length?`<div class="lines">${S.blocked.map(id=>{const p=person(id); return `<div class="line"><span class="row"><b>${esc(p.handle)}</b></span><button class="btn sm" onclick="App.unblock('${id}')">Unblock</button></div>`;}).join('')}</div>`
+        :'<p class="hint">No one is blocked. You can block someone from their profile or from a chat.</p>'}</div><p class="hint">No email, phone number or real name is ever required.</p></div>
+   <button class="btn block" onclick="App.signOut()">Sign out</button>
+   <button class="btn danger block" onclick="App.confirmDelete()">Delete account</button>
+   ${DISCLAIMER}`;
+}
+const toggle=(k,l,h)=>`<label class="toggle" for="t-${k}"><span>${l}${h?`<span class="th">${h}</span>`:''}</span><input type="checkbox" id="t-${k}" ${S.prefs[k]?'checked':''} onchange="App.pref('${k}',this.checked)"></label>`;
+
+/* ---------- Welcome / Sign in ---------- */
+function aboutUser(k){ return `<section class="card" aria-labelledby="ben-h-${k}"><h2 id="ben-h-${k}">Why people use User</h2>
+     <ul class="benefits">
+       <li><b>Find people who get it.</b> We match you on shared interests, drug use and mental health, so conversations start from common ground.</li>
+       <li><b>Stay anonymous.</b> No real name, email or phone number. You decide who sees what.</li>
+       <li><b>Feel less alone, day or night.</b> One-to-one chats, small group rooms, and peer supporters who have been there too.</li>
+       <li><b>Safe by design.</b> Every message is checked for safety, drug dealing is blocked, and Help now is one tap away.</li>
+     </ul></section>
+   <section class="card" aria-labelledby="how-h-${k}"><h2 id="how-h-${k}">How to use it</h2>
+     <ol class="howto">
+       <li>Create an anonymous account with a username and password.</li>
+       <li>Set up your profile using the three choices: Interest, Drug use and Mental health, and say if you'd like peer support.</li>
+       <li>See your matches on the Search page and say hi.</li>
+       <li>Join rooms on topics that matter to you.</li>
+       <li>To become a peer supporter, open the Me page and turn on 'Nominate myself as a peer supporter' under Peer support.</li>
+     </ol></section>`; }
+const DISCLAIMER='<p class="disclaimer">User is peer support, not a medical or emergency service.</p>';
+function renderWelcome(){
+  tabs(false); bar();
+  $('#screen').innerHTML=`
+   <div class="welcome-hero"><div class="big">User</div><div class="by">Connection and Recovery</div>
+     <p>A private, anonymous place to meet people who understand what you're going through, whether you use drugs, are in recovery, or live with a mental health condition.</p></div>
+   ${aboutUser('w')}
+   <form class="card signin" onsubmit="App.signIn(event)"><h2>Sign in</h2>
+     <div class="field"><label for="li-h">Username</label><input class="input" id="li-h" autocomplete="username" placeholder="Your username"></div>
+     <div class="field"><label for="li-p">Password</label><input class="input" id="li-p" type="password" autocomplete="current-password" placeholder="Your password"></div>
+     <div id="li-err" class="hint" role="alert"></div>
+     <button class="btn primary block" type="submit">Sign in</button>
+     <button class="btn block" type="button" onclick="App.passkeySignIn()">Sign in with a passkey</button>
+     <button class="btn quiet sm" type="button" onclick="App.forgot()">Forgot password?</button>
+     <div class="divider"><span>New here?</span></div>
+     <button class="btn block" type="button" onclick="App.startOnboard()">Create an anonymous account</button>
+     <p class="hint">No email or phone needed. 18+ only. Demo account: <b>QuietHeron</b> / <b>quiet heron walks</b></p>
+   </form>`;
+}
+
+/* ---------- Onboarding ---------- */
+const ADJ=['Quiet','Steady','Gentle','Mossy','Amber','Little','Brave','Calm','Paper','Willow','Cedar','Misty','Bright','Soft','River'];
+const ANI=['Heron','Otter','Fox','Wren','Badger','Lark','Moth','Hare','Finch','Owl','Seal','Robin','Newt','Vole','Crane'];
+const genHandle=()=>ADJ[Math.random()*ADJ.length|0]+ANI[Math.random()*ANI.length|0]+(Math.random()<.5?'':(10+Math.random()*89|0));
+const genCodes=()=>[...Array(8)].map(()=>{const a=new Uint8Array(4); crypto.getRandomValues(a); const h=[...a].map(b=>b.toString(16).padStart(2,'0')).join(''); return h.slice(0,4)+'-'+h.slice(4);});
+const genSalt=()=>{ const a=new Uint8Array(16); crypto.getRandomValues(a); return [...a].map(b=>b.toString(16).padStart(2,'0')).join(''); };
+// Salted hash: a random salt is added to the password before the one-way SHA-256 hash. (A real server would use Argon2id.)
+async function hash(s,salt=''){ s=salt+':'+s; try{ const b=await crypto.subtle.digest('SHA-256',new TextEncoder().encode(s)); return [...new Uint8Array(b)].map(x=>x.toString(16).padStart(2,'0')).join(''); }catch(e){ let h=0; for(const c of s) h=(h*31+c.charCodeAt(0))|0; return 'x'+h; } }
+const OB_STEPS=['rules','handle','passkey']; // after the last step the account is created and the profile setup page opens
+function renderOnboard(){
+  tabs(false);
+  const st=OB_STEPS[ob.i], d=ob.d;
+  bar(`<button class="iconbtn" onclick="App.obBack()" >Back</button>`, 'Create account');
+  const prog=`<div class="steps" aria-label="Step ${ob.i+1} of ${OB_STEPS.length}">${OB_STEPS.map((_,i)=>`<span class="${i<=ob.i?'on':''}"></span>`).join('')}</div>`;
+  let body='';
+  if(st==='rules') body=`<h2>Before you start</h2>
+    <div class="card"><div class="lines">
+      <div class="line"><span>I am 18 or older</span><input type="checkbox" id="r-age" ${d.age?'checked':''} onchange="ob.d.age=this.checked" style="width:20px;height:20px;accent-color:var(--accent)"></div></div>
+    <div class="section small"><b>Our community agreement</b>
+      <p>• Be kind. Everyone here is at a different stage, and all of them are welcome.</p>
+      <p>• No buying, selling, sharing or sourcing drugs. No dosing advice.</p>
+      <p>• Stay anonymous. Don't share real names, addresses or socials, and think carefully before sharing a phone number.</p>
+      <p>• We're peer support, not a crisis service. Help now is always at the top.</p></div>
+    <details class="salt"><summary>What is a salted hash?</summary>
+      <p class="small">User never keeps your actual password. When you create one, we add a random string of characters called a <b>salt</b>, then run the two together through a one-way formula called a <b>hash</b>. That turns them into a long scrambled code, which is all we store.</p>
+      <p class="small">When you sign in, the same steps run again and the two codes are compared. A hash can't be turned back into your password, and because everyone's salt is different, two people with the same password get different codes. So even if someone stole the stored codes, they couldn't read anyone's password.</p></details>
+    <label class="toggle" for="r-agree"><span>I agree to the community agreement</span><input type="checkbox" id="r-agree" ${d.agree?'checked':''} onchange="ob.d.agree=this.checked"></label></div>`;
+  if(st==='handle') body=`<h2>Choose a username and password</h2><p class="muted">Pick any username you like, or use a suggested one. Don't use your real name, so nothing links back to you.</p>
+    <div class="field"><label for="ob-h">Username</label>
+      <div class="row"><input class="input" id="ob-h" autocomplete="username" maxlength="20" value="${esc(d.handle)}" oninput="ob.d.handle=this.value.trim()"><button class="btn sm" type="button" onclick="App.suggestName()">Suggest</button></div>
+      <span class="hint">3 to 20 letters, numbers or underscores.</span></div>
+    <div class="field"><label for="ob-p">Password</label><input class="input" id="ob-p" type="password" autocomplete="new-password" value="${esc(d.pass||'')}" oninput="App.obPass(this.value)" placeholder="At least 8 characters"><div class="meter"><span id="pm" style="width:${pstr(d.pass||'')}%"></span></div><span class="hint" id="ph">${phint(d.pass||'')}</span></div>
+    <div class="field"><label for="ob-p2">Confirm password</label><input class="input" id="ob-p2" type="password" autocomplete="new-password" value="${esc(d.pass2||'')}" oninput="ob.d.pass2=this.value"></div>`;
+  if(st==='passkey') body=`<h2>Protect your account with a passkey</h2>
+    <p class="muted">A passkey lets you sign in with your face, fingerprint or phone PIN. There's nothing to write down or keep safe.</p>
+    <div class="card calm"><ul class="small pk-list"><li>It's stored by your phone or computer, never by User.</li><li>Most devices back it up to your Apple, Google or Microsoft account, so it isn't lost if you change phones.</li><li>It can't be guessed or phished, and it needs no email or phone number.</li></ul></div>
+    ${d.passkey?'<p class="peer-on" role="status"><span class="pill peer">Passkey saved</span> You can sign in with it next time.</p>':'<button class="btn" onclick="App.makePasskey()">Create a passkey</button>'}
+    <p class="hint">${d.passkey?'':'You can skip this and add one later on the Me page. Without a passkey, your password is the only way in.'}</p>`;
+  $('#screen').innerHTML=`${prog}${body}<div id="ob-err" class="hint" role="alert"></div>
+    <button class="btn primary block" onclick="App.obNext()">${st==='passkey'?(d.passkey?'Create account':'Create account without a passkey'):'Continue'}</button>`;
+}
+const pstr=p=>Math.min(100,p.length*7+(/[A-Z]/.test(p)?10:0)+(/[0-9]/.test(p)?10:0)+(/[^A-Za-z0-9]/.test(p)?10:0));
+const phint=p=>!p?'At least 8 characters. Never reuse a password from another app.':p.length<8?`${8-p.length} more characters needed.`:pstr(p)<80?'OK. Longer is stronger, or add a number or symbol.':'Strong. Stored only as a salted hash.';
+/* ---------- Support page ---------- */
+// Help services by country. Check every number before launch: services change. findahelpline.com lists more.
+const SERVICES = [
+ {c:'United Kingdom',em:'999 or 112',lines:[['Samaritans, 24/7','116 123'],['Shout, text support','Text SHOUT to 85258'],['FRANK, drugs information','0300 123 6600'],['NHS urgent mental health (England)','111, option 2']]},
+ {c:'Ireland',em:'112 or 999',lines:[['Samaritans, 24/7','116 123'],['Text About It','Text HELLO to 50808'],['HSE Drugs and Alcohol Helpline','1800 459 459']]},
+ {c:'United States',em:'911',lines:[['988 Suicide & Crisis Lifeline','Call or text 988'],['SAMHSA National Helpline (substance use)','1-800-662-4357'],['Never Use Alone','1-800-484-3731']]},
+ {c:'Canada',em:'911',lines:[['9-8-8 Suicide Crisis Helpline','Call or text 988'],['National Overdose Response Service','1-888-688-6677']]},
+ {c:'Australia',em:'000',lines:[['Lifeline','13 11 14'],['Beyond Blue','1300 22 4636'],['National Alcohol and Other Drug Hotline','1800 250 015']]},
+ {c:'New Zealand',em:'111',lines:[['Need to talk?','Call or text 1737'],['Lifeline Aotearoa','0800 543 354'],['Alcohol Drug Helpline','0800 787 797']]},
+ {c:'South Africa',em:'10111, or 112 from a mobile',lines:[['SADAG Suicide Crisis Line','0800 567 567'],['SADAG Substance Abuse Line','0800 12 13 14']]},
+ {c:'India',em:'112',lines:[['Tele-MANAS mental health helpline','14416 or 1-800-891-4416']]},
+ {c:'Germany',em:'112',lines:[['TelefonSeelsorge','0800 111 0 111 or 0800 111 0 222'],['Sucht & Drogen Hotline','01806 313031']]},
+ {c:'France',em:'15 (SAMU) or 112',lines:[['Suicide prevention line','3114'],['Drogues Info Service','0 800 23 13 13']]},
+ {c:'Spain',em:'112',lines:[['Suicide prevention line','024']]},
+ {c:'Italy',em:'112',lines:[['Telefono Amico','02 2327 2327']]},
+ {c:'Netherlands',em:'112',lines:[['113 Zelfmoordpreventie','113 or 0800 0113']]},
+ {c:'Belgium',em:'112',lines:[['Zelfmoordlijn (Dutch)','1813'],['Centre de Prévention du Suicide (French)','0800 32 123']]},
+ {c:'Switzerland',em:'144 (ambulance) or 112',lines:[['Die Dargebotene Hand / La Main Tendue','143']]},
+ {c:'Austria',em:'144 (ambulance) or 112',lines:[['TelefonSeelsorge','142']]},
+ {c:'Sweden',em:'112',lines:[['Självmordslinjen (Mind)','90101']]},
+ {c:'Norway',em:'113 (ambulance) or 112',lines:[['Mental Helse helpline','116 123']]},
+ {c:'Denmark',em:'112',lines:[['Livslinien','70 201 201']]},
+ {c:'Finland',em:'112',lines:[['MIELI Crisis Helpline','09 2525 0111']]},
+ {c:'Poland',em:'112',lines:[['Crisis line for adults','116 123']]},
+ {c:'Portugal',em:'112',lines:[['SOS Voz Amiga','213 544 545']]},
+ {c:'Israel',em:'101 (ambulance)',lines:[['ERAN emotional first aid','1201']]},
+ {c:'Japan',em:'119 (ambulance)',lines:[['TELL Lifeline (English)','03-5774-0992'],['Inochi no Denwa','0570-783-556']]},
+ {c:'South Korea',em:'119',lines:[['Suicide prevention line','109']]},
+ {c:'Singapore',em:'995',lines:[['Samaritans of Singapore','1767']]},
+ {c:'Hong Kong',em:'999',lines:[['Samaritan Befrienders Hong Kong','2389 2222']]},
+ {c:'Malaysia',em:'999',lines:[['Befrienders Kuala Lumpur','03-7627 2929']]},
+ {c:'Philippines',em:'911',lines:[['NCMH Crisis Hotline','1553']]},
+ {c:'Brazil',em:'192 (ambulance)',lines:[['CVV emotional support','188']]},
+ {c:'Mexico',em:'911',lines:[['Línea de la Vida','800 911 2000']]},
+ {c:'Argentina',em:'107 (ambulance) or 911',lines:[['Centro de Asistencia al Suicida','135 (Buenos Aires) or (011) 5275-1135']]},
+ {c:'Kenya',em:'999 or 112',lines:[['Befrienders Kenya','+254 722 178 177']]},
+];
+const UPLIFT = [
+ 'Reaching out is a strength, not a weakness. You opened this page, and that counts.',
+ 'You don\'t have to fix everything today. One small step is enough.',
+ 'Feelings come and go like weather. This one will pass too.',
+ 'Recovery isn\'t a straight line. A hard day doesn\'t undo your progress.',
+ 'You are allowed to ask for help as many times as you need.',
+ 'Someone here has felt what you\'re feeling. You are not the only one.',
+ 'Drink some water, eat something, and rest if you can. Looking after your body helps your mind.',
+ 'Being kind to yourself is part of getting better.',
+ 'You matter, today and every day, exactly as you are.',
+ 'If today was hard, you still made it through. That is worth noticing.',
+ 'Connection is the opposite of loneliness. One message to one person is a start.',
+ 'Whatever stage you\'re at, you are welcome here.'];
+function renderSupport(){
+  bar();
+  const day=Math.floor(Date.now()/86400000), msg=UPLIFT[(day+(S.ui.uplift||0))%UPLIFT.length];
+  const here=SERVICES.find(x=>x.c===S.country)||SERVICES[0];
+  const allPeers=PEOPLE.filter(p=>p.peer&&visible(p)).map(p=>({p,m:match(p)})).sort((a,b)=>b.m.pct-a.m.pct).map(x=>x.p), peers=S.ui.allPeers?allPeers:allPeers.slice(0,5);
+  const svc=x=>`<div class="lines"><div class="line em"><span class="small"><b>Emergency</b></span><span class="num">${esc(x.em)}</span></div>${x.lines.map(([a,b])=>`<div class="line"><span class="small">${esc(a)}</span><span class="num">${esc(b)}</span></div>`).join('')}</div>`;
+  $('#screen').innerHTML=`<div class="section"><h2>Support</h2><p class="muted small">Help, information and people who have been there.</p></div>
+   <section class="card" aria-labelledby="ps-h"><h2 id="ps-h">Peer supporters</h2>
+     <p class="small muted">Members with lived experience who offer to listen. ${S.me.wantsPeer?'You asked for peer support, so they appear first in your matches.':'Turn on peer support on the Me page to have them shown first in your matches.'}</p>
+     ${peers.map(p=>`<div class="person peer-row"><div class="body"><div class="row"><span class="name">${esc(p.handle)}</span><span class="pill peer">Peer supporter</span></div><div class="small muted">${esc(stageLabel(p.stage))}</div><div class="small">${esc(p.bio)}</div>
+       <button class="btn sm" style="align-self:flex-start" onclick="App.openChat('${p.id}')">Ask ${esc(p.handle)} for support</button></div></div>`).join('')}
+     ${allPeers.length>5?`<button class="btn sm" style="align-self:flex-start" onclick="App.allPeers()">${S.ui.allPeers?'Show fewer':'Show all '+allPeers.length+' peer supporters'}</button>`:''}
+     ${S.me.peer?'<p class="peer-on"><span class="pill peer">Peer supporter</span> You are listed as a peer supporter too.</p>':'<p class="hint">Want to help others? Nominate yourself under Peer support on the Me page.</p>'}</section>
+   <div class="card uplift" aria-live="polite"><span class="label">A message for you</span><p class="uplift-text" id="uplift">${esc(msg)}</p>
+     <button class="btn sm" style="align-self:flex-start" onclick="App.uplift()">Another message</button></div>
+   <section class="card" aria-labelledby="hs-h"><h2 id="hs-h">Help services by country</h2>
+     <div class="field"><label for="country">Your country</label><select class="input" id="country" onchange="App.country(this.value)">${SERVICES.map(x=>`<option ${x.c===here.c?'selected':''}>${esc(x.c)}</option>`).join('')}</select></div>
+     ${svc(here)}
+     <details class="all-countries"><summary>Show all ${SERVICES.length} countries</summary>${SERVICES.map(x=>`<div class="country-block"><h3>${esc(x.c)}</h3>${svc(x)}</div>`).join('')}</details>
+     <p class="hint">Numbers are shown as text so you can copy or dial them. Services can change. If a number doesn't work, findahelpline.com lists services worldwide.</p></section>
+   <section class="card od" aria-labelledby="od-h"><h2 id="od-h">Overdose information</h2>
+     <p class="small"><b>If you think someone has overdosed, call your emergency number now.</b></p>
+     <h3>Signs of an opioid overdose</h3>
+     <ul class="small"><li>Won't wake up or respond to their name or a firm rub on the breastbone</li><li>Slow, shallow or stopped breathing, or gurgling and snoring sounds</li><li>Blue or grey lips and fingertips</li><li>Tiny, pinpoint pupils</li></ul>
+     <h3>Signs of a stimulant overdose</h3>
+     <ul class="small"><li>Chest pain, a racing heart or trouble breathing</li><li>Very hot, sweaty skin or a high temperature</li><li>Fits or seizures, severe confusion or panic</li></ul>
+     <h3>What to do</h3>
+     <ol class="small"><li>Call your emergency number and say someone isn't breathing or won't wake up.</li><li>If you have naloxone, give it. It only reverses opioids, but it won't harm someone who hasn't taken them. Give another dose after 2 to 3 minutes if there's no response.</li><li>If they're breathing, put them in the recovery position on their side. If not, follow the call handler's instructions.</li><li>Stay with them until help arrives. Naloxone can wear off before the drugs do.</li><li>For overheating, move them somewhere cool and quiet and keep them calm.</li></ol>
+     <h3>Lower your risk</h3>
+     <ul class="small"><li>Don't use alone. If you do, tell someone or use a never-use-alone service.</li><li>Mixing opioids, benzodiazepines and alcohol greatly raises the risk.</li><li>Your tolerance drops fast after a break, a hospital stay or prison.</li><li>Street drugs may contain fentanyl or nitazenes. Use test strips where they're available, and start with a small amount.</li><li>Carry naloxone. Many pharmacies and drug services give it out free.</li></ul>
+     <p class="hint">In many places, laws protect people who call for help at an overdose. Check what applies where you live.</p></section>
+   <section class="card" aria-labelledby="hr-h"><h2 id="hr-h">Ask for a review</h2>
+     <p class="small muted">If you think a safety decision was wrong, ask for a review. Every review is decided straight away, and an independent arbitrator checks decisions and can change them.</p>
+     <button class="btn" style="align-self:flex-start" onclick="App.humanReview('')">Ask for a review</button>
+     ${S.cases.length?`<div class="lines" aria-label="Your reviews">${S.cases.map(c=>`<div class="line"><span class="small"><b>${esc(c.id)}</b> · ${esc(c.topic)}${c.auto?' · raised automatically':''}<br><span class="muted">Reply by ${esc(c.due)}</span></span><span class="pill ${/^Decided/.test(c.status)?'':'amber'}">${esc(c.status)}</span></div>${c.note?`<p class="small arb-note">${c.by==='Arbitrator'?'<b>Arbitrator:</b> ':''}${esc(c.note)}</p>`:''}`).join('')}</div>`:''}</section>
+   ${DISCLAIMER}`;
+}
+
+/* ---------- Human arbitrator dashboard ---------- */
+// Sample figures stand in for the live service; review cases raised in this browser are shown live.
+const ARB = {
+  kpis:[['1,284','active today'],['4,912','active in the last 7 days'],['318','new members this week'],['146','peer supporters'],['1,037','members who want peer support']],
+  cases:[
+    {id:'HR-0991',topic:'Report: seems to be in danger',raised:'Automatic',due:'Today, 6pm',urgent:true,text:'A member wrote that they had taken too many pills. Help was shown to them straight away. The report asks for a check that the right support was offered.'},
+    {id:'HR-0989',topic:'Report: may be under 18',raised:'Automatic',due:'Today, 9pm',urgent:true,text:'Two reports say a member mentioned being in Year 10 at school.'},
+    {id:'HR-0985',topic:'Account removal proposed',raised:'Automatic',due:'Tomorrow',text:'GreyFalcon has 3 blocked dealing messages in 7 days and 4 reports. The automatic checks propose removing the account.'},
+    {id:'HR-0983',topic:'Appeal: checks disagreed',raised:'Automatic',due:'Tue 27 Oct',text:'A message saying "I used to sell, now I help others stay clean" was blocked. On appeal, the re-check allowed it.'},
+    {id:'HR-0978',topic:'A message that was blocked',raised:'Member',due:'Wed 28 Oct',text:'"My message about my naloxone training was blocked and I don\'t know why."'},
+    {id:'HR-0976',topic:'Report: offering drugs',raised:'Member',due:'Wed 28 Oct',text:'A member reported SwiftRaven for asking "who has bars tonight?" in Taper Together.'},
+    {id:'HR-0974',topic:'A message that was blocked',raised:'Member',due:'Wed 28 Oct',text:'"I only said message me on Telegram for the group chat."'},
+    {id:'HR-0971',topic:'Report: spam',raised:'Member',due:'Thu 29 Oct',text:'An account posted the same advert in 6 rooms.'},
+    {id:'HR-0968',topic:'Something else',raised:'Member',due:'Thu 29 Oct',text:'"Someone keeps replying to me in every room even though I asked them to stop."'}],
+  safety:[['182,406','messages checked'],['1,912','messages blocked (1.0%)'],['214','times Help was shown after crisis words'],['0.9 s','average check time']],
+  blockedBy:[['Buying or selling drugs',1104],['Links and other apps',412],['Harassment',203],['Spam or scam',141],['Hate',52]],
+  reports:[['Offering or asking for drugs',96],['Harassment or hate',71],['Spam or scam',45],['Pressuring me to meet or share details',38],['Something else',30],['Seems to be in danger',22],['Under 18',9]],
+  blocks:{week:263,muted:41,suspended:12,removed:5,top:[['GreyFalcon',11,4],['SwiftRaven',7,2],['DustyPike',5,0]]},
+  countries:[['United Kingdom',1842],['United States',1206],['Australia',611],['Canada',437],['Ireland',288],['New Zealand',174],['South Africa',121],['Other countries',433]],
+  peer:[['382','peer support matches this week'],['517','chats started with a peer supporter'],['146','active peer supporters']],
+  auto:[['87%','of reviews decided automatically this week'],['41 s','average time to an automatic decision'],['6','overturned by an arbitrator after an automatic decision']],
+  rooms:[['15','rooms'],['9','room requests approved this week'],['4','room requests refused this week']],
+  health:[['99.97%','uptime, last 30 days'],['3','messages waiting for a check now'],['0','reviews overdue']]
+};
+const fmt = n => n.toLocaleString('en-GB');
+function hbars(rows, label){
+  const max=Math.max(...rows.map(r=>r[1]));
+  return `<div class="hbars" role="list" aria-label="${esc(label)}">${rows.map(([k,v])=>`<div class="hbar" role="listitem" title="${esc(k)}: ${fmt(v)}"><span class="hk">${esc(k)}</span><span class="ht"><i style="width:${(v/max*100).toFixed(1)}%"></i></span><span class="hv">${fmt(v)}</span></div>`).join('')}</div>`;
+}
+const figs = rows => `<div class="figs">${rows.map(([v,k])=>`<div class="fig"><b>${esc(v)}</b><span>${esc(k)}</span></div>`).join('')}</div>`;
+// AI Review Agent (simulated). Decides every case in the review queue. Decisions under 85% confidence
+// are still made, using the safest outcome, and flagged so the arbitrator can check them.
+const AI_THRESHOLD = 0.85;
+function aiReview(c){
+  const t=(c.topic+' '+(c.text||'')).toLowerCase();
+  let r;
+  if(/danger/.test(t)) r={decision:'Action changed',confidence:.9,reason:'Possible risk to life. Help now and local crisis lines were shown to the member at once, a supportive check-in message was sent, and their recent messages were reviewed for further risk.',note:'Reviewed automatically and urgently: support and crisis lines have been offered. Thank you for reporting.'};
+  else if(/under 18|under-18/.test(t)) r={decision:'Action changed',confidence:.88,reason:'Signs the member may be under 18. Their account is paused and they have been asked to confirm their age. It is removed if they don\'t confirm within 7 days.',note:'Reviewed automatically: the account has been paused while age is checked. Thank you for reporting.'};
+  else if(/removal/.test(t)) r={decision:'Action changed',confidence:.9,reason:'3 or more blocked dealing messages in 7 days. Under the strike ladder this means removal. The account has been removed and the member told which rule they broke.',note:'Reviewed automatically: the account has been removed for repeated dealing.'};
+  else if(/naloxone|recovery|stay clean|help others|harm reduction|used to sell|used to deal|support group|test strips/.test(t)&&!HARD.test(c.text||'')) r={decision:'Overturned',confidence:.93,reason:'Recovery or harm-reduction context, with no buying, selling, prices or contact details.',note:'Reviewed automatically: your message was about recovery or harm reduction, which is allowed. The block has been removed.'};
+  else if(/blocked/.test(t)&&HARD.test(c.text||'')) r={decision:'Upheld',confidence:.91,reason:'The message includes prices, links or other apps\' contact details.',note:'Reviewed automatically: the message included prices, links or other apps\' details, which aren\'t allowed.'};
+  else if(/offering drugs|spam/.test(t)) r={decision:'Upheld',confidence:.95,reason:'Messages match the report and earlier blocks.',note:'Reviewed automatically: the report was upheld and action was taken.'};
+  else if(/report i made/.test(t)) r={decision:'Upheld',confidence:.87,reason:'The reported messages break the community agreement.',note:'Reviewed automatically: thank you, the report was upheld.'};
+  else if(/stop|keeps|harass/.test(t)) r={decision:'Action changed',confidence:.8,reason:'Unwanted repeated contact. The other member has been muted for 24 hours and warned.',note:'Reviewed automatically: the other member has been warned and muted for 24 hours. You can also block them.'};
+  else r={decision:'Upheld',confidence:.6,reason:'Not enough detail to change the decision, so the safest outcome was kept.',note:'Reviewed automatically: we couldn\'t confirm the message was safe, so the decision stays. It will be checked again.'};
+  r.flagged = r.confidence < AI_THRESHOLD;
+  return r;
+}
+function arbCases(){
+  const live=S.cases.map(c=>({...c,raised:c.auto?'Automatic':'Member',live:true,ai:c.ai||aiReview(c)}));
+  const sample=ARB.cases.map(c=>{ const ai=aiReview(c), o=S.arb.decided[c.id];
+    if(o) return {...c,ai,status:o.status,by:'Arbitrator',note:o.note};
+    return {...c,ai,status:'Decided: '+ai.decision,by:'AI Review Agent',note:ai.note}; });
+  return live.concat(sample);
+}
+const flagged = c => c.by==='AI Review Agent' && c.ai && c.ai.flagged;
+function renderDashboard(){
+  tabs(false);
+  $('#bar').innerHTML=`<div class="brand">User<small>Arbitrator dashboard</small></div><div class="grow"></div><button class="iconbtn" onclick="App.arbSignOut()">Sign out</button>`;
+  const cases=arbCases(), flags=cases.filter(flagged), urgent=cases.filter(c=>c.urgent||(c.auto&&c.live));
+  const row=c=>`<tr class="${c.urgent||(c.auto&&c.live)?'urgent':''}"><td class="mono">${esc(c.id)}</td><td>${esc(c.topic)}${c.live?' <span class="pill">This browser</span>':''}</td><td>${esc(c.raised)}</td><td>${Math.round(c.ai.confidence*100)}%${flagged(c)?' <span class="pill amber">Flagged</span>':''}</td><td>${esc(c.due)}</td><td><span class="pill">${esc(c.status||'Being reviewed')}</span>${c.by?`<div class="small muted">by ${esc(c.by)}</div>`:''}</td><td><button class="btn sm" onclick="App.openCase('${c.id}')">Check</button></td></tr>`;
+  const table=(list,label)=>`<div class="tbl"><table aria-label="${label}"><thead><tr><th>Case</th><th>About</th><th>Raised by</th><th>Confidence</th><th>Due</th><th>Decision</th><th></th></tr></thead><tbody>${list.map(row).join('')||'<tr><td colspan="7" class="muted">Nothing here.</td></tr>'}</tbody></table></div>`;
+  $('#screen').innerHTML=`<div class="section"><h2>Arbitrator dashboard</h2>
+     <p class="small muted">How User is working, and how the AI Review Agent is deciding cases. Figures marked as samples stand in for the live service in this prototype. Members are shown by username only.</p></div>
+   <div class="kpis">${figs(ARB.kpis.concat([[String(flags.length),'flagged for a check'],[String(urgent.length),'urgent cases']]))}</div>
+   <section class="card" aria-labelledby="dq-h"><div class="row between"><h2 id="dq-h">Review queue</h2><span class="pill amber">${flags.length} flagged</span></div>
+     <p class="small muted">The AI Review Agent decides every case. Danger, under-18 and account removal cases are decided first, within minutes. When it is less than ${Math.round(AI_THRESHOLD*100)}% confident it still decides, using the safest outcome, and flags the case for you to check.</p>
+     <h3>Decided (${cases.length})</h3>${table(cases,'Decided')}
+     <p class="hint">You can check any decision and change it. Flagged and urgent cases are worth checking first.</p>
+     ${figs(ARB.auto)}</section>
+   <section class="card" aria-labelledby="ds-h"><h2 id="ds-h">Message safety this week <span class="pill sample">Sample</span></h2>${figs(ARB.safety)}
+     <h3>Blocked messages by reason</h3>${hbars(ARB.blockedBy,'Blocked messages by reason')}</section>
+   <section class="card" aria-labelledby="dr-h"><h2 id="dr-h">Reports this week <span class="pill sample">Sample</span></h2>${hbars(ARB.reports,'Reports by reason')}
+     <p class="hint">Reports made in this browser: ${S.reported||0}.</p></section>
+   <section class="card" aria-labelledby="db-h"><h2 id="db-h">Blocking and actions <span class="pill sample">Sample</span></h2>
+     ${figs([[fmt(ARB.blocks.week),'blocks this week'],[String(ARB.blocks.muted),'members muted'],[String(ARB.blocks.suspended),'members suspended'],[String(ARB.blocks.removed),'accounts removed']])}
+     <h3>Most-blocked members</h3>
+     <div class="tbl"><table><thead><tr><th>Username</th><th>Blocked by</th><th>Reports</th></tr></thead><tbody>${ARB.blocks.top.map(([u,b,r])=>`<tr><td>${esc(u)}</td><td class="num">${b} members</td><td class="num">${r}</td></tr>`).join('')}</tbody></table></div>
+     <p class="hint">Blocked by the member in this browser: ${S.blocked.length?S.blocked.map(id=>esc(person(id).handle)).join(', '):'nobody'}.</p></section>
+   <section class="card" aria-labelledby="dc-h"><h2 id="dc-h">Country of origin <span class="pill sample">Sample</span></h2>${hbars(ARB.countries,'Members by country')}
+     <p class="hint">Based on the country members choose on the Support page. User doesn't track location.</p></section>
+   <section class="card" aria-labelledby="dk-h"><h2 id="dk-h">Peer support <span class="pill sample">Sample</span></h2>${figs(ARB.peer)}</section>
+   <section class="card" aria-labelledby="dm-h"><h2 id="dm-h">Rooms and system health <span class="pill sample">Sample</span></h2>${figs(ARB.rooms.concat(ARB.health))}</section>`;
+}
+
+/* ---------- Crisis / help ---------- */
+function helpSheet(intro){
+  const L=[['United States & Canada','Call or text 988'],['UK & Ireland · Samaritans','116 123'],['Australia · Lifeline','13 11 14'],['New Zealand · Need to talk?','Call or text 1737'],
+           ['Overdose or danger','Call your emergency number: 911 · 999 · 112 · 000'],['US · Never Use Alone','1-800-484-3731'],['UK · FRANK drugs helpline','0300 123 6600']];
+  sheet(`<h2>${intro?'You don\'t have to hold this alone':'Help now'}</h2>
+   <p>${intro||'If you are in danger or someone may have overdosed, call emergency services now. If you have naloxone, use it and stay with them.'}</p>
+   <div class="lines">${L.map(([a,b])=>`<div class="line"><span class="small">${a}</span><span class="num">${b}</span></div>`).join('')}</div>
+   <p class="hint">Numbers are shown as text so you can copy or dial them. In the full app these are localised to your region and tap-to-call.</p>
+   <div class="card calm"><h3>Grounding, right now</h3><p class="small">Name 5 things you can see, 4 you can feel, 3 you can hear, 2 you can smell, 1 you can taste. Breathe out longer than you breathe in.</p></div>
+   <button class="btn block" onclick="App.closeSheet();App.tab('support')">See help services for every country</button>
+   <button class="btn quiet block" onclick="App.closeSheet()">Close</button>`);
+}
+
+/* ---------- Actions ---------- */
+const App = {
+  closeSheet,
+  tab(t){ view={name:null}; S.ui.tab=t; save(); render(); $('#screen').scrollTop=0; },
+  back(){ view={name:null}; render(); },
+  help(){ helpSheet(); },
+  exit(){ closeSheet(); quickExit=true; App._taps=0; render(); },
+  unexit(){ App._taps=(App._taps||0)+1; if(App._taps>=3){ quickExit=false; render(); } },
+  q(v){ S.ui.q=v; save(); renderResults(); },
+  path(k){ const on=S.ui.cats.includes(k);
+    if(S.ui.tab==='find'&&!view.name){ if(on){ S.ui.cats=S.ui.cats.filter(x=>x!==k); const cs=pathOf(k).cats; S.ui.f=S.ui.f.filter(t=>!cs.includes(catOf(t))); } else S.ui.cats.push(k); }
+    else if(!on) S.ui.cats.push(k);
+    if(S.ui.tab!=='find') S.ui.applied=draft();
+    S.ui.tab='find'; view={name:null}; save(); render(); },
+  roomRequest(){ sheet(`<h2>Request a new room</h2>
+    <p class="small muted">Tell us what the room is for. We check it straight away and, if it's safe and new, create it for you.</p>
+    <div class="field"><label for="rq-name">Room name</label><input class="input" id="rq-name" maxlength="40" placeholder="e.g. Cyclists in Recovery"></div>
+    <div class="field"><label for="rq-cat">Type of room</label><select class="input" id="rq-cat">${PATHS.map(p=>`<option value="${p.key}" ${S.ui.roomCat===p.key?'selected':''}>${dName(p)}</option>`).join('')}</select></div>
+    <div class="field"><label for="rq-desc">What is it for?</label><textarea class="input" id="rq-desc" rows="3" maxlength="160" placeholder="One or two sentences"></textarea></div>
+    <div id="rq-err" class="hint" role="alert"></div>
+    <button class="btn primary" onclick="App.submitRoom()">Send request</button>`); },
+  submitRoom(){ const name=$('#rq-name').value.trim(), cat=$('#rq-cat').value, desc=$('#rq-desc').value.trim(), err=m=>$('#rq-err').textContent=m;
+    if(name.length<3) return err('Give the room a name of at least 3 characters.');
+    if(desc.length<10) return err('Say what the room is for in at least 10 characters.');
+    if(blocked(name+' '+desc)) return err('Room requests can\'t mention buying or selling, prices, links or contact details.');
+    if(allRooms().concat(S.rooms.requests||[]).some(r=>r.name.toLowerCase()===name.toLowerCase())) return err('A room with that name already exists or has been requested.');
+    const q={id:'c'+Date.now().toString(36),name,cat,desc,status:'Checking'}; (S.rooms.requests=S.rooms.requests||[]).push(q); save(); renderRooms();
+    $('.sheet').innerHTML=`<div class="grab"></div><div class="success" role="status"><div class="tick" aria-hidden="true">✓</div><h2>Request sent successfully</h2>
+      <p>Your request for <b>${esc(name)}</b> has been sent. We're checking it now.</p><p class="small muted" id="rq-status">Checking…</p></div>
+      <button class="btn primary" onclick="App.closeSheet()">Done</button>`;
+    setTimeout(()=>{ q.status='Approved'; S.rooms.custom=S.rooms.custom||[];
+      S.rooms.custom.push({id:q.id,cat,name,desc,members:1,seed:[['User','Welcome to '+name+'. This room has just been created. Say hello!']]});
+      if(!S.rooms.joined.includes(q.id)) S.rooms.joined.push(q.id); save();
+      const st=$('#rq-status'); if(st) st.textContent='Approved. The room has been created and you have joined it.';
+      if(S.ui.tab==='rooms'&&!view.name) renderRooms(); }, 1500); },
+  roomCat(k){ S.ui.roomCat=k; save(); renderRooms(); },
+  swipeDelete(kind,id){
+    if(kind==='chat'){ const h=person(id).handle, convo=S.convos[id], unread=S.unread[id];
+      delete S.convos[id]; delete S.unread[id]; save(); render();
+      toast('Chat with '+h+' deleted.',()=>{ S.convos[id]=convo; if(unread) S.unread[id]=unread; save(); render(); }); return; }
+    const r=allRooms().find(x=>x.id===id), own=id[0]==='c', was=[...S.rooms.joined], custom=[...(S.rooms.custom||[])], reqs=[...(S.rooms.requests||[])];
+    S.rooms.joined=S.rooms.joined.filter(x=>x!==id);
+    if(own){ S.rooms.custom=custom.filter(x=>x.id!==id); S.rooms.requests=reqs.filter(q=>q.id!==id); }
+    save(); render();
+    toast((own?'Room '+r.name+' deleted.':'You left '+r.name+'.'),()=>{ S.rooms.joined=was; S.rooms.custom=custom; S.rooms.requests=reqs; save(); render(); }); },
+  allPeers(){ S.ui.allPeers=!S.ui.allPeers; save(); const sc=$('#screen').scrollTop; renderSupport(); $('#screen').scrollTop=sc; },
+  uplift(){ S.ui.uplift=(S.ui.uplift||0)+1; save(); const day=Math.floor(Date.now()/86400000); $('#uplift').textContent=UPLIFT[(day+S.ui.uplift)%UPLIFT.length]; },
+  country(c){ S.country=c; save(); const sc=$('#screen').scrollTop; renderSupport(); $('#screen').scrollTop=sc; },
+  humanReview(topic){ const T=['A message that was blocked','A report I made','A report about me','A room request','Something else'];
+    sheet(`<h2>Ask for a review</h2>
+    <p class="small muted">Every review is decided straight away. An independent arbitrator checks decisions and can change them. Reviews are confidential.</p>
+    <div class="field"><label for="hr-topic">What is it about?</label><select class="input" id="hr-topic">${T.map(t=>`<option ${t===topic?'selected':''}>${t}</option>`).join('')}</select></div>
+    <div class="field"><label for="hr-text">What happened?</label><textarea class="input" id="hr-text" rows="4" maxlength="500" placeholder="Tell the arbitrator what happened and what you'd like them to look at."></textarea></div>
+    <div id="hr-err" class="hint" role="alert"></div>
+    <button class="btn primary" onclick="App.sendReview()">Request a review</button>`); },
+  sendReview(){ const t=$('#hr-text').value.trim(); if(t.length<10){ $('#hr-err').textContent='Please describe what happened in at least 10 characters.'; return; }
+    const c=App.addCase($('#hr-topic').value,t,false); save();
+    $('.sheet').innerHTML=`<div class="grab"></div><div class="success" role="status"><div class="tick" aria-hidden="true">✓</div><h2>Review requested</h2><p>Your review <b>${esc(c.id)}</b> has been sent and is being checked now.</p><p class="small muted" id="rv-status">Checking…</p></div><button class="btn primary" onclick="App.closeSheet();App.tab('support')">Done</button>`; },
+  addCase(topic,text,auto){ const d=new Date(Date.now()+72*3600000);
+    const c={id:'HR-'+(1000+S.cases.length+1),topic,text,auto,status:'Being reviewed',due:d.toLocaleDateString('en-GB',{weekday:'short',day:'numeric',month:'short'})};
+    S.cases.unshift(c);
+    setTimeout(()=>{ const ai=aiReview(c); c.ai=ai;
+      c.status='Decided: '+ai.decision; c.by='AI Review Agent'; c.note=ai.note;
+      save(); const st=$('#rv-status'); if(st) st.textContent=c.note;
+      if(S.ui.tab==='support'&&!view.name&&!$('#scrim')) renderSupport(); },1500);
+    return c; },
+  arbSignOut(){ S.arbMode=false; save(); render(); $('#screen').scrollTop=0; },
+  openCase(id){ const c=arbCases().find(x=>x.id===id);
+    sheet(`<h2>${esc(c.id)}: ${esc(c.topic)}</h2>
+    <div class="lines"><div class="line"><span class="small">Raised by</span><b>${esc(c.raised)}</b></div><div class="line"><span class="small">Reply due</span><b>${esc(c.due)}</b></div><div class="line"><span class="small">Status</span><b>${esc(c.status)}</b></div></div>
+    <div class="card calm"><h3>What happened</h3><p class="small">${esc(c.text||'')}</p></div>
+    <div class="card ai-rec"><h3>AI Review Agent</h3><p class="small"><b>${esc(c.ai.decision)}</b> · ${Math.round(c.ai.confidence*100)}% confident${c.ai.flagged?' · flagged for a check':''}</p><p class="small">${esc(c.ai.reason)}</p></div>
+    <div class="field"><label for="arb-note">Your decision note (shown to the member)</label><textarea class="input" id="arb-note" rows="3" maxlength="400" placeholder="Explain the decision in plain words."></textarea></div>
+    <div id="arb-err" class="hint" role="alert"></div>
+    <div class="row wrap"><button class="btn primary sm" onclick="App.decide('${c.id}','Upheld')">Uphold the decision</button><button class="btn sm" onclick="App.decide('${c.id}','Overturned')">Overturn it</button><button class="btn sm" onclick="App.decide('${c.id}','Action changed')">Change the action</button></div>`); },
+  decide(id,outcome){ const note=$('#arb-note').value.trim(); if(note.length<5){ $('#arb-err').textContent='Add a short note explaining your decision.'; return; }
+    const st='Decided: '+outcome, mine=S.cases.find(c=>c.id===id);
+    if(mine){ mine.status=st; mine.note=note; mine.by='Arbitrator'; } else S.arb.decided[id]={status:st,note};
+    save(); closeSheet(); renderDashboard(); toast(id+' decided: '+outcome+'.'); },
+  showAll(){ S.ui.all=!S.ui.all; save(); renderResults(); },
+  clearAll(){ S.ui.cats=['interests','drugs','mh']; S.ui.f=[]; S.ui.q=''; S.ui.look=[]; S.ui.peerOnly=false; S.ui.applied=draft(); save(); renderFind(); },
+  search(){ S.ui.applied=draft(); save(); renderFind(); $('#screen').scrollTop=0; const n=$('#match-count'); toast('Search updated: '+(n?n.textContent:'')+'.'); },
+  f(id){ const i=S.ui.f.indexOf(id); i<0?S.ui.f.push(id):S.ui.f.splice(i,1); save(); renderFind(); },
+  look(id){ const t=S.ui.look, i=t.indexOf(id); i<0?t.push(id):t.splice(i,1); save(); const sc=$('#screen').scrollTop; renderFind(); $('#screen').scrollTop=sc; },
+  peerOnly(){ S.ui.peerOnly=!S.ui.peerOnly; save(); const sc=$('#screen').scrollTop; renderFind(); $('#screen').scrollTop=sc; },
+  profile(id){ profileSheet(id); },
+  openChat(id){ closeSheet(); if(!S.convos[id]){ S.convos[id]=[]; S.stats.started++; } view={name:'chat',id}; S.ui.tab='chat'; save(); render(); setTimeout(()=>$('#msg')?.focus(),50); },
+  ice(t){ const m=$('#msg'); m.value=t; m.focus(); },
+  send(e,id){ e.preventDefault(); const inp=$('#msg'), t=inp.value.trim(); if(!t) return; if(!guard(t)) return;
+    S.convos[id].push({f:'me',t,ts:Date.now()}); S.stats.sent++; markDay(); inp.value=''; save(); $('#msgs').insertAdjacentHTML('beforeend',bubble({f:'me',t})); $('.ice')?.remove(); scrollMsgs();
+    if(CRISIS.test(t)) setTimeout(()=>helpSheet('It sounds like things might be really hard right now. If you\'re thinking about ending your life or someone may have overdosed, please reach out now.'),400);
+    const p=person(id); const typ=document.createElement('div'); typ.className='typing'; typ.textContent=p.handle+' is typing…';
+    setTimeout(()=>{ if(view.id!==id) return; $('#msgs')?.appendChild(typ); scrollMsgs(); },700);
+    setTimeout(()=>{ typ.remove(); const n=S.convos[id].filter(m=>m.f==='them').length; const r=p.replies[n%p.replies.length];
+      S.convos[id].push({f:'them',t:r,ts:Date.now()}); save(); if(view.name==='chat'&&view.id===id){ $('#msgs').insertAdjacentHTML('beforeend',bubble({f:'them',t:r})); scrollMsgs(); } else { S.unread[id]=1; save(); } },2200+Math.random()*1200); },
+  chatMenu(id){ const p=person(id); sheet(`<h2>${esc(p.handle)}</h2>
+    <div class="card calm"><h3>Meeting up safely</h3><p class="small">Meet in a busy public place in daylight, like a park entrance or café. Tell a friend where you'll be. Don't share your home address. Never use substances with someone you've just met. You can leave at any time.</p></div>
+    <div class="lines"><div class="line"><span>Mute notifications</span><button class="btn sm" onclick="App.stub('Muted for 8 hours.')">Mute</button></div>
+    <div class="line"><span>Report a message or behaviour</span><button class="btn sm" onclick="App.report('${id}')">Report</button></div>
+    <div class="line"><span>Block ${esc(p.handle)}</span><button class="btn sm danger" onclick="App.block('${id}')">Block</button></div></div>`); },
+  block(id){ if(!S.blocked.includes(id)) S.blocked.push(id); closeSheet(); view={name:null}; save(); render(); toast(person(id).handle+' is blocked. They can\'t see or message you.'); },
+  unblock(id){ S.blocked=S.blocked.filter(x=>x!==id); save(); render(); toast(person(id).handle+' is unblocked.'); },
+  report(id){ sheet(`<h2>Report ${esc(person(id).handle)}</h2><p class="muted small">Reports are anonymous and are reviewed straight away. An independent arbitrator checks decisions and can change them.</p>
+    <div class="lines">${['Offering or asking for drugs','Harassment or hate','Pressuring me to meet or share details','Seems to be in danger','Spam or scam','Under 18','Something else'].map(r=>`<button class="btn" style="text-align:left" onclick="App.reported('${r}')">${r}</button>`).join('')}</div>
+    <button class="btn quiet sm" onclick="App.humanReview('A report I made')">Think a decision is wrong? Ask for a review</button>`); },
+  reported(reason){ S.reported++;
+    if(/danger|Under 18/.test(reason||'')){ App.addCase('A report I made', 'Automatic: '+reason, true); save(); closeSheet(); toast('Report sent. Because this may be serious, it is being reviewed urgently.'); return; }
+    save(); closeSheet(); toast('Report sent. We\'re reviewing it now.'); },
+  room(id){ view={name:'room',id}; render(); },
+  join(id){ if(!S.rooms.joined.includes(id)) S.rooms.joined.push(id); save(); render(); toast('Joined. Say hello when you\'re ready.'); },
+  post(e,id){ e.preventDefault(); const inp=$('#msg'), t=inp.value.trim(); if(!t||!guard(t)) return; (S.rooms.posts[id]=S.rooms.posts[id]||[]).push({f:'me',t}); S.stats.roomPosts++; markDay(); save(); inp.value='';
+    $('#msgs').insertAdjacentHTML('beforeend',bubble({f:'me',t})); scrollMsgs(); if(CRISIS.test(t)) setTimeout(()=>helpSheet('It sounds like things might be really hard right now. These lines are open now.'),400); },
+  vis(k,v){ S.vis[k]=v; save(); toast('Visibility updated.'); },
+  pref(k,v){ S.prefs[k]=v; save(); toast(v?'Turned on.':'Turned off.'); },
+  stub(m){ toast(m); },
+  confirmDelete(){ sheet(`<h2>Delete your account?</h2><p>This permanently erases your profile, messages and check-ins. It can't be undone.</p><div class="row"><button class="btn danger" onclick="App.doDelete()">Delete everything</button><button class="btn" onclick="App.closeSheet()">Keep my account</button></div>`); },
+  doDelete(){ try{localStorage.removeItem(KEY);}catch(e){} S=seedState(); S.loggedIn=false; S.account=null; closeSheet(); render(); toast('Account deleted. The demo account has been restored for testing.'); S.account={handle:'QuietHeron',passHash:'demo',passkey:true}; save(); },
+  signOut(){ S.loggedIn=false; save(); render(); $('#screen').scrollTop=0; },
+  async signIn(e){ e.preventDefault(); const h=$('#li-h').value.trim(), p=$('#li-p').value; const err=$('#li-err');
+    if(h.toLowerCase()==='arbitrator'&&p.trim().toLowerCase()==='fair review'){ S.arbMode=true; save(); render(); $('#screen').scrollTop=0; return; }
+    const ok = S.account && h.toLowerCase()===S.account.handle.toLowerCase() && (S.account.passHash==='demo' ? p.trim().toLowerCase()==='quiet heron walks' : (await hash(p,S.account.salt||''))===S.account.passHash);
+    if(!ok){ err.textContent='That username and password don\'t match. Check for typos, or use a recovery code.'; return; }
+    S.loggedIn=true; markDay(); S.ui.tab='home'; view={name:null}; save(); render(); $('#screen').scrollTop=0; },
+  suggestName(){ ob.d.handle=genHandle(); $('#ob-h').value=ob.d.handle; },
+  makePasskey(){ ob.d.passkey=true; render(); toast('Passkey saved on this device.'); },
+  addPasskey(){ S.account.passkey=true; save(); render(); toast('Passkey added. You can now sign in with your face, fingerprint or PIN.'); },
+  removePasskey(){ S.account.passkey=false; save(); render(); toast('Passkey removed from this device.'); },
+  passkeySignIn(){ const err=$('#li-err');
+    if(!S.account||!S.account.passkey){ err.textContent='No passkey for User is saved on this device. Sign in with your username and password.'; return; }
+    sheet(`<h2>Sign in with a passkey</h2><p>Your device will ask for your face, fingerprint or PIN.</p><p class="hint">In this prototype the device check is simulated.</p>
+      <button class="btn primary" onclick="App.closeSheet();App.passkeyOk()">Continue as ${esc(S.account.handle)}</button>`); },
+  passkeyOk(){ S.loggedIn=true; markDay(); S.ui.tab='home'; view={name:null}; save(); render(); $('#screen').scrollTop=0; toast('Signed in with your passkey.'); },
+  forgot(){ sheet(`<h2>Forgot your password?</h2>
+    <p>If you set up a passkey, sign in with it, then change your password on the Me page.</p>
+    <button class="btn primary" onclick="App.closeSheet();App.passkeySignIn()">Sign in with a passkey</button>
+    <p class="small muted">User keeps no email or phone number, so without a passkey we can't reset your password. You can create a new anonymous account instead.</p>`); },
+  startOnboard(){ ob={i:0,d:{age:false,agree:false,handle:'',pass:'',pass2:'',passkey:false,tags:[],vis:{interests:'everyone',mh:'matches',subs:'matches'},stage:'na',looking:['chat'],bio:''}}; render(); },
+  obBack(){ if(ob.i===0){ ob=null; render(); return; } ob.i--; render(); },
+  obPass(v){ ob.d.pass=v; $('#pm').style.width=pstr(v)+'%'; $('#ph').textContent=phint(v); },
+  meField(k,v){ S.me[k]=v; save(); const b=$('#me-byline'); if(k==='bio'&&b) b.innerHTML=v?esc(v):'<span class="muted">Add your byline under Edit profile.</span>'; },
+  meLook(id,el){ const t=S.me.looking, i=t.indexOf(id); i<0?t.push(id):t.splice(i,1); el.setAttribute('aria-pressed',i<0); save(); },
+  finishSetup(){ if(typeof S.me.wantsPeer!=='boolean'){ $('#su-err').textContent='Please answer whether you would like peer support.'; return; }
+    if(!S.me.tags.some(t=>catOf(t)==='interests')){ $('#su-err').textContent='Pick at least one interest so we can find people for you.'; return; }
+    S.me.setupDone=true; S.ui.tab='home'; view={name:'matches'}; save(); render(); $('#screen').scrollTop=0; toast('Profile saved. Here are your matches.'); },
+  leaveMatches(t){ view={name:null}; App.tab(t); },
+  setPeer(k,v){ S.me[k]=v; save(); if(S.me.setupDone!==false&&!view.name&&S.ui.tab==='me'){ const sc=$('#screen').scrollTop; render(); $('#screen').scrollTop=sc; }
+    if(k==='peer') toast(v?'You are now a peer supporter. Thank you.':'You are no longer listed as a peer supporter.');
+    else if(S.me.setupDone!==false) toast(v?'Peer support turned on. Peer supporters will show first in your matches.':'Peer support turned off.'); },
+  editByline(){ const h=$('#me-head'); h.innerHTML=`<h1 class="me-name">${esc(S.me.handle)}</h1><div class="field"><label for="by-in">Your byline</label><input class="input" id="by-in" maxlength="240" value="${esc(S.me.bio||'')}"></div><div class="row"><button class="btn primary sm" onclick="App.saveByline()">Save byline</button><button class="btn sm" onclick="App.tab('me')">Cancel</button></div>`; $('#by-in').focus(); },
+  saveByline(){ S.me.bio=$('#by-in').value.trim(); save(); render(); toast('Byline saved.'); },
+  meTag(id,el){ const t=S.me.tags, i=t.indexOf(id); i<0?t.push(id):t.splice(i,1); el.setAttribute('aria-pressed',i<0); save();
+    const g=PATHS.find(g=>g.cats.includes(catOf(id))); const c=$('#cnt-'+g.key); if(c) c.textContent=t.filter(x=>g.cats.includes(catOf(x))).length+' added'; },
+  async obNext(){
+    const st=OB_STEPS[ob.i], d=ob.d, err=m=>{$('#ob-err').textContent=m;};
+    if(st==='rules'&&!(d.age&&d.agree)) return err('Please confirm you are 18+ and agree to the community agreement.');
+    if(st==='handle'){
+      if(!/^[A-Za-z0-9_]{3,20}$/.test(d.handle||'')) return err('Usernames need 3 to 20 letters, numbers or underscores, with no spaces.');
+      if(PEOPLE.some(p=>p.handle.toLowerCase()===d.handle.toLowerCase())||d.handle.toLowerCase()==='quietheron') return err('That username is taken. Try another, or tap Suggest.');
+      if((d.pass||'').length<8) return err('Your password needs at least 8 characters.');
+      if(d.pass!==d.pass2) return err('The two passwords don\'t match.');
+    }
+    if(st==='passkey') return App.createAccount();
+    ob.i++; render(); $('#screen').scrollTop=0;
+  },
+  async createAccount(){ const d=ob.d;
+    const fresh=seedState();
+    const salt=genSalt();
+    S={...fresh, account:{handle:d.handle,salt,passHash:await hash(d.pass,salt),passkey:!!d.passkey},
+       me:{handle:d.handle,bio:'',tags:[],stage:'na',looking:['chat'],region:'',setupDone:false,peer:false}, vis:d.vis,
+       checkins:[], days:[dayKey(0)], convos:{}, unread:{}, rooms:{joined:[],posts:{}}, stats:{sent:0,started:0,roomPosts:0,helped:0}};
+    ob=null; save(); render(); $('#screen').scrollTop=0; toast('Account created. Now set up your profile.'); }
+};
+window.App=App; window.ob=null; Object.defineProperty(window,'ob',{get:()=>ob,set:v=>ob=v});
+window.genHandle=genHandle; window.render=render;
+
+function applyTheme(){ document.documentElement.setAttribute('data-theme','light'); } // light UI only
+document.addEventListener('keydown',e=>{ if(e.key==='Escape') closeSheet(); });
+applyTheme(); markDay(); save(); render();
+</script>

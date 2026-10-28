@@ -1,0 +1,13 @@
+{
+  "name": "user-prototype-tests",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Playwright test rig for the User: Connection and Recovery prototype",
+  "scripts": {
+    "test": "playwright test",
+    "report": "node make-report.js"
+  },
+  "devDependencies": {
+    "@playwright/test": "1.56.1"
+  }
+}

@@ -1,0 +1,12 @@
+{
+  "title": "User Test Report",
+  "prototype": "Prototype version 24",
+  "changes": [
+    "New: swipe a chat to the left to delete it, with Undo (C-15, C-16).",
+    "New: swipe a room in Your rooms to the left to leave it, or delete it if you created it, with Undo (R-12).",
+    "11 new tests for the swipe functions; the full suite was run twice."
+  ],
+  "fixed_title": "Problems found by the tests and fixed",
+  "fixed": [],
+  "corrected": []
+}

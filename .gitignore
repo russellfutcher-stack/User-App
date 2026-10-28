@@ -1,0 +1,4 @@
+node_modules/
+tests/results/
+tests/test-results/
+.DS_Store
