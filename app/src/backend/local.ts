@@ -2,6 +2,8 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Crypto from 'expo-crypto';
 import { SAMPLE_HANDLES } from '../data/reference';
+import { SAMPLES } from '../data/people';
+import { score } from '../lib/match';
 import { Backend, Profile, blankProfile } from './types';
 
 const KEY = 'user-app-v1';
@@ -38,8 +40,13 @@ async function save(s: Store) { try { await AsyncStorage.setItem(KEY, JSON.strin
 export function localBackend(): Backend {
   // The app always opens signed out, so the signed-in account lives in memory only.
   let current: string | null = null;
-  const withMe = async (fn: (a: Account, s: Store) => void) => {
-    const s = await load(); const a = current && s.accounts[current]; if (!a) return; fn(a, s); await save(s);
+  // Changes run one at a time, so quick taps can't overwrite each other.
+  let queue: Promise<unknown> = Promise.resolve();
+  const withMe = (fn: (a: Account, s: Store) => void) => {
+    const run = queue.catch(() => undefined).then(async () => {
+      const s = await load(); const a = current && s.accounts[current]; if (!a) return; fn(a, s); await save(s);
+    });
+    queue = run; return run;
   };
   return {
     kind: 'local',
@@ -82,6 +89,11 @@ export function localBackend(): Backend {
       return { ok: true, value: null };
     },
     async saveProfile(patch) { await withMe(a => { a.profile = { ...a.profile, ...patch }; }); },
+    async members() {
+      await queue.catch(() => undefined); const s = await load(); const a = current && s.accounts[current]; if (!a) return [];
+      return SAMPLES.filter(m => !a.blocked.includes(m.username)).map(m => ({ ...m, pct: score(a.profile, m) }));
+    },
+    async block(username) { await withMe(a => { if (!a.blocked.includes(username)) a.blocked.push(username); }); },
     async blocked() { const s = await load(); return (current && s.accounts[current]?.blocked) || []; },
     async unblock(username) { await withMe(a => { a.blocked = a.blocked.filter(x => x !== username); }); },
     async signOut() { current = null; },

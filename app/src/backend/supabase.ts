@@ -2,7 +2,7 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { createClient } from '@supabase/supabase-js';
 import { SAMPLE_HANDLES } from '../data/reference';
-import { Backend, Profile } from './types';
+import { Backend, Member, Profile } from './types';
 
 // Supabase Auth needs an email address, but members never give one. The app makes a
 // placeholder from the username. No email is sent ("Confirm email" is off in Supabase).
@@ -127,6 +127,15 @@ export function supabaseBackend(url: string, anonKey: string): Backend {
       });
       saving = run; return run;
     },
+    async members() {
+      await settled(); // so the score uses the profile just saved
+      const { data, error } = await db.rpc('find_members'); must(error);
+      return (data || []).map((r: { username: string; is_peer: boolean; wants_peer: boolean; region: string; active: string; stage: string; looking: string[]; byline: string; tags: string[]; pct: number }): Member => ({
+        username: r.username, isPeer: r.is_peer, wantsPeer: r.wants_peer, region: r.region, active: r.active, stage: r.stage,
+        looking: r.looking, byline: r.byline, tags: r.tags, pct: r.pct,
+      }));
+    },
+    async block(username) { const { error } = await db.rpc('block', { name: username }); must(error); },
     async blocked() { const { data, error } = await db.rpc('my_blocked'); must(error); return (data || []).map((r: { username: string }) => r.username); },
     async unblock(username) { const { error } = await db.rpc('unblock', { name: username }); must(error); },
     async signOut() { leaving = settled().then(() => db.auth.signOut()).catch(() => undefined); await leaving; },

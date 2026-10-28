@@ -1,4 +1,6 @@
 import type { Vis, VisKey } from '../data/reference';
+import type { Member } from '../lib/match';
+export type { Member } from '../lib/match';
 
 export type Profile = {
   username: string;
@@ -29,6 +31,8 @@ export interface Backend {
   setPasskey(on: boolean): Promise<Result<null>>; // adds or removes the signed-in member's passkey
   changePassword(current: string, next: string): Promise<Result<null>>;
   saveProfile(patch: Partial<Profile>): Promise<void>;
+  members(): Promise<Member[]>; // everyone you can match with, scored against your profile
+  block(username: string): Promise<void>;
   blocked(): Promise<string[]>;
   unblock(username: string): Promise<void>;
   signOut(): Promise<void>;

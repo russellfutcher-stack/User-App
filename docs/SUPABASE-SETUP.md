@@ -29,4 +29,17 @@ Supabase is where members' accounts and profiles will be stored. Do these steps 
 
    These are test settings while the app isn't on the internet yet. At step 6, when the app gets its real web address, they change to that address. Passkeys are tied to the address, so any made before then (only test ones) stop working.
 
+## Matching and the sample members (step 2)
+
+8. **Add matching.** In **SQL Editor**, click **New query**, paste everything from `supabase/migrations/20261029000000_matching.sql`, and click **Run**.
+9. **Add the 100 sample members.** New query again, paste everything from `supabase/seed/sample_members.sql`, and click **Run**. It should say `sample_members_added 100`. Running it again is harmless.
+
+   The sample members are fictional and nobody can sign in as them. Before the app goes public (step 6), remove them with:
+   `delete from auth.users where email like '%@samples.user-app.invalid';`
+
+## Deleting a test account
+
+If deleting a user under **Authentication → Users** fails, delete it in **SQL Editor** instead, using its exact email. For example:
+`delete from auth.users where email = 'zzpk123456@members.user-app.invalid';`
+
 Never share the **Secret key** (starts with `sb_secret_`), the legacy **service_role** key or the database password. The publishable key is safe in the app because the security rules from step 4 decide what each member can see.

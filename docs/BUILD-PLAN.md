@@ -23,12 +23,17 @@ Each step ships with its own tests and is reviewed before the next one starts.
 
 ## Progress
 
-**Step 1 (built, waiting for Rusty's go-ahead).** Built in `app/`: Welcome and sign-in, the 3-step sign-up, profile setup, the Me page, the header with Exit and Help now, and the tab bar. The database tables and security rules are in `supabase/migrations/`. 139 tests (at least 2 for each of the 69 functions in this step) pass against the in-browser version. Still to do in step 1:
+**Step 1 (done).** Built in `app/`: Welcome and sign-in, the 3-step sign-up, profile setup, the Me page, the header with Exit and Help now, and the tab bar. The database tables and security rules are in `supabase/migrations/`. 139 tests (at least 2 for each of the 69 functions in this step) pass against the in-browser version. Still to do in step 1:
 - ~~Connect the real Supabase project and run the tests against it.~~ Done 28 Oct 2026: the Sydney project is connected, and sign-up, sign-in, saving the profile, changing the password and deleting the account all work on the real server.
 - ~~Real passkeys (WebAuthn).~~ Done 28 Oct 2026, using Supabase's passkeys: create one at sign-up or on the Me page, sign in with it, remove it. Checked on the real server with `app/scripts/live-passkey.js`. The passkey settings in Supabase are for `localhost` until the app has its web address (step 6).
-- Until step 2 builds the matches screen, saving the profile opens Home.
 
 Agreed changes from the prototype: the sign-in error now says "Check for typos, or sign in with a passkey." (also fixed in the prototype), and Change password on the Me page really changes the password. On sign-up step 3, tapping Create a passkey now creates the account first (a passkey needs an account to belong to), so Back is hidden after that.
+
+**Step 2 (in progress).** Built in `app/`: the 100 sample members (`app/src/data/people.ts`, copied from the prototype), the match score (`app/src/lib/match.ts`), the matches screen after profile setup, the Search page and Home. On the real server, `find_members()` in `supabase/migrations/20261029000000_matching.sql` works out the same score from all of a member's tags but only shows the tags they allow; the two versions give the same score for 6,000 test pairs. The sample members go on the server from `supabase/seed/sample_members.sql` and must be removed before launch. 189 tests pass against the in-browser version. Still to do in step 2:
+- Rusty runs the matching file and the sample members in Supabase (steps 8 and 9 of `SUPABASE-SETUP.md`), then `app/scripts/live-matching.js` checks it on the real server.
+- Say hi opens the Chats tab, and Report shows a placeholder, until chats (step 3) and reports (step 4) are built. New messages on Home arrive with chats.
+
+Agreed for step 2: hidden drug use and mental health tags still count towards the match score but are never shown or searchable (Rusty, 28 Oct 2026). The sample members go on the real server for testing.
 
 ## Phase 2
 

@@ -39,11 +39,12 @@ async function createAccount(page, name = 'TestUser_1', pass = 'Strong!pass9', {
   else await btn(page, 'Create account without a passkey').click();
   await expect(page.getByText("Let's set up your profile.")).toBeVisible();
 }
-async function finishSetup(page, interest = 'Music', { wantsPeer = true } = {}) {
+async function finishSetup(page, interest = 'Music', { wantsPeer = true, toHome = true } = {}) {
   await page.getByRole('radio', { name: wantsPeer ? 'Yes, match me with peer supporters' : 'Not right now' }).click();
   await chip(page, interest).click();
   await btn(page, 'Save profile and see my matches').click();
-  await expect(tab(page, 'Home')).toBeVisible();
+  await expect(page.getByRole('heading', { name: /^Here are your matches/ })).toBeVisible();
+  if (toHome) { await btn(page, 'Continue to Home').click(); await expect(tab(page, 'Home')).toBeVisible(); }
 }
 async function signOut(page) { await tab(page, 'Me').click(); await btn(page, 'Sign out').click(); }
 // Change what's stored in the browser (for example, add a blocked person), then reload signed out.

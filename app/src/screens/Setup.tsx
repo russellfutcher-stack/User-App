@@ -7,14 +7,13 @@ import { Btn, Card, ErrorText, H2, H3, P, Radio, Section } from '../components/u
 import { AboutFields, ThreeChoices, VisSelect } from './profileParts';
 
 export function Setup() {
-  const { profile, update, toast, setTab } = useApp();
+  const { profile, update, toast, setTab, setMatches } = useApp();
   const [err, setErr] = useState('');
   if (!profile) return null;
   const save = () => {
     if (typeof profile.wantsPeer !== 'boolean') return setErr('Please answer whether you would like peer support.');
     if (!profile.tags.some(t => TAG_CAT[t] === 'interests')) return setErr('Pick at least one interest so we can find people for you.');
-    // The matches screen arrives in step 2. Until then, saving opens Home.
-    update({ setupDone: true }); setTab('home'); toast('Profile saved. Here are your matches.');
+    update({ setupDone: true }); setTab('home'); setMatches(true); toast('Profile saved. Here are your matches.');
   };
   return (
     <>

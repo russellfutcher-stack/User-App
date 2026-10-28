@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useRef } from 'react';
 import { Platform, ScrollView, StyleSheet, useWindowDimensions, View } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
@@ -12,11 +12,15 @@ import { SignUp, useSignUp } from './src/screens/SignUp';
 import { Setup } from './src/screens/Setup';
 import { Me } from './src/screens/Me';
 import { Home, Later } from './src/screens/Home';
+import { Search } from './src/screens/Search';
+import { Matches } from './src/screens/Matches';
 import { QuickExit } from './src/screens/QuickExit';
 import { C } from './src/theme';
 
 function Screen() {
-  const { page, profile, tab, quickExit, go } = useApp();
+  const { page, profile, tab, quickExit, go, matches } = useApp();
+  const scroller = useRef<React.ComponentRef<typeof ScrollView>>(null);
+  const toTop = () => scroller.current?.scrollTo({ y: 0, animated: false });
   const signup = useSignUp();
   const { reset } = signup;
   useEffect(() => { if (page !== 'signup' || profile) reset(); }, [page, profile]); // eslint-disable-line react-hooks/exhaustive-deps
@@ -32,15 +36,18 @@ function Screen() {
   } else if (!profile.setupDone) {
     bar = <Bar title="Set up your profile" />;
     body = <Setup />;
+  } else if (matches) {
+    bar = <Bar title="Your matches" />;
+    body = <Matches />;
   } else {
     tabs = true;
-    body = { home: <Home />, me: <Me />, find: <Later name="Search" />, chat: <Later name="Chats" />, rooms: <Later name="Rooms" />, support: <Later name="Support" /> }[tab];
+    body = { home: <Home />, me: <Me />, find: <Search toTop={toTop} />, chat: <Later name="Chats" />, rooms: <Later name="Rooms" />, support: <Later name="Support" /> }[tab];
   }
-  const key = `${page}-${profile ? (profile.setupDone ? tab : 'setup') : signup.i}`; // a new page starts at the top
+  const key = `${page}-${profile ? (profile.setupDone ? (matches ? 'matches' : tab) : 'setup') : signup.i}`; // a new page starts at the top
   return (
     <>
       {bar}
-      <ScrollView key={key} id="screen" style={{ flex: 1 }} contentContainerStyle={s.screen} keyboardShouldPersistTaps="handled">{body}</ScrollView>
+      <ScrollView ref={scroller} key={key} id="screen" style={{ flex: 1 }} contentContainerStyle={s.screen} keyboardShouldPersistTaps="handled">{body}</ScrollView>
       {tabs ? <Tabs /> : null}
       <SheetHost />
       <ToastHost />
