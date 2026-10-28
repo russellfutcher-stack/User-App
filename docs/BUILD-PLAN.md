@@ -21,6 +21,13 @@ Each step ships with its own tests and is reviewed before the next one starts.
 5. **Support and arbitrator:** the Support page (help services by country, overdose information, peer supporters) and the arbitrator dashboard with live figures.
 6. **Launch readiness:** installable web app (offline shell, home-screen icon, notifications), the public information website, an independent security and privacy review, and checking every helpline number.
 
+## Progress
+
+**Step 1 (in progress).** Built in `app/`: Welcome and sign-in, the 3-step sign-up, profile setup, the Me page, the header with Exit and Help now, and the tab bar. The database tables and security rules are in `supabase/migrations/`. 138 tests (2 for each of the 69 functions in this step) pass against the in-browser version. Still to do in step 1:
+- Connect the real Supabase project (see `SUPABASE-SETUP.md`) and run the tests against it.
+- Real passkeys (WebAuthn). For now they only work in the in-browser demo.
+- Until step 2 builds the matches screen, saving the profile opens Home.
+
 ## Phase 2
 
 iPhone and Android apps from the same Expo code, with a neutral icon option, Face ID app lock, push notifications and store listings rated 18+.
