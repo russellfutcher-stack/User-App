@@ -27,6 +27,7 @@ export interface Backend {
   signInWithPasskey(): Promise<Result<Profile>>;
   hasPasskey(): Promise<boolean>;
   setPasskey(on: boolean): Promise<void>;
+  changePassword(current: string, next: string): Promise<Result<null>>;
   saveProfile(patch: Partial<Profile>): Promise<void>;
   blocked(): Promise<string[]>;
   unblock(username: string): Promise<void>;

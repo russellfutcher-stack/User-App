@@ -85,7 +85,7 @@ On approval, the app (not the model) creates the room, joins the requester and p
 
 ### 3.3 AI Support Agent
 
-**Job:** Answer questions about using the app, guide account recovery with a recovery code, and handle appeals.
+**Job:** Answer questions about using the app, guide sign-in with a passkey, and handle appeals.
 
 **Tools**, defined with `strict: true` and each one checked by the app before it runs:
 - `get_help_article(topic)`

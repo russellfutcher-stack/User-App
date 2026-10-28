@@ -4,7 +4,8 @@ import React, { useEffect, useState } from 'react';
 import { Text, View } from 'react-native';
 import { backend } from '../backend';
 import { useApp } from '../state/app';
-import { Btn, Card, Disclaimer, Field, H1, H2, H3, Label, P, Row, Toggle, s as ui } from '../components/ui';
+import { Btn, Card, Disclaimer, ErrorText, Field, H1, H2, H3, Label, Meter, P, Row, Toggle, s as ui } from '../components/ui';
+import { passHint, passStrength } from '../lib/account';
 import { AboutFields, PeerCard, ThreeChoices, VisSelect } from './profileParts';
 import { C, F } from '../theme';
 
@@ -31,8 +32,38 @@ function Byline() {
   );
 }
 
+// Change password: check the current one, then set a new one (same rules as sign-up).
+function ChangePassword() {
+  const { closeSheet, toast } = useApp();
+  const [cur, setCur] = useState(''); const [next, setNext] = useState(''); const [next2, setNext2] = useState('');
+  const [err, setErr] = useState(''); const [busy, setBusy] = useState(false);
+  const save = async () => {
+    if (!cur) return setErr('Enter your current password.');
+    if (next.length < 8) return setErr('Your new password needs at least 8 characters.');
+    if (next !== next2) return setErr("The two new passwords don't match.");
+    if (next === cur) return setErr('Choose a password different from your current one.');
+    setBusy(true); const r = await backend.changePassword(cur, next); setBusy(false);
+    if (!r.ok) return setErr(r.error);
+    closeSheet(); toast('Password changed. Use your new password next time you sign in.');
+  };
+  return (
+    <>
+      <H2>Change password</H2>
+      <Field label="Current password" id="pw-cur" secureTextEntry autoComplete="current-password" value={cur} onChangeText={setCur} />
+      <Field label="New password" id="pw-new" secureTextEntry autoComplete="new-password" placeholder="At least 8 characters" value={next} onChangeText={setNext}
+        hint={<><Meter pct={passStrength(next)} /><P hint>{passHint(next)}</P></>} />
+      <Field label="Confirm new password" id="pw-new2" secureTextEntry autoComplete="new-password" value={next2} onChangeText={setNext2} />
+      <ErrorText id="pw-err" text={err} />
+      <Row>
+        <Btn variant="primary" label="Save new password" disabled={busy} onPress={save} />
+        <Btn label="Cancel" onPress={closeSheet} />
+      </Row>
+    </>
+  );
+}
+
 function Security() {
-  const { toast } = useApp();
+  const { toast, openSheet } = useApp();
   const [passkey, setPasskey] = useState(false); const [blocked, setBlocked] = useState<string[]>([]);
   useEffect(() => { backend.hasPasskey().then(setPasskey); backend.blocked().then(setBlocked).catch(() => setBlocked([])); }, []);
   const setPk = async (on: boolean) => {
@@ -48,7 +79,7 @@ function Security() {
     <Card>
       <H3>Security</H3>
       <View style={{ gap: 8 }}>
-        <Line label="Password"><Btn sm label="Change" onPress={() => toast('Password change opens here in the full app.')} /></Line>
+        <Line label="Password"><Btn sm label="Change" onPress={() => openSheet(<ChangePassword />)} /></Line>
         <Line label="Two-step verification"><Btn sm label="Set up" onPress={() => toast('Authenticator-app setup (TOTP) opens here.')} /></Line>
         <Line label="Passkey" sub={passkey ? 'Saved on this device. Sign in with your face, fingerprint or PIN.' : 'Not set up. Add one so you can sign in without your password.'}>
           {passkey ? <Btn sm label="Remove" onPress={() => setPk(false)} /> : <Btn sm label="Add a passkey" onPress={() => setPk(true)} />}

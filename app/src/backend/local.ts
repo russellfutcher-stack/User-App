@@ -59,7 +59,7 @@ export function localBackend(): Backend {
     async signIn(username, password) {
       const s = await load(); const n = username.trim().toLowerCase(); const a = s.accounts[n];
       const ok = !!a && (a.hash === 'demo' ? password.trim().toLowerCase() === 'quiet heron walks' : (await hash(password, a.salt)) === a.hash);
-      if (!ok) return { ok: false, error: "That username and password don't match. Check for typos, or use a recovery code." };
+      if (!ok) return { ok: false, error: "That username and password don't match. Check for typos, or sign in with a passkey." };
       s.device = n; current = n; await save(s);
       return { ok: true, value: a.profile };
     },
@@ -74,6 +74,13 @@ export function localBackend(): Backend {
     },
     async hasPasskey() { const s = await load(); return !!(current && s.accounts[current]?.passkey); },
     async setPasskey(on) { await withMe(a => { a.passkey = on; }); },
+    async changePassword(currentPass, next) {
+      const s = await load(); const a = current && s.accounts[current]; if (!a) return { ok: false, error: 'Please sign in again.' };
+      const ok = a.hash === 'demo' ? currentPass.trim().toLowerCase() === 'quiet heron walks' : (await hash(currentPass, a.salt)) === a.hash;
+      if (!ok) return { ok: false, error: "That isn't your current password." };
+      a.salt = newSalt(); a.hash = await hash(next, a.salt); await save(s); // a fresh salt with every new password
+      return { ok: true, value: null };
+    },
     async saveProfile(patch) { await withMe(a => { a.profile = { ...a.profile, ...patch }; }); },
     async blocked() { const s = await load(); return (current && s.accounts[current]?.blocked) || []; },
     async unblock(username) { await withMe(a => { a.blocked = a.blocked.filter(x => x !== username); }); },

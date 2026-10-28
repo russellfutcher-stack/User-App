@@ -32,7 +32,7 @@ const toRow = (p: Partial<Profile>): Partial<Row> => {
   return r;
 };
 
-const WRONG = "That username and password don't match. Check for typos, or use a recovery code.";
+const WRONG = "That username and password don't match. Check for typos, or sign in with a passkey.";
 const TROUBLE = "Something went wrong reaching User. Check your connection and try again.";
 
 export function supabaseBackend(url: string, anonKey: string): Backend {
@@ -68,6 +68,14 @@ export function supabaseBackend(url: string, anonKey: string): Backend {
     async signInWithPasskey() { return { ok: false, error: 'No passkey for User is saved on this device. Sign in with your username and password.' }; },
     async hasPasskey() { return false; },
     async setPasskey() { /* added with WebAuthn later in step 1 */ },
+    async changePassword(current, next) {
+      const { data } = await db.auth.getUser(); const email = data.user?.email;
+      if (!email) return { ok: false, error: 'Please sign in again.' };
+      const check = await db.auth.signInWithPassword({ email, password: current }); // confirm it's really them
+      if (check.error) return { ok: false, error: check.error.status === 400 ? "That isn't your current password." : TROUBLE };
+      const { error } = await db.auth.updateUser({ password: next });
+      return error ? { ok: false, error: TROUBLE } : { ok: true, value: null };
+    },
     async saveProfile(patch) {
       const id = await myId(); if (!id) return;
       const { error } = await db.from('profiles').update(toRow(patch)).eq('id', id); must(error);

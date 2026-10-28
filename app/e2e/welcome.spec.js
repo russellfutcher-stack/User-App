@@ -31,7 +31,7 @@ test('WS-04 The password is hidden', async ({ page }) => {
 });
 test('WS-05 Wrong details show a message', async ({ page }) => {
   await H.signIn(page, 'QuietHeron', 'wrong password');
-  await expect(page.locator('#li-err')).toHaveText(/That username and password don't match/);
+  await expect(page.locator('#li-err')).toHaveText("That username and password don't match. Check for typos, or sign in with a passkey.");
   await expect(page.locator('#tabs')).toHaveCount(0);
 });
 test('WS-05 Username is not case-sensitive', async ({ page }) => {

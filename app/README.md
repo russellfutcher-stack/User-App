@@ -11,7 +11,7 @@ npm run typecheck
 CHROMIUM_PATH=/opt/pw-browsers/chromium npm test   # builds the web app and runs the end-to-end tests
 ```
 
-Without Supabase settings the app keeps data in the browser, with the demo account QuietHeron / quiet heron walks. With `EXPO_PUBLIC_SUPABASE_URL` and `EXPO_PUBLIC_SUPABASE_ANON_KEY` set (see `.env.example` and `../docs/SUPABASE-SETUP.md`) it uses the real server in Sydney, and there is no demo account.
+Without Supabase settings the app keeps data in the browser, with the demo account QuietHeron / quiet heron walks. With `EXPO_PUBLIC_SUPABASE_URL` and `EXPO_PUBLIC_SUPABASE_KEY` set (the Publishable key; see `.env.example` and `../docs/SUPABASE-SETUP.md`) it uses the real server in Sydney, and there is no demo account.
 
 ## Where things are
 

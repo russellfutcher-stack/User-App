@@ -18,7 +18,7 @@ module.exports = defineConfig({
   },
   outputDir: 'e2e-results/artifacts',
   webServer: {
-    command: 'EXPO_PUBLIC_SUPABASE_URL= EXPO_PUBLIC_SUPABASE_ANON_KEY= npx expo export --platform web --output-dir dist-test && node e2e/serve.js dist-test 8091',
+    command: 'EXPO_PUBLIC_SUPABASE_URL= EXPO_PUBLIC_SUPABASE_KEY= npx expo export --platform web --output-dir dist-test && node e2e/serve.js dist-test 8091',
     url: 'http://localhost:8091',
     timeout: 300000,
     reuseExistingServer: !process.env.CI,

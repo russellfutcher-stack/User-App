@@ -110,7 +110,7 @@ Totals: Working 126, Simulated 22, Saved only 2, Placeholder 4, 154 functions in
 | M-13 | Show me in Search results | Toggle | Saves the choice. | Saved only | Hiding from other members' searches needs a server. |
 | M-14 | Disappearing messages | Toggle on | Hides chat messages older than 7 days and shows a notice. | Working | Deleting messages for both people needs a server. |
 | M-15 | App lock | Toggle | Saves the choice only. | Placeholder | App lock uses the phone's own security. |
-| M-16 | Change password | Tap Change | Message only. | Placeholder | Password change needs a server. |
+| M-16 | Change password | Tap Change | Real app: asks for the current password, then a new one (8+ characters, typed twice) and saves it with a fresh salt. Wrong current password: 'That isn't your current password.' Prototype: message only. | Working in the real app | Password change needs a server. |
 | M-17 | Two-step verification | Tap Set up | Message only. | Placeholder | Two-step verification needs a server. |
 | M-18 | Passkey | Security section | Shows whether a passkey is saved, with Add a passkey or Remove. | Simulated | Real passkeys need a device and server. |
 | M-19 | Blocked people list | Block someone | Lists blocked people, or says nobody is blocked. | Working | - |

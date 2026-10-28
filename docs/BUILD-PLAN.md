@@ -28,6 +28,8 @@ Each step ships with its own tests and is reviewed before the next one starts.
 - Real passkeys (WebAuthn). For now they only work in the in-browser demo.
 - Until step 2 builds the matches screen, saving the profile opens Home.
 
+Agreed changes from the prototype: the sign-in error now says "Check for typos, or sign in with a passkey." (also fixed in the prototype), and Change password on the Me page really changes the password.
+
 ## Phase 2
 
 iPhone and Android apps from the same Expo code, with a neutral icon option, Face ID app lock, push notifications and store listings rated 18+.

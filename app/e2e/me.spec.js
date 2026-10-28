@@ -114,11 +114,24 @@ test('M-15 App lock saves the choice', async ({ page }) => {
 test('M-15 App lock is off at first', async ({ page }) => {
   await expect(H.toggle(page, 'App lock with PIN or Face ID')).toHaveAttribute('aria-checked', 'false');
 });
-test('M-16 Change password shows a message', async ({ page }) => {
-  await H.btn(page, 'Change').click(); await expect(H.toast(page)).toHaveText('Password change opens here in the full app.');
+const changePw = async (page, cur, next, next2 = next) => {
+  await H.btn(page, 'Change').click();
+  await page.fill('#pw-cur', cur); await page.fill('#pw-new', next); await page.fill('#pw-new2', next2);
+  await H.btn(page, 'Save new password').click();
+};
+test('M-16 Change password: the new one works, the old one does not', async ({ page }) => {
+  await changePw(page, 'quiet heron walks', 'New!password7');
+  await expect(H.toast(page)).toHaveText('Password changed. Use your new password next time you sign in.');
+  await H.btn(page, 'Sign out').click();
+  await H.signIn(page, 'QuietHeron', 'quiet heron walks'); await expect(page.locator('#li-err')).toContainText("don't match");
+  await H.signIn(page, 'QuietHeron', 'New!password7'); await expect(H.tab(page, 'Home')).toBeVisible();
 });
-test('M-16 The password still works afterwards', async ({ page }) => {
-  await H.btn(page, 'Change').click(); await H.btn(page, 'Sign out').click(); await H.signInDemo(page);
+test('M-16 Change password checks the current one and the rules', async ({ page }) => {
+  await changePw(page, 'wrong one', 'New!password7'); await expect(page.locator('#pw-err')).toHaveText("That isn't your current password.");
+  await page.fill('#pw-cur', 'quiet heron walks'); await page.fill('#pw-new', 'short'); await page.fill('#pw-new2', 'short');
+  await H.btn(page, 'Save new password').click(); await expect(page.locator('#pw-err')).toHaveText('Your new password needs at least 8 characters.');
+  await page.fill('#pw-new', 'New!password7'); await page.fill('#pw-new2', 'New!password8');
+  await H.btn(page, 'Save new password').click(); await expect(page.locator('#pw-err')).toHaveText("The two new passwords don't match.");
 });
 test('M-17 Two-step verification shows a message', async ({ page }) => {
   await H.btn(page, 'Set up').click(); await expect(H.toast(page)).toHaveText('Authenticator-app setup (TOTP) opens here.');
