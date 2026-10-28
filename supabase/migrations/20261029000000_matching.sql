@@ -1,4 +1,4 @@
--- Phase 1, step 2: matching and Search.
+-- Phase 1, step 2: matching and Search. Safe to run more than once.
 -- Members never read each other's profiles directly. find_members() returns, for each member you can match with,
 -- only the tags they let you see, and a match score the server works out from all their tags
 -- (so "Only me (still used for matching)" holds, and hidden tags never leave the server).
@@ -6,22 +6,22 @@
 
 -- Region and last-active are shown for the sample members only. Members can't set these (see the grants in step 1).
 alter table public.profiles
-  add column is_sample boolean not null default false,
-  add column region text not null default '',
-  add column active text not null default '';
+  add column if not exists is_sample boolean not null default false,
+  add column if not exists region text not null default '',
+  add column if not exists active text not null default '';
 
 -- People who chat with each other. Chats arrive in step 3, which replaces this function.
-create function public.chat_partners(a uuid, b uuid) returns boolean language sql stable set search_path = '' as $$
+create or replace function public.chat_partners(a uuid, b uuid) returns boolean language sql stable set search_path = '' as $$
   select false;
 $$;
 
 -- Tags by choice: I = interests, D = mental health, M, S and O = drug use.
-create function public.tags_in(tags text[], kinds text[]) returns text[] language sql immutable set search_path = '' as $$
+create or replace function public.tags_in(tags text[], kinds text[]) returns text[] language sql immutable set search_path = '' as $$
   select coalesce(array_agg(t order by n), '{}') from unnest(tags) with ordinality as u(t, n) where left(t, 1) = any(kinds);
 $$;
 
 -- The tags of p that viewer may see, following p's privacy settings.
-create function public.visible_tags(p public.profiles, viewer uuid) returns text[] language sql stable set search_path = '' as $$
+create or replace function public.visible_tags(p public.profiles, viewer uuid) returns text[] language sql stable set search_path = '' as $$
   select coalesce(array_agg(t order by n), '{}') from unnest(p.tags) with ordinality as u(t, n)
   where case case left(t, 1) when 'I' then p.vis_interests when 'D' then p.vis_mh else p.vis_subs end
           when 'everyone' then true
@@ -29,13 +29,13 @@ create function public.visible_tags(p public.profiles, viewer uuid) returns text
           else false end;
 $$;
 
-create function public.jac(a text[], b text[]) returns double precision language sql immutable set search_path = '' as $$
+create or replace function public.jac(a text[], b text[]) returns double precision language sql immutable set search_path = '' as $$
   select case when x + y = 0 then null else i::double precision / (x + y - i) end
   from (select cardinality(array(select distinct unnest(a))) x, cardinality(array(select distinct unnest(b))) y,
                (select count(distinct t) from unnest(a) t where t = any(b)) i) s;
 $$;
 
-create function public.stage_compat(a text, b text) returns double precision language sql immutable set search_path = '' as $$
+create or replace function public.stage_compat(a text, b text) returns double precision language sql immutable set search_path = '' as $$
   select case
     when a = 'na' or b = 'na' then 0.5
     when a = 'help' or b = 'help' then case when a = b then 0.6 else 0.85 end -- helpers suit anyone who wants support
@@ -45,19 +45,19 @@ create function public.stage_compat(a text, b text) returns double precision lan
 $$;
 
 -- Can someone offering `offer` meet `want`? Mentor and mentee complement each other.
-create function public.meets(want text, offer text[]) returns boolean language sql immutable set search_path = '' as $$
+create or replace function public.meets(want text, offer text[]) returns boolean language sql immutable set search_path = '' as $$
   select want = any(offer) or coalesce(case want
     when 'mentor' then array['mentoring'] when 'mentoring' then array['mentor']
     when 'listen' then array['chat','checkin','night'] when 'chat' then array['listen'] end && offer, false);
 $$;
 
-create function public.look_fit(mine text[], theirs text[]) returns double precision language sql immutable set search_path = '' as $$
+create or replace function public.look_fit(mine text[], theirs text[]) returns double precision language sql immutable set search_path = '' as $$
   select case when cardinality(mine) = 0 then 0
     else (select count(*) from unnest(mine) l where public.meets(l, theirs))::double precision / cardinality(mine) end;
 $$;
 
 -- Interests 35%, mental health 20%, drug use 20%, stage 10%, looking for 15%, plus the peer support boost. At most 99.
-create function public.match_score(me public.profiles, p public.profiles) returns int language sql stable set search_path = '' as $$
+create or replace function public.match_score(me public.profiles, p public.profiles) returns int language sql stable set search_path = '' as $$
   select least(99, floor(coalesce(sum(wt * v) / nullif(sum(wt), 0), 0) * 100
       + ((case when coalesce(me.wants_peer, false) and p.is_peer then 0.12 else 0 end)::double precision
        + (case when me.is_peer and coalesce(p.wants_peer, false) then 0.08 else 0 end)::double precision) * 100 + 0.5))::int
@@ -71,7 +71,7 @@ create function public.match_score(me public.profiles, p public.profiles) return
 $$;
 
 -- Everyone you can match with: set up, shown in Search, and not blocked either way.
-create function public.find_members()
+create or replace function public.find_members()
 returns table (username text, is_peer boolean, wants_peer boolean, region text, active text, stage text,
                looking text[], byline text, tags text[], pct int)
 language sql stable security definer set search_path = '' as $$
@@ -85,7 +85,7 @@ $$;
 revoke execute on function public.find_members() from public;
 grant execute on function public.find_members() to authenticated;
 
-create function public.block(name text) returns void language sql security definer set search_path = '' as $$
+create or replace function public.block(name text) returns void language sql security definer set search_path = '' as $$
   insert into public.blocks (blocker, blocked)
   select auth.uid(), id from public.profiles where username = name::public.citext and id <> auth.uid()
   on conflict do nothing;
