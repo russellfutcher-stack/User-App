@@ -24,7 +24,8 @@ function Screen() {
 
   let bar = <Bar />; let body: React.ReactNode; let tabs = false;
   if (page === 'signup' && !profile) {
-    bar = <Bar title="Create account" back={() => (signup.i === 0 ? go('welcome') : signup.setI(signup.i - 1))} />;
+    // Once a passkey has been added the account exists, so there is no going back to change the username.
+    bar = <Bar title="Create account" back={signup.d.made ? undefined : () => (signup.i === 0 ? go('welcome') : signup.setI(signup.i - 1))} />;
     body = <SignUp flow={signup} />;
   } else if (!profile) {
     body = <Welcome />;

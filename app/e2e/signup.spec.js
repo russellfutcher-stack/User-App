@@ -103,6 +103,10 @@ test('SN-12 The button becomes Create account', async ({ page }) => {
   await toStep2(page); await H.passCredentials(page); await H.btn(page, 'Create a passkey').click();
   await expect(H.btn(page, 'Create account')).toBeVisible(); await expect(H.btn(page, 'Create account without a passkey')).toHaveCount(0);
 });
+test('SN-12 Once the passkey is saved, Back is hidden', async ({ page }) => {
+  await toStep2(page); await H.passCredentials(page); await H.btn(page, 'Create a passkey').click();
+  await expect(H.screen(page).getByText('Passkey saved', { exact: true })).toBeVisible(); await expect(H.btn(page, 'Back')).toHaveCount(0);
+});
 test('SN-13 Skipping the passkey creates the account', async ({ page }) => {
   await toStep2(page); await H.passCredentials(page); await H.btn(page, 'Create account without a passkey').click();
   await expect(page.getByText("Let's set up your profile.")).toBeVisible();

@@ -1,7 +1,7 @@
 // Sign-up in three steps: the community agreement, username and password, then a passkey.
 import React, { useState } from 'react';
 import { Pressable, Text, View } from 'react-native';
-import { backend } from '../backend';
+import { backend, Profile } from '../backend';
 import { HANDLE_RE, genHandle, passHint, passStrength } from '../lib/account';
 import { useApp } from '../state/app';
 import { B, Bullet, Btn, Card, Check, ErrorText, Field, H2, Meter, P, Pill, Section, Steps, Toggle, s as ui } from '../components/ui';
@@ -11,7 +11,8 @@ export const STEPS = ['rules', 'handle', 'passkey'] as const;
 
 export function useSignUp() {
   const [i, setI] = useState(0);
-  const blank = { age: false, agree: false, handle: '', pass: '', pass2: '', passkey: false };
+  // `made` is the new account once it exists: a passkey can only be added to an account that exists.
+  const blank = { age: false, agree: false, handle: '', pass: '', pass2: '', passkey: false, made: null as Profile | null };
   const [d, setD] = useState(blank);
   return {
     i, setI, d, set: (patch: Partial<typeof d>) => setD(x => ({ ...x, ...patch })),
@@ -52,16 +53,25 @@ export function SignUp({ flow }: { flow: ReturnType<typeof useSignUp> }) {
       if (d.pass !== d.pass2) return setErr("The two passwords don't match.");
     }
     if (st === 'passkey') {
-      if (busy) return; setBusy(true);
-      const r = await backend.signUp(d.handle, d.pass, d.passkey); setBusy(false);
-      if (!r.ok) return setErr(r.error);
-      signedIn(r.value); toast('Account created. Now set up your profile.'); return;
+      if (busy) return;
+      let made = d.made;
+      if (!made) { setBusy(true); const r = await backend.signUp(d.handle, d.pass); setBusy(false); if (!r.ok) return setErr(r.error); made = r.value; }
+      signedIn(made); toast('Account created. Now set up your profile.'); return;
     }
     setI(i + 1);
   };
 
-  const makePasskey = () => {
+  const makePasskey = async () => {
     if (!backend.passkeysReady) { toast("Passkeys aren't ready yet. You can add one later on the Me page."); return; }
+    if (busy) return; setErr(''); setBusy(true);
+    let made = d.made;
+    if (!made) {
+      const r = await backend.signUp(d.handle, d.pass);
+      if (!r.ok) { setBusy(false); return setErr(r.error); }
+      made = r.value; set({ made });
+    }
+    const pk = await backend.setPasskey(true); setBusy(false);
+    if (!pk.ok) return setErr(pk.error);
     set({ passkey: true }); toast('Passkey saved on this device.');
   };
 

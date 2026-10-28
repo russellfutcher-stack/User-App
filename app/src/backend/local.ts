@@ -48,11 +48,11 @@ export function localBackend(): Backend {
       const n = name.toLowerCase(); const s = await load();
       return !!s.accounts[n] || SAMPLE_HANDLES.some(h => h.toLowerCase() === n);
     },
-    async signUp(username, password, passkey) {
+    async signUp(username, password) {
       const s = await load(); const n = username.toLowerCase();
       if (s.accounts[n] || SAMPLE_HANDLES.some(h => h.toLowerCase() === n)) return { ok: false, error: 'That username is taken. Try another, or tap Suggest.' };
       const salt = newSalt();
-      s.accounts[n] = { salt, hash: await hash(password, salt), passkey, profile: blankProfile(username), blocked: [] };
+      s.accounts[n] = { salt, hash: await hash(password, salt), passkey: false, profile: blankProfile(username), blocked: [] };
       s.device = n; current = n; await save(s);
       return { ok: true, value: s.accounts[n].profile };
     },
@@ -73,7 +73,7 @@ export function localBackend(): Backend {
       current = s.device; return { ok: true, value: a.profile };
     },
     async hasPasskey() { const s = await load(); return !!(current && s.accounts[current]?.passkey); },
-    async setPasskey(on) { await withMe(a => { a.passkey = on; }); },
+    async setPasskey(on) { await withMe(a => { a.passkey = on; }); return { ok: true, value: null }; },
     async changePassword(currentPass, next) {
       const s = await load(); const a = current && s.accounts[current]; if (!a) return { ok: false, error: 'Please sign in again.' };
       const ok = a.hash === 'demo' ? currentPass.trim().toLowerCase() === 'quiet heron walks' : (await hash(currentPass, a.salt)) === a.hash;

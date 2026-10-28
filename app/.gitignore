@@ -42,6 +42,8 @@ yarn-error.*
 
 # tests
 dist-test/
+dist-live/
+live-passkey-fail.png
 e2e-results/
 
 # secrets

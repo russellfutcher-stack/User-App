@@ -19,4 +19,14 @@ Supabase is where members' accounts and profiles will be stored. Do these steps 
    - `EXPO_PUBLIC_SUPABASE_KEY` = the Publishable key
    Save, then start a new session and tell Max it's done.
 
+## Turning on passkeys
+
+7. **Switch passkeys on.** Open **Authentication → Passkeys** (or **Sign In / Providers → Passkeys**) and turn it on. Fill in:
+   - Display name: `User`
+   - Relying Party ID: `localhost`
+   - Origins: `http://localhost:3000`
+   Click **Save**, then tell Max it's done.
+
+   These are test settings while the app isn't on the internet yet. At step 6, when the app gets its real web address, they change to that address. Passkeys are tied to the address, so any made before then (only test ones) stop working.
+
 Never share the **Secret key** (starts with `sb_secret_`), the legacy **service_role** key or the database password. The publishable key is safe in the app because the security rules from step 4 decide what each member can see.

@@ -68,7 +68,8 @@ function Security() {
   useEffect(() => { backend.hasPasskey().then(setPasskey); backend.blocked().then(setBlocked).catch(() => setBlocked([])); }, []);
   const setPk = async (on: boolean) => {
     if (on && !backend.passkeysReady) { toast("Passkeys aren't ready yet. They're coming soon."); return; }
-    await backend.setPasskey(on); setPasskey(on);
+    const r = await backend.setPasskey(on); if (!r.ok) { toast(r.error); return; }
+    setPasskey(on);
     toast(on ? 'Passkey added. You can now sign in with your face, fingerprint or PIN.' : 'Passkey removed from this device.');
   };
   const unblock = async (u: string) => { await backend.unblock(u); setBlocked(b => b.filter(x => x !== u)); toast(`${u} is unblocked.`); };

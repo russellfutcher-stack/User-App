@@ -57,16 +57,19 @@ export function Welcome() {
   };
   const passkey = async () => {
     const name = await backend.passkeyAccount();
+    const viaPasskey = async () => {
+      const r = await backend.signInWithPasskey();
+      if (!r.ok) { setErr(r.error); return; }
+      signedIn(r.value); toast('Signed in with your passkey.');
+    };
+    // On the real server a passkey synced from another device can still be used, so the device is asked.
+    if (!name && backend.kind === 'supabase' && backend.passkeysReady) { setErr(''); viaPasskey(); return; }
     if (!name) { setErr('No passkey for User is saved on this device. Sign in with your username and password.'); return; }
     openSheet(<>
       <H2>Sign in with a passkey</H2>
       <P>Your device will ask for your face, fingerprint or PIN.</P>
       {backend.kind === 'local' ? <P hint>In this demo the device check is simulated.</P> : null}
-      <Btn variant="primary" label={`Continue as ${name}`} onPress={async () => {
-        closeSheet(); const r = await backend.signInWithPasskey();
-        if (!r.ok) { setErr(r.error); return; }
-        signedIn(r.value); toast('Signed in with your passkey.');
-      }} />
+      <Btn variant="primary" label={`Continue as ${name}`} onPress={() => { closeSheet(); viaPasskey(); }} />
     </>);
   };
   const forgot = () => openSheet(<>

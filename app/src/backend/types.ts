@@ -21,12 +21,12 @@ export interface Backend {
   kind: 'local' | 'supabase';
   passkeysReady: boolean;
   usernameTaken(name: string): Promise<boolean>;
-  signUp(username: string, password: string, passkey: boolean): Promise<Result<Profile>>;
+  signUp(username: string, password: string): Promise<Result<Profile>>; // also signs in
   signIn(username: string, password: string): Promise<Result<Profile>>;
-  passkeyAccount(): Promise<string | null>; // username with a passkey on this device
+  passkeyAccount(): Promise<string | null>; // username with a passkey on this device, if known
   signInWithPasskey(): Promise<Result<Profile>>;
   hasPasskey(): Promise<boolean>;
-  setPasskey(on: boolean): Promise<void>;
+  setPasskey(on: boolean): Promise<Result<null>>; // adds or removes the signed-in member's passkey
   changePassword(current: string, next: string): Promise<Result<null>>;
   saveProfile(patch: Partial<Profile>): Promise<void>;
   blocked(): Promise<string[]>;
