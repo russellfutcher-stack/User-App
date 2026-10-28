@@ -24,7 +24,7 @@ Each step ships with its own tests and is reviewed before the next one starts.
 ## Progress
 
 **Step 1 (in progress).** Built in `app/`: Welcome and sign-in, the 3-step sign-up, profile setup, the Me page, the header with Exit and Help now, and the tab bar. The database tables and security rules are in `supabase/migrations/`. 138 tests (2 for each of the 69 functions in this step) pass against the in-browser version. Still to do in step 1:
-- Connect the real Supabase project (see `SUPABASE-SETUP.md`) and run the tests against it.
+- ~~Connect the real Supabase project and run the tests against it.~~ Done 28 Oct 2026: the Sydney project is connected, and sign-up, sign-in, saving the profile, changing the password and deleting the account all work on the real server.
 - Real passkeys (WebAuthn). For now they only work in the in-browser demo.
 - Until step 2 builds the matches screen, saving the profile opens Home.
 
