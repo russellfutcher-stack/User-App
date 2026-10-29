@@ -37,7 +37,7 @@ Supabase is where members' accounts and profiles will be stored. Do these steps 
    The sample members are fictional and nobody can sign in as them. Before the app goes public (step 6), remove them with:
    `delete from auth.users where email like '%@samples.user-app.invalid';`
 
-## Letting Max run Supabase for you
+## Letting Max run Supabase for you (done 29 Oct 2026)
 
 Once this is set up, Max can add tables and run checks on Supabase himself, so you don't need to paste SQL.
 

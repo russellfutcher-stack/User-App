@@ -22,6 +22,7 @@ const wait = ms => new Promise(r => setTimeout(r, ms));
     let heard = 0;
     const ch = b.channel('t').on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages' }, () => { heard++; });
     await new Promise(res => ch.subscribe(s => { if (s === 'SUBSCRIBED') res(); }));
+    await wait(1500); // the server takes a moment to start sending changes
     await rpc(a, 'send_message', { name: B, body: 'Hi there' });
     await wait(2500); check('Realtime delivers the message', heard > 0, heard + ' events');
     const bc = await rpc(b, 'my_chats');
