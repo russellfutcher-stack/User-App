@@ -1,0 +1,16 @@
+{
+  "name": "User: Connection and Recovery",
+  "short_name": "User",
+  "description": "Anonymous peer support for people who use drugs, are in recovery, or live with a mental health condition.",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#D7E9F8",
+  "theme_color": "#0A2A5E",
+  "icons": [
+    { "src": "icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png" },
+    { "src": "icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}

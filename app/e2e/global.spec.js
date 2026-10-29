@@ -87,7 +87,7 @@ test('G-10 Wide screen shows a phone-sized frame', async ({ page }) => {
 });
 test('G-10 Phone width fills the screen with no sideways scroll', async ({ page }) => {
   await page.setViewportSize({ width: 375, height: 760 });
-  const box = await page.locator('#device').boundingBox(); expect(box.width).toBe(375);
+  await expect.poll(async () => (await page.locator('#device').boundingBox()).width).toBe(375); // waits for the resize to settle
   expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(375);
 });
 test('G-11 Profile changes are kept after a reload', async ({ page }) => {

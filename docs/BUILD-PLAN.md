@@ -48,6 +48,9 @@ Agreed changes from the prototype: the sign-in error now says "Check for typos, 
 - Figures count real members only: the 100 sample members and arbitrators are left out. A deleted account takes its history with it, so figures only cover current members.
 - Still to do: choose the real arbitrator and give them an account, once the app has its web address (step 6).
 
+**Step 6 (in progress).** The app is online at https://russellfutcher-stack.github.io/User-App/ (GitHub Pages, chosen by Rusty 29 Oct 2026), published from the `gh-pages` branch with `bash app/scripts/deploy-web.sh`. It can be installed on a phone's home screen (`app/public/manifest.webmanifest`, a navy "U" icon) and opens offline with Help now working (`app/public/sw.js`, which never stores anything from the server). Members' data stays in Supabase in Sydney.
+- To do: passkey settings in Supabase for the new address; notifications; the public information website; the security and privacy review; checking every helpline number.
+
 ## Phase 2
 
 iPhone and Android apps from the same Expo code, with a neutral icon option, Face ID app lock, push notifications and store listings rated 18+.

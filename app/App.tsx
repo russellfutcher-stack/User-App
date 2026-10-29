@@ -85,6 +85,10 @@ function Frame({ children }: { children: React.ReactNode }) {
   );
 }
 
+// On the live site, keep the app's own files on the device so it opens offline (public/sw.js). Not in tests or development.
+if (Platform.OS === 'web' && typeof navigator !== 'undefined' && 'serviceWorker' in navigator && location.protocol === 'https:')
+  navigator.serviceWorker.register('sw.js').catch(() => undefined);
+
 export default function App() {
   const [loaded] = useFonts({ AtkinsonHyperlegible_400Regular, AtkinsonHyperlegible_700Bold, BricolageGrotesque_500Medium, BricolageGrotesque_700Bold, BricolageGrotesque_800ExtraBold });
   if (!loaded) return null;
