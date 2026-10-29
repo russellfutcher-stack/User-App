@@ -9,7 +9,7 @@ Prototype version 24. Every function a person can use in the prototype, each wit
 - **Saved only**: the choice is saved but has no visible effect yet.
 - **Placeholder**: the button only shows a message.
 
-Totals: Working 126, Simulated 22, Saved only 2, Placeholder 4, 154 functions in all.
+Totals: Working 129, Simulated 22, Saved only 2, Placeholder 4, 157 functions in all.
 
 ## Global
 
@@ -206,6 +206,9 @@ Totals: Working 126, Simulated 22, Saved only 2, Placeholder 4, 154 functions in
 | HS-04 | Report a person | Tap Report, then a reason | 7 reasons. Toast: 'Report sent. We're reviewing it now.' | Simulated | Reports must reach the AI Moderator on a server. |
 | HS-05 | Serious reports reviewed urgently | Report 'Seems to be in danger' or 'Under 18' | Toast says it's being reviewed urgently, and a review is raised automatically, marked 'raised automatically'. | Simulated | Urgent review needs the AI Review Agent on a server. |
 | HS-06 | Review from a report | Tap 'Think a decision is wrong? Ask for a review' | Opens the review form with 'A report I made' chosen. | Working | - |
+| HS-07 | Check-in after a danger report | Another member reports you as 'Seems to be in danger', then open the app | The Help sheet opens once, headed 'You don't have to hold this alone', with 'Someone here is thinking of you. If things are hard right now, these people can help.' and the helplines. It never says who reported you. | Working | Real on the Supabase server; checked with app/scripts/live-age-checkin.js. |
+| HS-08 | Age check | Say you are under 18 in a message (for example 'I'm 15'), or be reported as 'Under 18' | The message isn't sent and the account is paused: 'Please confirm your age', with a tick box 'I am 18 or older'. No tab bar; Help now still works; Sign out. Not confirmed within 7 days: the account and everything in it is removed. A report after you've confirmed doesn't pause you again. | Working | Real on the Supabase server; checked with app/scripts/live-age-checkin.js. |
+| HS-09 | Confirm your age | Tick 'I am 18 or older', then 'Confirm and continue' | Without the tick: 'Please tick the box to confirm you are 18 or older.' With it: 'Thanks. Your account is open again.' A new sign of being under 18 after confirming pauses the account while it is reviewed ('Your account is paused'). | Working | Real on the Supabase server; checked with app/scripts/live-age-checkin.js. |
 
 ## Arbitrator dashboard
 

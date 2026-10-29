@@ -2,7 +2,7 @@
 // Claude Haiku 5.5 makes the quick first check; anything unclear goes to Claude Opus 5.5 (Rusty, 29 Oct 2026).
 import Anthropic from 'npm:@anthropic-ai/sdk@1.3.0';
 
-const client = new Anthropic(); // reads ANTHROPIC_API_KEY from the function's secrets
+export const client = new Anthropic(); // reads ANTHROPIC_API_KEY from the function's secrets
 export const FIRST = 'claude-haiku-5-5';
 export const CAREFUL = 'claude-opus-5-5';
 export type Effort = 'low' | 'medium' | 'high';

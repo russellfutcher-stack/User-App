@@ -11,14 +11,20 @@ const LADDER: Record<string, string> = {
   removal: ' Your account is paused while it is reviewed, because of repeated dealing messages.',
 };
 const TYPE: Record<string, string> = { interests: 'Interest', drugs: 'Drug use', mh: 'Mental health' };
+// Signs of being under 18 pause the account until the member confirms their age (Rusty, 29 Oct 2026).
+const AGE = "User is for adults, so this message wasn't sent. Please confirm you are 18 or older to carry on.";
+const AGE_REVIEW = "User is for adults, so this message wasn't sent. Your account is paused while it is reviewed.";
 
 serve(async (me, b) => {
   const kind = b.kind === 'room' ? 'room' : 'chat', to = String(b.to || ''), text = String(b.text || '').trim();
   if (!to || !text || text.length > 1000) return reply({ ok: false, error: 'length' }, 400);
   const [state] = must(await admin.rpc('member_state', { m: me.id })) as { strikes: number; muted_until: string | null; suspended_until: string | null }[];
   const now = Date.now();
-  if (state.suspended_until && Date.parse(state.suspended_until) > now) return reply({ ok: false, error: state.suspended_until === 'infinity' ? 'Your account is paused while it is reviewed.' : `Your account is paused until ${until(state.suspended_until)}.` });
+  // 'infinity' (paused while reviewed) isn't a date JavaScript can read, so it's checked by name.
+  if (state.suspended_until === 'infinity' || (state.suspended_until && Date.parse(state.suspended_until) > now)) return reply({ ok: false, error: state.suspended_until === 'infinity' ? 'Your account is paused while it is reviewed.' : `Your account is paused until ${until(state.suspended_until)}.` });
   if (state.muted_until && Date.parse(state.muted_until) > now) return reply({ ok: false, error: `You can't send messages until ${until(state.muted_until)}.` });
+  const age = must(await admin.from('profiles').select('age_check_at').eq('id', me.id).single()) as { age_check_at: string | null };
+  if (age.age_check_at) return reply({ ok: false, error: 'Please confirm you are 18 or older to carry on.', ageCheck: 'ask' });
 
   let where = 'a one-to-one chat';
   if (kind === 'room') {
@@ -34,6 +40,10 @@ serve(async (me, b) => {
   }).select('id')) as { id: number }[];
 
   if (out.action === 'hold') return reply({ ok: false, error: HELD });
+  if (out.action === 'block' && out.category === 'under_18') {
+    const step = must(await admin.rpc('flag_under_18', { m: me.id, why: 'their own message' })) as 'ask' | 'review';
+    return reply({ ok: false, blocked: step === 'ask' ? AGE : AGE_REVIEW, error: 'Message not sent', ageCheck: step });
+  }
   if (out.action === 'block') {
     const step = out.strike ? must(await admin.rpc('add_strike', { m: me.id, cat: out.category, mod_id: log.id })) as string : '';
     return reply({ ok: false, blocked: out.note + (LADDER[step] || ''), error: 'Message not sent' });

@@ -130,7 +130,7 @@ function RequestRoom({ rooms, requests }: { rooms: Room[]; requests: RoomRequest
 }
 
 export function RoomScreen({ id }: { id: string }) {
-  const { openSheet, toast, chatsVer, chatsChanged } = useApp();
+  const { openSheet, toast, chatsVer, chatsChanged, setPaused } = useApp();
   const [room, setRoom] = useState<Room | null>(null); const [posts, setPosts] = useState<Msg[] | null>(null);
   const [why, setWhy] = useState(''); const [draft, setDraft] = useState('');
   const scroller = useRef<React.ComponentRef<typeof ScrollView>>(null);
@@ -147,7 +147,7 @@ export function RoomScreen({ id }: { id: string }) {
   };
   const post = async (t: string) => {
     return sendChecked(() => backend.post(id, t), setWhy, m => setPosts(l => [...(l || []), m]), toast,
-      () => openSheet(<HelpSheet intro="It sounds like things might be really hard right now. These lines are open now." />));
+      () => openSheet(<HelpSheet intro="It sounds like things might be really hard right now. These lines are open now." />), setPaused);
   };
   return (
     <View style={{ flex: 1 }}>

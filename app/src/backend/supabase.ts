@@ -3,7 +3,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { createClient } from '@supabase/supabase-js';
 import { SAMPLE_HANDLES } from '../data/reference';
 import { TAKEN_ROOM } from '../lib/rooms';
-import { Backend, Member, Msg, Profile, Review, Room, Sent } from './types';
+import { AgeCheck, Backend, Member, Msg, Profile, Review, Room, Sent } from './types';
 
 // Supabase Auth needs an email address, but members never give one. The app makes a
 // placeholder from the username. No email is sent ("Confirm email" is off in Supabase).
@@ -80,10 +80,10 @@ export function supabaseBackend(url: string, anonKey: string): Backend {
     return data as T;
   };
   const checked = async (kind: 'chat' | 'room', to: string, text: string): Promise<Sent> => {
-    const r = await call<{ ok: boolean; msg?: { id: string; created_at: string }; help?: boolean; blocked?: string; error?: string }>('send', { kind, to, text });
+    const r = await call<{ ok: boolean; msg?: { id: string; created_at: string }; help?: boolean; blocked?: string; error?: string; ageCheck?: AgeCheck }>('send', { kind, to, text });
     if (r?.ok && r.msg) return { ok: true, msg: { id: r.msg.id, mine: true, text, at: Date.parse(r.msg.created_at) }, help: !!r.help };
-    if (r?.blocked) return { ok: false, blocked: r.blocked, error: 'Message not sent' };
-    return { ok: false, error: r?.error && r.error.length > 20 ? r.error : TROUBLE };
+    if (r?.blocked) return { ok: false, blocked: r.blocked, error: 'Message not sent', ageCheck: r.ageCheck };
+    return { ok: false, error: r?.error && r.error.length > 20 ? r.error : TROUBLE, ageCheck: r?.ageCheck };
   };
 
   return {
@@ -224,6 +224,16 @@ export function supabaseBackend(url: string, anonKey: string): Backend {
     async reviews() {
       const { data, error } = await db.rpc('my_reviews'); must(error);
       return (data || []).map(asReview);
+    },
+    async notices() {
+      const { data, error } = await db.rpc('my_notices'); must(error);
+      const n = (data || [])[0] as { checkin: boolean; age_check: AgeCheck | null } | undefined;
+      return { checkin: !!n?.checkin, ageCheck: n?.age_check || null };
+    },
+    async seenCheckin() { const { error } = await db.rpc('seen_checkin'); must(error); },
+    async confirmAge() {
+      const { data, error } = await db.rpc('confirm_age');
+      return error ? { ok: false, error: TROUBLE } : data ? { ok: true, value: null } : { ok: false, error: 'Your account is paused while it is reviewed.' };
     },
     async blocked() { const { data, error } = await db.rpc('my_blocked'); must(error); return (data || []).map((r: { username: string }) => r.username); },
     async unblock(username) { const { error } = await db.rpc('unblock', { name: username }); must(error); },

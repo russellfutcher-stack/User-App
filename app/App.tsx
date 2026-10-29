@@ -17,15 +17,19 @@ import { Rooms, RoomScreen } from './src/screens/Rooms';
 import { Search } from './src/screens/Search';
 import { Matches } from './src/screens/Matches';
 import { QuickExit } from './src/screens/QuickExit';
+import { AgeCheck } from './src/screens/AgeCheck';
+import { HelpSheet } from './src/screens/HelpSheet';
 import { C } from './src/theme';
 
 function Screen() {
-  const { page, profile, tab, quickExit, go, matches, view, setView } = useApp();
+  const { page, profile, tab, quickExit, go, matches, view, setView, paused, checkin, checkinShown, openSheet } = useApp();
   const scroller = useRef<React.ComponentRef<typeof ScrollView>>(null);
   const toTop = () => scroller.current?.scrollTo({ y: 0, animated: false });
   const signup = useSignUp();
   const { reset } = signup;
   useEffect(() => { if (page !== 'signup' || profile) reset(); }, [page, profile]); // eslint-disable-line react-hooks/exhaustive-deps
+  // After a danger report, the Help sheet opens once with a short, kind note. It never says who reported them.
+  useEffect(() => { if (checkin && !paused) { openSheet(<HelpSheet intro={CHECKIN} />); checkinShown(); } }, [checkin, paused]); // eslint-disable-line react-hooks/exhaustive-deps
   if (quickExit) return <QuickExit />;
 
   let bar = <Bar />; let body: React.ReactNode; let tabs = false; let full: React.ReactNode = null; // `full` fills the screen itself
@@ -35,6 +39,9 @@ function Screen() {
     body = <SignUp flow={signup} />;
   } else if (!profile) {
     body = <Welcome />;
+  } else if (paused) {
+    bar = <Bar title="Account paused" />;
+    body = <AgeCheck />;
   } else if (!profile.setupDone) {
     bar = <Bar title="Set up your profile" />;
     body = <Setup />;
@@ -48,7 +55,7 @@ function Screen() {
     tabs = true;
     body = { home: <Home />, me: <Me />, find: <Search toTop={toTop} />, chat: <Chats />, rooms: <Rooms />, support: <Later name="Support" /> }[tab];
   }
-  const key = `${page}-${profile ? (profile.setupDone ? (matches ? 'matches' : tab) : 'setup') : signup.i}`; // a new page starts at the top
+  const key = `${page}-${profile ? (paused ? 'paused' : profile.setupDone ? (matches ? 'matches' : tab) : 'setup') : signup.i}`; // a new page starts at the top
   return (
     <>
       {bar}
@@ -59,6 +66,8 @@ function Screen() {
     </>
   );
 }
+
+export const CHECKIN = 'Someone here is thinking of you. If things are hard right now, these people can help.';
 
 // Wide screens show the app in a phone-sized frame; phones fill the screen.
 function Frame({ children }: { children: React.ReactNode }) {

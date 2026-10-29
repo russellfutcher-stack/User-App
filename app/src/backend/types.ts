@@ -23,7 +23,11 @@ export type RoomRequest = { id: string; name: string; cat: PathKey; status: 'Che
 export type Undo = () => Promise<void>;
 // Every message and post is checked for safety before anyone sees it.
 // `help` means it was sent and the Help sheet should open; `blocked` holds why it wasn't sent.
-export type Sent = { ok: true; msg: Msg; help: boolean } | { ok: false; blocked?: string; error: string };
+// `ageCheck` means the account is now paused: 'ask' until they confirm they are 18 or older, 'review' while it is reviewed.
+export type Sent = { ok: true; msg: Msg; help: boolean } | { ok: false; blocked?: string; error: string; ageCheck?: AgeCheck };
+export type AgeCheck = 'ask' | 'review';
+// What a member needs to see when they open the app: a check-in after a danger report, or the age check.
+export type Notices = { checkin: boolean; ageCheck: AgeCheck | null };
 export type Review = {
   id: string; topic: string; text: string; auto: boolean; due: string;
   status: string; // "Being reviewed", or "Decided: Upheld" and so on
@@ -68,6 +72,9 @@ export interface Backend {
   report(username: string, reason: string): Promise<Result<{ urgent: boolean }>>;
   requestReview(topic: string, text: string): Promise<Result<Review>>;
   reviews(): Promise<Review[]>; // newest first
+  notices(): Promise<Notices>;
+  seenCheckin(): Promise<void>;
+  confirmAge(): Promise<Result<null>>; // ticks 'I am 18 or older' and unpauses the account
   unblock(username: string): Promise<void>;
   signOut(): Promise<void>;
   deleteAccount(): Promise<void>;

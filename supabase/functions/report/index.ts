@@ -13,6 +13,9 @@ serve(async (me, b) => {
   if (!them || them === me.id) return reply({ ok: false, error: 'no such member' }, 404);
   const [rep] = must(await admin.from('reports').insert({ reporter: me.id, reported: them, reason }).select('id')) as { id: number }[];
   const urgent = /danger|Under 18/.test(reason);
+  // Straight away: a danger report sends a check-in; an under-18 report pauses the account until they confirm their age.
+  if (reason === 'Seems to be in danger') must(await admin.rpc('flag_danger', { m: them }));
+  if (reason === 'Under 18') must(await admin.rpc('flag_under_18', { m: them, why: 'a report' }));
   let review: string | null = null;
   if (urgent) { // reviewed urgently, raised automatically
     const [r] = must(await admin.from('reviews').insert({ member: me.id, topic: 'A report I made', body: 'Automatic: ' + reason, auto: true, urgent: true, due_at: new Date(Date.now() + 24 * 3600e3).toISOString() }).select('id')) as { id: string }[];

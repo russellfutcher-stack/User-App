@@ -41,6 +41,13 @@ Supabase is where members' accounts and profiles will be stored. Do these steps 
 
 Once this is set up, Max can add tables and run checks on Supabase himself, so you don't need to paste SQL.
 
+**Now done with the Supabase connector instead (29 Oct 2026).** On claude.ai, **Settings → Connectors → Supabase → Connect**, then sign in and authorize. Nothing needs pasting, and steps 10 and 11 below aren't needed. The Anthropic key is in Supabase under **Edge Functions → Secrets** as `ANTHROPIC_API_KEY`.
+
+The nightly re-check (step 4) needs its address registered once, after `supabase/migrations/20261101000000_safety_followups.sql` has run (done 29 Oct 2026):
+`insert into public.jobs (name, url) values ('nightly-recheck', 'https://prpbhfzsjxcburgzxzgl.supabase.co/functions/v1/nightly-recheck') on conflict (name) do nothing;`
+
+Older way, with a token:
+
 10. **Make an access token.** Open https://supabase.com/dashboard/account/tokens (or click your account picture → **Account preferences** → **Access Tokens**) and click **Generate new token**. Name it `Max`, choose an expiry date (for example 30 days), and copy the token. It starts with `sbp_`.
     This token can change anything in your Supabase account, so treat it like a password: never paste it into the chat. You can delete it on the same page at any time, and Max stops having access.
 11. **Give it to Max safely.** In this Claude session, open the environment menu in the title bar, then **Edit**:

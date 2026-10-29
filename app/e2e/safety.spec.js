@@ -108,3 +108,67 @@ test('SP-11 An unclear one keeps the safest outcome and will be checked again', 
   await openReviewFromBlocked(page); await review(page, 'Something else', 'I am not sure why this happened to me.');
   await expect(page.locator('#rv-status')).toHaveText("Reviewed automatically: we couldn't confirm the message was safe, so the decision stays. It will be checked again.", { timeout: 6000 });
 });
+
+// Step 4 (part 3): the check-in after a danger report, and the age check (Rusty, 29 Oct 2026).
+const CHECKIN = 'Someone here is thinking of you. If things are hard right now, these people can help.';
+// The demo account is saved once someone has signed in, so sign in and out before changing it.
+const withCheckin = async page => { await H.signInDemo(page); await H.signOut(page); await H.editStore(page, s => { s.accounts.quietheron.checkin = true; }); };
+const pausedBySaying = async (page, text = "I'm 15 and my dad drinks a lot") => {
+  await H.signInDemo(page); await H.openChat(page, 'SteadyBadger'); await H.send(page, text);
+  await expect(page.getByRole('heading', { name: 'Please confirm your age' })).toBeVisible();
+};
+test('HS-07 After a danger report, the Help sheet opens with a check-in', async ({ page }) => {
+  await withCheckin(page);
+  await H.signInDemo(page);
+  await expect(sheet(page).getByRole('heading', { name: "You don't have to hold this alone" })).toBeVisible();
+  await expect(sheet(page)).toContainText(CHECKIN);
+  await expect(sheet(page)).toContainText('116 123');
+});
+test('HS-07 The check-in shows only once', async ({ page }) => {
+  await withCheckin(page);
+  await H.signInDemo(page); await expect(sheet(page)).toContainText(CHECKIN);
+  await sheet(page).getByRole('button', { name: 'Close', exact: true }).click();
+  await H.signOut(page); await H.signInDemo(page);
+  await expect(sheet(page)).toHaveCount(0);
+  expect((await H.stored(page)).accounts.quietheron.checkin).toBeUndefined();
+});
+test('HS-08 Saying you are under 18 pauses the account', async ({ page }) => {
+  await pausedBySaying(page);
+  await expect(H.screen(page)).toContainText('Your account is paused. User is for adults, so please confirm you are 18 or older to carry on.');
+  await expect(H.screen(page)).toContainText("If you don't confirm within 7 days, the account and everything in it is removed.");
+  await expect(H.tab(page, 'Home')).toHaveCount(0);
+  const chat = (await H.stored(page)).accounts.quietheron.chats.SteadyBadger.msgs;
+  expect(chat.some(m => /I'm 15/.test(m.t))).toBe(false);
+});
+test('HS-08 The account stays paused after signing in again, and Help now still works', async ({ page }) => {
+  await pausedBySaying(page, 'I am in Year 10 at school');
+  await H.btn(page, 'Sign out').click(); await H.signIn(page);
+  await expect(page.getByRole('heading', { name: 'Please confirm your age' })).toBeVisible();
+  await H.btn(page, 'Help now').click(); await expect(sheet(page)).toContainText('Grounding, right now');
+});
+test('HS-08 Recovery talk with a number is not an age sign', async ({ page }) => {
+  await H.signInDemo(page); await H.openChat(page, 'SteadyBadger'); await H.send(page, "I'm 9 months sober today");
+  await expect(page.locator('#msgs')).toContainText("I'm 9 months sober today");
+  await expect(page.getByRole('heading', { name: 'Please confirm your age' })).toHaveCount(0);
+});
+test('HS-09 Confirming needs the box ticked', async ({ page }) => {
+  await pausedBySaying(page); await H.btn(page, 'Confirm and continue').click();
+  await expect(page.locator('#age-err')).toHaveText('Please tick the box to confirm you are 18 or older.');
+  await expect(page.getByRole('heading', { name: 'Please confirm your age' })).toBeVisible();
+});
+test('HS-09 Confirming opens the account again', async ({ page }) => {
+  await pausedBySaying(page);
+  await page.getByRole('checkbox', { name: 'I am 18 or older' }).click(); await H.btn(page, 'Confirm and continue').click();
+  await expect(H.toast(page)).toHaveText('Thanks. Your account is open again.');
+  await expect(H.tab(page, 'Home')).toBeVisible();
+  await H.openChat(page, 'SteadyBadger'); await H.send(page, 'Sorry, that was a joke. Hope your week is good.');
+  await expect(page.locator('#msgs')).toContainText('Hope your week is good.');
+});
+test('HS-09 Another sign after confirming pauses the account for review', async ({ page }) => {
+  await pausedBySaying(page);
+  await page.getByRole('checkbox', { name: 'I am 18 or older' }).click(); await H.btn(page, 'Confirm and continue').click();
+  await H.openChat(page, 'SteadyBadger'); await H.send(page, "honestly I'm 16");
+  await expect(page.getByRole('heading', { name: 'Your account is paused' })).toBeVisible();
+  await expect(H.screen(page)).toContainText('Your account is paused while it is reviewed.');
+  await expect(H.btn(page, 'Confirm and continue')).toHaveCount(0);
+});
