@@ -39,7 +39,7 @@ const wait = ms => new Promise(r => setTimeout(r, ms));
     check('it is decided automatically', !!decided, decided ? `${decided.status}: ${decided.note}` : 'not decided after 60s');
     const urgent = ((await db.rpc('my_reviews')).data || []).find(x => x.auto);
     check('the danger report raised an automatic review', !!urgent, urgent?.status);
-    r = await fn('request-room', { name: 'Zz Allotment Friends ' + name.slice(-4), cat: 'interests', desc: 'Growing veg on allotments and sharing tips and spare seedlings.' });
+    r = await fn('request-room', { name: 'Zz Knit and Natter ' + name.slice(-4), cat: 'interests', desc: 'Knitting and crochet: show what you are making, swap patterns and help each other with tricky stitches.' });
     check('a good room request is approved', r.ok === true, `${r.ms}ms ${r.error || ''}`);
     if (r.ok) { const posts = (await db.rpc('room_posts_of', { room: r.id })).data || []; check('with a welcome post', /^Welcome to/.test(posts[0]?.body || ''), posts[0]?.body); await db.rpc('leave_room', { room: r.id }); }
     r = await fn('request-room', { name: 'Book Club Corner', cat: 'interests', desc: 'A place to talk about the books we are reading.' });
