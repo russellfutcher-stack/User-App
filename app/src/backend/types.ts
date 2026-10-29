@@ -35,6 +35,21 @@ export type Review = {
   note?: string; by?: 'automatic' | 'arbitrator';
 };
 
+// The arbitrator dashboard (AI-agents-spec.md, section 3.5). Figures are live on the server and samples in the demo.
+export type ArbCase = {
+  id: string; member?: string; topic: string; text: string; raised: 'Automatic' | 'Member'; urgent: boolean; due: string;
+  status: string; confidence: number; reason: string; note?: string; flagged: boolean; by: 'automatic' | 'arbitrator' | null;
+  live?: boolean; // in the demo: raised in this browser
+};
+export type ArbOutcome = 'Upheld' | 'Overturned' | 'Action changed';
+export type ArbFigures = {
+  sample: boolean; activeToday: number; activeWeek: number; newMembers: number; peers: number; wantPeers: number;
+  checked: number; blocked: number; help: number; held: number; blockedBy: [string, number][]; reports: [string, number][];
+  blocksWeek: number; muted: number; suspended: number; ageChecks: number; topBlocked: [string, number, number][]; countries: [string, number][];
+  peerChats: number; rooms: number; roomsApproved: number; roomsRefused: number;
+  autoDecided: number; reviewsWeek: number; autoSeconds: number | null; changedByArbitrator: number; overdue: number; missed: number;
+};
+
 export type Result<T> = { ok: true; value: T } | { ok: false; error: string };
 
 // Everything the app needs from a server. `local` keeps data in this browser
@@ -76,6 +91,11 @@ export interface Backend {
   notices(): Promise<Notices>;
   seenCheckin(): Promise<void>;
   confirmAge(): Promise<Result<null>>; // ticks 'I am 18 or older' and unpauses the account
+  // The arbitrator: an ordinary sign-in listed as an arbitrator sees the dashboard instead of the member pages.
+  isArbitrator(): Promise<boolean>;
+  arbFigures(): Promise<ArbFigures>;
+  arbCases(): Promise<ArbCase[]>;
+  arbDecide(id: string, outcome: ArbOutcome, note: string): Promise<Result<null>>; // the note (5+ characters) is shown to the member
   unblock(username: string): Promise<void>;
   signOut(): Promise<void>;
   deleteAccount(): Promise<void>;

@@ -9,6 +9,11 @@ const TAKEN = 'A room with that name already exists or has been requested.';
 serve(async (me, b) => {
   const name = String(b.name || '').trim(), desc = String(b.desc || '').trim(), cat = String(b.cat || '');
   if (name.length < 3 || name.length > 40 || desc.length < 10 || desc.length > 160 || !['interests', 'drugs', 'mh'].includes(cat)) return reply({ ok: false, error: 'length' }, 400);
+  // Paused, muted or waiting to confirm their age: no new rooms. Reports and reviews stay open to them.
+  const [st] = must(await admin.rpc('member_state', { m: me.id })) as { muted_until: string | null; suspended_until: string | null }[];
+  const age = must(await admin.from('profiles').select('age_check_at').eq('id', me.id).single()) as { age_check_at: string | null };
+  const later = (t: string | null) => t === 'infinity' || (!!t && Date.parse(t) > Date.now());
+  if (later(st.suspended_until) || later(st.muted_until) || age.age_check_at) return reply({ ok: false, error: "You can't ask for new rooms while your account is paused or muted." });
   if (notAllowed(name + ' ' + desc)) return reply({ ok: false, error: "Room requests can't mention buying or selling, prices, links or contact details." });
   if ((must(await admin.rpc('requests_today', { m: me.id })) as number) >= 5) return reply({ ok: false, error: "You've asked for 5 rooms today. Try again tomorrow." });
   const rooms = must(await admin.from('rooms').select('name').eq('deleted', false)) as { name: string }[];

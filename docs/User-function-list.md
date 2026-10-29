@@ -9,7 +9,7 @@ Prototype version 24. Every function a person can use in the prototype, each wit
 - **Saved only**: the choice is saved but has no visible effect yet.
 - **Placeholder**: the button only shows a message.
 
-Totals: Working 129, Simulated 22, Saved only 2, Placeholder 4, 157 functions in all.
+Totals: Working 144, Simulated 7, Saved only 2, Placeholder 4, 157 functions in all.
 
 ## Global
 
@@ -192,9 +192,9 @@ Totals: Working 129, Simulated 22, Saved only 2, Placeholder 4, 157 functions in
 | SP-06 | Overdose information | Open Support | Signs of opioid and stimulant overdose, what to do (including naloxone) and lowering risk. | Working | - |
 | SP-07 | Ask for a review | Tap Ask for a review | Form: what it's about (5 options) and what happened (up to 500 characters). Says every review is decided straight away and an independent arbitrator checks decisions. | Working | - |
 | SP-08 | Review checks | Send under 10 characters | Refused with a message. | Working | - |
-| SP-09 | Review requested | Send a valid review | 'Review requested' with a case number; about 2 seconds later it shows the decision note. | Simulated | Real reviews are decided by the AI Review Agent on a server. |
-| SP-11 | Automatic review decision | Send any review | Every review is decided automatically. A naloxone or recovery message is overturned; an unclear one keeps the safest outcome and says it will be checked again. | Simulated | Real decisions come from the AI Review Agent. |
-| SP-10 | Arbitrator changes a decision | After the arbitrator changes it | The case shows the new decision with 'Arbitrator:' and their note. | Simulated | A decision reaching the member on another device needs a server. |
+| SP-09 | Review requested | Send a valid review | 'Review requested' with a case number; about 2 seconds later it shows the decision note. | Working | Real reviews are decided on the Supabase server. |
+| SP-11 | Automatic review decision | Send any review | Every review is decided automatically. A naloxone or recovery message is overturned; an unclear one keeps the safest outcome and says it will be checked again. | Working | Real decisions come from the review check on the Supabase server. |
+| SP-10 | Arbitrator changes a decision | After the arbitrator changes it | The case shows the new decision with 'Arbitrator:' and their note. | Working | Real on the Supabase server; checked with app/scripts/live-arbitrator.js. |
 
 ## Help & Safety
 
@@ -214,18 +214,18 @@ Totals: Working 129, Simulated 22, Saved only 2, Placeholder 4, 157 functions in
 
 | ID | Function | How to trigger | Expected result / rules | Status | Needs a backend |
 |---|---|---|---|---|---|
-| AD-01 | Arbitrator sign-in | Sign in as Arbitrator / fair review | Opens the dashboard with no tab bar. | Working | A real arbitrator account with its own permissions needs a server. |
-| AD-02 | Summary figures | Open the dashboard | Active today, active in 7 days, new members, peer supporters, members who want peer support, cases flagged for a check, urgent cases. | Simulated | Live figures need server data. |
-| AD-03 | Review queue | Open the dashboard | One Decided table: every case with its decision, the agent's confidence, who decided it, and a Flagged tag when under 85%. Urgent cases are red. Live cases are marked 'This browser'. | Simulated | The live queue needs a server. |
-| AD-13 | AI Review Agent | Every case | Decides every case, including danger, under 18 and account removal. Under 85% confidence it keeps the safest outcome and flags the case. The naloxone and 'I used to sell' cases are overturned. | Simulated | Real decisions come from the AI Review Agent model. |
+| AD-01 | Arbitrator sign-in | Sign in as Arbitrator / fair review | Opens the dashboard with no tab bar. | Working | Real arbitrators are accounts listed in public.arbitrators; checked with app/scripts/live-arbitrator.js. |
+| AD-02 | Summary figures | Open the dashboard | Active today, active in 7 days, new members, peer supporters, members who want peer support, cases flagged for a check, urgent cases. | Working | Live figures on the Supabase server; samples in the demo. |
+| AD-03 | Review queue | Open the dashboard | One Decided table: every case with its decision, the agent's confidence, who decided it, and a Flagged tag when under 85%. Urgent cases are red. Live cases are marked 'This browser'. | Working | Live queue on the Supabase server. |
+| AD-13 | AI Review Agent | Every case | Decides every case, including danger, under 18 and account removal. Under 85% confidence it keeps the safest outcome and flags the case. The naloxone and 'I used to sell' cases are overturned. | Working | Real decisions come from the review check on the Supabase server. |
 | AD-04 | Change a decision | Tap Check, write a note, choose an outcome | Shows the agent's decision and reason. Uphold, Overturn or Change the action; a note of at least 5 characters is required. The case then shows 'by Arbitrator'. | Working | - |
-| AD-05 | Decision reaches the member | Decide a case raised in this browser, then sign in as the member | The Support page shows the decision and note. | Working | Decisions reaching members on their own devices need a server. |
-| AD-06 | Message safety | Open the dashboard | Messages checked, blocked, Help shown, check time, and blocked messages by reason. | Simulated | Live figures need server data. |
-| AD-07 | Reports | Open the dashboard | Reports by reason (7), plus reports made in this browser. | Simulated | Live figures need server data. |
-| AD-08 | Blocking and actions | Open the dashboard | Blocks, mutes, suspensions, removals, most-blocked members, and who is blocked in this browser. | Simulated | Live figures need server data. |
-| AD-09 | Country of origin | Open the dashboard | Members by country (8 rows), from the country members choose. | Simulated | Live figures need server data. |
-| AD-10 | Peer support | Open the dashboard | Peer support matches, chats with peer supporters and active peer supporters. | Simulated | Live figures need server data. |
-| AD-11 | Rooms and system health | Open the dashboard | Rooms, requests, uptime, waiting messages, overdue reviews. | Simulated | Live figures need server data. |
+| AD-05 | Decision reaches the member | Decide a case raised in this browser, then sign in as the member | The Support page shows the decision and note. | Working | Real on the Supabase server; checked with app/scripts/live-arbitrator.js. |
+| AD-06 | Message safety | Open the dashboard | Messages checked, blocked, Help shown, check time, and blocked messages by reason. | Working | Live figures on the Supabase server; samples in the demo. |
+| AD-07 | Reports | Open the dashboard | Reports by reason (7), plus reports made in this browser. | Working | Live figures on the Supabase server; samples in the demo. |
+| AD-08 | Blocking and actions | Open the dashboard | Blocks, mutes, suspensions, removals, most-blocked members, and who is blocked in this browser. | Working | Live figures on the Supabase server; samples in the demo. |
+| AD-09 | Country of origin | Open the dashboard | Members by country (8 rows), from the country members choose. | Working | Live figures on the Supabase server; samples in the demo. |
+| AD-10 | Peer support | Open the dashboard | Peer support matches, chats with peer supporters and active peer supporters. | Working | Live figures on the Supabase server; samples in the demo. |
+| AD-11 | Rooms and system health | Open the dashboard | Rooms, requests, uptime, waiting messages, overdue reviews. | Working | Live figures on the Supabase server; samples in the demo. |
 | AD-12 | Sign out | Tap Sign out | Back to the Welcome page. | Working | - |
 
 ## Test data

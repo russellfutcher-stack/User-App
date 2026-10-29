@@ -3,7 +3,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { createClient } from '@supabase/supabase-js';
 import { SAMPLE_HANDLES } from '../data/reference';
 import { TAKEN_ROOM } from '../lib/rooms';
-import { AgeCheck, Backend, Member, Msg, Profile, Review, Room, Sent } from './types';
+import { AgeCheck, ArbCase, Backend, Member, Msg, Profile, Review, Room, Sent } from './types';
 
 // Supabase Auth needs an email address, but members never give one. The app makes a
 // placeholder from the username. No email is sent ("Confirm email" is off in Supabase).
@@ -35,6 +35,9 @@ const toRow = (p: Partial<Profile>): Partial<Row> => {
   return r;
 };
 
+type CaseRow = { id: string; member: string; topic: string; body: string; auto: boolean; urgent: boolean; status: string; confidence: number | null;
+  reason: string | null; note: string | null; flagged: boolean; decided_by: 'automatic' | 'arbitrator' | null; due_at: string };
+const dayTime = (t: string) => new Date(t).toLocaleString('en-GB', { weekday: 'short', day: 'numeric', month: 'short', hour: 'numeric', minute: '2-digit' });
 type ReviewRow = { id: string; topic: string; body: string; auto: boolean; status: string; note?: string | null; decided_by?: string | null; due_at: string };
 const asReview = (r: ReviewRow): Review => ({
   id: r.id, topic: r.topic, text: r.body, auto: r.auto, status: r.status, note: r.note || undefined,
@@ -230,6 +233,23 @@ export function supabaseBackend(url: string, anonKey: string): Backend {
       const { data, error } = await db.rpc('my_notices'); must(error);
       const n = (data || [])[0] as { checkin: boolean; age_check: AgeCheck | null } | undefined;
       return { checkin: !!n?.checkin, ageCheck: n?.age_check || null };
+    },
+    async isArbitrator() { const { data } = await db.rpc('am_arbitrator'); return data === true; },
+    async arbFigures() {
+      const { data, error } = await db.rpc('arb_figures'); must(error);
+      return { ...(data as object), sample: false } as Awaited<ReturnType<Backend['arbFigures']>>;
+    },
+    async arbCases() {
+      const { data, error } = await db.rpc('arb_cases'); must(error);
+      return ((data || []) as CaseRow[]).map((c): ArbCase => ({
+        id: c.id, member: c.member, topic: c.topic, text: c.body, raised: c.auto ? 'Automatic' : 'Member', urgent: c.urgent,
+        due: dayTime(c.due_at), status: c.status, confidence: c.confidence ?? 0, reason: c.reason || '', note: c.note || undefined,
+        flagged: c.flagged, by: c.decided_by,
+      }));
+    },
+    async arbDecide(id, outcome, note) {
+      const { error } = await db.rpc('arb_decide', { case_id: id, outcome, why: note });
+      return error ? { ok: false, error: /note/.test(error.message) ? 'Add a short note explaining your decision.' : TROUBLE } : { ok: true, value: null };
     },
     async seenCheckin() { const { error } = await db.rpc('seen_checkin'); must(error); },
     async confirmAge() {

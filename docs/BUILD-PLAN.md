@@ -43,6 +43,11 @@ Agreed changes from the prototype: the sign-in error now says "Check for typos, 
 - Next, in step 5: the arbitrator's view of decisions, flagged cases and nightly misses.
 - Not yet covered: paused or muted members can still request rooms and reviews, and make reports.
 
+**Step 5 (done, 29 Oct 2026).** Built in `app/`: the Support page (`app/src/screens/Support.tsx`: peer supporters, a message for you, help services for 33 countries with the chosen country remembered, overdose information, and your reviews with their decisions) and the arbitrator dashboard (`app/src/screens/Dashboard.tsx`). In the demo the arbitrator signs in as Arbitrator / fair review and sees sample figures, as in the prototype. On the real server an arbitrator is an ordinary account listed in `public.arbitrators` (see `docs/SUPABASE-SETUP.md`); they see live figures and every review case, and can uphold, overturn or change a decision with a note the member sees as "Arbitrator: …". Server side: `supabase/migrations/20261102000000_support.sql` and `20261102000001_arbitrator.sql` (both applied). Also: paused, muted or age-check members can no longer ask for new rooms (reports and reviews stay open to them). 317 tests pass against the in-browser version; `app/scripts/live-arbitrator.js` (17 checks), `live-age-checkin.js` and `live-safety.js` pass on the real server.
+- Differences from the prototype's dashboard, because the real server doesn't measure them yet: "average check time" is replaced by "messages held for a re-check", uptime isn't shown, and Peer support shows chats started with a peer supporter rather than matches made. To check with Rusty.
+- Figures count real members only: the 100 sample members and arbitrators are left out. A deleted account takes its history with it, so figures only cover current members.
+- Still to do: choose the real arbitrator and give them an account, once the app has its web address (step 6).
+
 ## Phase 2
 
 iPhone and Android apps from the same Expo code, with a neutral icon option, Face ID app lock, push notifications and store listings rated 18+.

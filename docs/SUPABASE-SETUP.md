@@ -55,6 +55,14 @@ Older way, with a token:
     - under **Network access**, add `api.supabase.com` to **Allowed domains** (leave the package managers box ticked)
     Save, then start a new session and tell Max it's done.
 
+## The arbitrator (step 5)
+
+The arbitrator signs in like a member, with a username and password, and sees the dashboard instead. Their account shouldn't be used as a member. Once they have made an account (after step 6, when the app has its web address), Max lists it as an arbitrator in **SQL Editor**:
+`insert into public.arbitrators (member) select id from public.profiles where username = '<their username>';`
+To remove them: `delete from public.arbitrators where member = (select id from public.profiles where username = '<their username>');`
+
+To check the dashboard on the server: `ARB_USER=<username> ARB_PASS=<password> node scripts/live-arbitrator.js` from `app/`.
+
 ## Deleting a test account
 
 If deleting a user under **Authentication → Users** fails, delete it in **SQL Editor** instead, using its exact email. For example:

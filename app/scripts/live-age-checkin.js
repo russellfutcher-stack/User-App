@@ -49,6 +49,8 @@ async function member(tag) {
     check('HS-09 after confirming, a second sign pauses the account for review', r.ageCheck === 'review' && (await b.notices()).age_check === 'review');
     r = await b.fn('send', { kind: 'chat', to: a.name, text: 'hello?' });
     check('HS-09 and they cannot send while it is reviewed', r.ok === false && /reviewed/.test(r.error || ''), r.error);
+    r = await b.fn('request-room', { name: 'Zz Paused Room ' + b.name.slice(-4), cat: 'interests', desc: 'A room asked for while the account is paused.' });
+    check('HS-09 or ask for new rooms while paused', r.ok === false && /paused or muted/.test(r.error || ''), r.error);
   } catch (e) { check('run', false, e.message); }
   for (const m of [a, b]) if (m) check(`test member deleted`, !(await m.db.rpc('delete_my_account')).error);
   console.log(failed ? `${failed} FAILED` : 'ALL PASSED'); process.exit(failed ? 1 : 0);

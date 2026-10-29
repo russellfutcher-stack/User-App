@@ -30,6 +30,7 @@ type Ctx = {
   chatsChanged: () => void; refreshUnread: () => void; // refreshUnread only rechecks the dot
   paused: AgeCheck | null; setPaused: (p: AgeCheck | null) => void; // the age check: the account is paused until it's done
   checkin: boolean; checkinShown: () => void; // a check-in after a danger report, shown once on the Help sheet
+  arbitrator: boolean; // signed in as the arbitrator: the dashboard replaces the member pages
 };
 const AppCtx = createContext<Ctx | null>(null);
 export const useApp = () => { const c = useContext(AppCtx); if (!c) throw new Error('useApp outside AppProvider'); return c; };
@@ -43,7 +44,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const [toastMsg, setToast] = useState<{ text: string; n: number; undo?: () => void } | null>(null);
   const [view, setView] = useState<View>(null); const [roomCat, setRoomCat] = useState<PathKey>('interests');
   const [chatsVer, setChatsVer] = useState(0); const [unread, setUnread] = useState(false);
-  const [paused, setPaused] = useState<AgeCheck | null>(null); const [checkin, setCheckin] = useState(false);
+  const [paused, setPaused] = useState<AgeCheck | null>(null); const [checkin, setCheckin] = useState(false); const [arbitrator, setArbitrator] = useState(false);
   const chatsChanged = useCallback(() => setChatsVer(v => v + 1), []);
   const [query, setQuery] = useState<Query>(blankQuery); const [applied, setApplied] = useState<Query>(blankQuery);
   const [showAll, setShowAll] = useState(false); const [matches, setMatches] = useState(false); const [membersVer, setVer] = useState(0);
@@ -73,12 +74,14 @@ export function AppProvider({ children }: { children: ReactNode }) {
     openSheet: n => setSheet(n),
     go: p => { setSheet(null); setPage(p); },
     setTab: t => { setView(null); setTabState(t); },
-    signedIn: p => {
-      setProfile(p); setTabState('home'); setPage('main');
-      backend.notices().then(n => { setPaused(n.ageCheck); setCheckin(n.checkin); }).catch(() => undefined);
+    signedIn: async p => {
+      // The arbitrator is checked first, so a member page never shows before the dashboard.
+      const arb = await backend.isArbitrator().catch(() => false);
+      setArbitrator(arb); setProfile(p); setTabState('home'); setPage('main');
+      if (!arb) backend.notices().then(n => { setPaused(n.ageCheck); setCheckin(n.checkin); }).catch(() => undefined);
     },
     signOut: () => {
-      backend.signOut(); setProfile(null); setSheet(null); setPage('welcome'); setPaused(null); setCheckin(false);
+      backend.signOut(); setProfile(null); setSheet(null); setPage('welcome'); setPaused(null); setCheckin(false); setArbitrator(false);
       setQuery(blankQuery()); setApplied(blankQuery()); setShowAll(false); setMatches(false); setView(null); setRoomCat('interests');
     },
     update: patch => {
@@ -91,7 +94,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     membersVer, membersChanged: () => { setVer(v => v + 1); chatsChanged(); },
     view, setView: v => { setSheet(null); setView(v); }, roomCat, setRoomCat, chatsVer, unread, chatsChanged, refreshUnread,
     paused, setPaused: p => { setSheet(null); setView(null); setPaused(p); },
-    checkin, checkinShown: () => { setCheckin(false); backend.seenCheckin().catch(() => undefined); },
+    arbitrator, checkin, checkinShown: () => { setCheckin(false); backend.seenCheckin().catch(() => undefined); },
   };
   return <AppCtx.Provider value={value}>{children}</AppCtx.Provider>;
 }
