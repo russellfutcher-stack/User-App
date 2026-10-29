@@ -51,6 +51,10 @@ test('SP-04 The country is remembered', async ({ page }) => {
   await expect(page.locator('#country')).toHaveValue('New Zealand');
   expect((await H.stored(page)).accounts.quietheron.profile.country).toBe('New Zealand');
 });
+test('SP-04 Lines that are not open all day show their hours, with a 24-hour line where there is one', async ({ page }) => {
+  await page.locator('#country').selectOption('Poland');
+  await expect(page.locator('#services')).toContainText('Crisis line for adults (2pm to 10pm)'); await expect(page.locator('#services')).toContainText('800 70 22 22');
+});
 test('SP-05 Show all 33 countries', async ({ page }) => {
   await H.btn(page, 'Show all 33 countries').click();
   await expect(page.locator('#all-countries').getByRole('heading')).toHaveCount(33);
