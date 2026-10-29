@@ -13,12 +13,12 @@ const emailFor = (username: string) => `${username.trim().toLowerCase()}@${EMAIL
 type Row = {
   username: string; byline: string; stage: string; looking: string[]; wants_peer: boolean | null; is_peer: boolean;
   tags: string[]; vis_interests: Profile['vis']['interests']; vis_mh: Profile['vis']['mh']; vis_subs: Profile['vis']['subs'];
-  searchable: boolean; disappearing: boolean; app_lock: boolean; setup_done: boolean;
+  searchable: boolean; disappearing: boolean; app_lock: boolean; setup_done: boolean; country: string | null;
 };
 const fromRow = (r: Row): Profile => ({
   username: r.username, byline: r.byline, stage: r.stage, looking: r.looking, wantsPeer: r.wants_peer, isPeer: r.is_peer,
   tags: r.tags, vis: { interests: r.vis_interests, mh: r.vis_mh, subs: r.vis_subs },
-  prefs: { searchable: r.searchable, disappearing: r.disappearing, lock: r.app_lock }, setupDone: r.setup_done,
+  prefs: { searchable: r.searchable, disappearing: r.disappearing, lock: r.app_lock }, setupDone: r.setup_done, country: r.country || '',
 });
 const toRow = (p: Partial<Profile>): Partial<Row> => {
   const r: Partial<Row> = {};
@@ -31,6 +31,7 @@ const toRow = (p: Partial<Profile>): Partial<Row> => {
   if (p.vis) { r.vis_interests = p.vis.interests; r.vis_mh = p.vis.mh; r.vis_subs = p.vis.subs; }
   if (p.prefs) { r.searchable = p.prefs.searchable; r.disappearing = p.prefs.disappearing; r.app_lock = p.prefs.lock; }
   if (p.setupDone !== undefined) r.setup_done = p.setupDone;
+  if (p.country !== undefined) r.country = p.country;
   return r;
 };
 

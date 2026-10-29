@@ -43,7 +43,7 @@ const demoAccount = (): Account => ({
     stage: 'early', looking: ['chat', 'walk', 'pets'], wantsPeer: true, isPeer: false,
     tags: ['I01', 'I02', 'I04', 'D02', 'D03', 'O01', 'M05'],
     vis: { interests: 'everyone', mh: 'matches', subs: 'matches' },
-    prefs: { searchable: true, disappearing: false, lock: false }, setupDone: true,
+    prefs: { searchable: true, disappearing: false, lock: false }, setupDone: true, country: '',
   },
 });
 

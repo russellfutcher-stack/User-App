@@ -11,7 +11,8 @@ import { Welcome } from './src/screens/Welcome';
 import { SignUp, useSignUp } from './src/screens/SignUp';
 import { Setup } from './src/screens/Setup';
 import { Me } from './src/screens/Me';
-import { Home, Later } from './src/screens/Home';
+import { Home } from './src/screens/Home';
+import { Support } from './src/screens/Support';
 import { Chat, Chats } from './src/screens/Chats';
 import { Rooms, RoomScreen } from './src/screens/Rooms';
 import { Search } from './src/screens/Search';
@@ -53,7 +54,7 @@ function Screen() {
     body = <Matches />;
   } else {
     tabs = true;
-    body = { home: <Home />, me: <Me />, find: <Search toTop={toTop} />, chat: <Chats />, rooms: <Rooms />, support: <Later name="Support" /> }[tab];
+    body = { home: <Home />, me: <Me />, find: <Search toTop={toTop} />, chat: <Chats />, rooms: <Rooms />, support: <Support /> }[tab];
   }
   const key = `${page}-${profile ? (paused ? 'paused' : profile.setupDone ? (matches ? 'matches' : tab) : 'setup') : signup.i}`; // a new page starts at the top
   return (

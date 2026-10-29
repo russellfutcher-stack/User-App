@@ -39,6 +39,3 @@ export function Home() {
     </>
   );
 }
-export function Later({ name }: { name: string }) {
-  return <Card><H2>{name}</H2><P muted>Coming in a later build step.</P></Card>;
-}

@@ -13,6 +13,7 @@ export type Profile = {
   vis: Record<VisKey, Vis>;
   prefs: { searchable: boolean; disappearing: boolean; lock: boolean };
   setupDone: boolean;
+  country: string; // chosen on the Support page for its help services; '' until then
 };
 
 // A chat message or room post. `who` names the poster in rooms.
@@ -83,5 +84,5 @@ export interface Backend {
 export const blankProfile = (username: string): Profile => ({
   username, byline: '', stage: 'na', looking: ['chat'], wantsPeer: null, isPeer: false, tags: [],
   vis: { interests: 'everyone', mh: 'matches', subs: 'matches' },
-  prefs: { searchable: true, disappearing: false, lock: false }, setupDone: false,
+  prefs: { searchable: true, disappearing: false, lock: false }, setupDone: false, country: '',
 });
