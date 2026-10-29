@@ -4,12 +4,11 @@ import { Pressable, ScrollView, Text, TextInput, View } from 'react-native';
 import { backend, Msg, Room, RoomRequest } from '../backend';
 import { PATHS, PathKey } from '../data/reference';
 import { roomRequestError } from '../lib/rooms';
-import { CRISIS, notAllowed } from '../lib/safety';
 import { useApp } from '../state/app';
 import { SwipeRow } from '../components/Swipe';
 import { B, Btn, Card, ErrorText, H2, H3, Label, P, Row, Select, s as ui } from '../components/ui';
 import { C, F, R } from '../theme';
-import { Bubble, Composer, NotSent, Sys } from './Chats';
+import { Bubble, Composer, NotSent, sendChecked, Sys } from './Chats';
 import { HelpSheet } from './HelpSheet';
 import { choiceName, GROUP_COLOUR, PathTiles } from './people';
 
@@ -94,10 +93,11 @@ function RequestRoom({ rooms, requests }: { rooms: Room[]; requests: RoomRequest
   const send = async () => {
     const n = name.trim(), d = desc.trim();
     const e = roomRequestError(n, d, [...rooms.map(r => r.name), ...requests.map(q => q.name)]); if (e) return setErr(e);
-    setErr(''); const r = await backend.requestRoom(n, cat, d);
-    if (!r.ok) return setErr(r.error);
-    setSent(n);
-    setTimeout(() => { setDone(true); chatsChanged(); }, 1500); // the check takes a moment
+    // The request is checked straight away; "Checking…" shows for at least a moment, as in the prototype.
+    setErr(''); setSent(n); const start = Date.now();
+    const r = await backend.requestRoom(n, cat, d);
+    if (!r.ok) { setSent(null); return setErr(r.error); }
+    setTimeout(() => { setDone(true); chatsChanged(); }, Math.max(0, 1500 - (Date.now() - start)));
   };
   if (sent) return (
     <>
@@ -132,7 +132,7 @@ function RequestRoom({ rooms, requests }: { rooms: Room[]; requests: RoomRequest
 export function RoomScreen({ id }: { id: string }) {
   const { openSheet, toast, chatsVer, chatsChanged } = useApp();
   const [room, setRoom] = useState<Room | null>(null); const [posts, setPosts] = useState<Msg[] | null>(null);
-  const [warn, setWarn] = useState(false); const [draft, setDraft] = useState('');
+  const [why, setWhy] = useState(''); const [draft, setDraft] = useState('');
   const scroller = useRef<React.ComponentRef<typeof ScrollView>>(null);
   useEffect(() => {
     let live = true;
@@ -146,12 +146,8 @@ export function RoomScreen({ id }: { id: string }) {
     setRoom({ ...room, joined: true, members: room.members + 1 }); chatsChanged(); toast("Joined. Say hello when you're ready.");
   };
   const post = async (t: string) => {
-    if (notAllowed(t)) { setWarn(true); return false; }
-    setWarn(false);
-    const r = await backend.post(id, t); if (!r.ok) { toast(r.error); return false; }
-    setPosts(l => [...(l || []), r.value]);
-    if (CRISIS.test(t)) setTimeout(() => openSheet(<HelpSheet intro="It sounds like things might be really hard right now. These lines are open now." />), 400);
-    return true;
+    return sendChecked(() => backend.post(id, t), setWhy, m => setPosts(l => [...(l || []), m]), toast,
+      () => openSheet(<HelpSheet intro="It sounds like things might be really hard right now. These lines are open now." />));
   };
   return (
     <View style={{ flex: 1 }}>
@@ -159,7 +155,7 @@ export function RoomScreen({ id }: { id: string }) {
         <Sys id="room-intro">{room.desc} Every message is checked for safety. {room.members} members.</Sys>
         {posts.map(m => <Bubble key={m.id} m={m} />)}
       </ScrollView>
-      {warn ? <NotSent /> : null}
+      {why ? <NotSent why={why} /> : null}
       {room.joined ? <Composer placeholder="Say something to the room" button="Post" onSend={post} text={draft} setText={setDraft} />
         : <View style={{ paddingVertical: 10, paddingHorizontal: 12, backgroundColor: C.surface, borderTopWidth: 1, borderTopColor: C.lineSoft }}><Btn variant="primary" block label="Join room to post" onPress={join} /></View>}
     </View>

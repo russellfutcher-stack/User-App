@@ -8,6 +8,7 @@ import { groupOf, shared, tagLabel, whyMatched } from '../lib/match';
 import { useApp } from '../state/app';
 import { Btn, Card, H2, Label, P, Pill, Row, s as ui } from '../components/ui';
 import { C, F } from '../theme';
+import { ReportSheet } from './Safety';
 
 export const stageLabel = (id: string) => STAGES.find(x => x.id === id)?.label || '';
 export const choiceName = (key: PathKey) => (key === 'interests' ? 'Interest' : PATHS.find(p => p.key === key)!.name); // singular on Home and Search
@@ -95,7 +96,7 @@ export function PersonRow({ m }: { m: Member }) {
 }
 
 export function ProfileSheet({ m }: { m: Member }) {
-  const { profile, closeSheet, setTab, setView, setMatches, toast, membersChanged } = useApp();
+  const { profile, closeSheet, openSheet, setTab, setView, setMatches, toast, membersChanged } = useApp();
   if (!profile) return null;
   const both = shared(profile, m);
   const block = async () => {
@@ -122,11 +123,11 @@ export function ProfileSheet({ m }: { m: Member }) {
         );
       })}
       <View style={{ gap: 8 }}><Label>Looking for</Label><View style={ui.chips}>{m.looking.map(l => <PlainTag key={l} text={LOOKING.find(x => x.id === l)?.label || l} />)}</View></View>
-      {/* Reports arrive in step 4. */}
+
       <Btn variant="primary" block label="Say hi" onPress={() => { closeSheet(); setMatches(false); setTab('chat'); setView({ name: 'chat', with: m.username }); }} />
       <Row>
         <Btn variant="danger" sm label="Block" onPress={block} />
-        <Btn sm label="Report" onPress={() => toast('Reporting opens here.')} />
+        <Btn sm label="Report" onPress={() => openSheet(<ReportSheet username={m.username} />)} />
       </Row>
     </>
   );

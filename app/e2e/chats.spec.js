@@ -130,9 +130,11 @@ test('C-14 A blocked message offers a review', async ({ page }) => {
   await H.signInDemo(page); await H.openChat(page, 'SteadyBadger'); await H.send(page, 'anyone holding?');
   await expect(page.locator('#warn').getByRole('button', { name: 'Think this is wrong? Ask for a review' })).toBeVisible();
 });
-test('C-14 Asking for a review (form arrives in step 4)', async ({ page }) => {
+test('C-14 It opens the review form with the blocked message chosen', async ({ page }) => {
   await H.signInDemo(page); await H.openChat(page, 'SteadyBadger'); await H.send(page, 'anyone holding?');
-  await H.btn(page, 'Think this is wrong? Ask for a review').click(); await expect(H.toast(page)).toHaveText('Reviews open here.');
+  await H.btn(page, 'Think this is wrong? Ask for a review').click();
+  await expect(H.sheet(page).getByRole('heading', { name: 'Ask for a review' })).toBeVisible();
+  await expect(page.locator('#hr-topic')).toHaveValue('A message that was blocked');
 });
 test('C-15 Swipe left shows Delete; tapping it deletes the chat', async ({ page }) => {
   await demo(page); await H.swipe(page, H.chatRow(page, 'SteadyBadger'));

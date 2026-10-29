@@ -21,6 +21,14 @@ export type ChatSummary = { with: string; last: Msg; unread: boolean };
 export type Room = { id: string; cat: PathKey; name: string; desc: string; members: number; joined: boolean; mine: boolean };
 export type RoomRequest = { id: string; name: string; cat: PathKey; status: 'Checking' | 'Approved' };
 export type Undo = () => Promise<void>;
+// Every message and post is checked for safety before anyone sees it.
+// `help` means it was sent and the Help sheet should open; `blocked` holds why it wasn't sent.
+export type Sent = { ok: true; msg: Msg; help: boolean } | { ok: false; blocked?: string; error: string };
+export type Review = {
+  id: string; topic: string; text: string; auto: boolean; due: string;
+  status: string; // "Being reviewed", or "Decided: Upheld" and so on
+  note?: string; by?: 'automatic' | 'arbitrator';
+};
 
 export type Result<T> = { ok: true; value: T } | { ok: false; error: string };
 
@@ -44,7 +52,7 @@ export interface Backend {
   // Chats: newest first. Opening a chat marks it read. Sample members reply with their prototype lines.
   chats(): Promise<ChatSummary[]>;
   messages(withUser: string): Promise<Msg[]>;
-  send(withUser: string, text: string): Promise<Result<Msg>>;
+  send(withUser: string, text: string): Promise<Sent>;
   sampleReply(withUser: string): Promise<Msg | null>;
   deleteChat(withUser: string): Promise<Undo>;
   onChange(fn: () => void): () => void; // called when a message or post arrives; returns a stop function
@@ -52,10 +60,14 @@ export interface Backend {
   rooms(): Promise<Room[]>;
   roomPosts(id: string): Promise<Msg[]>;
   joinRoom(id: string): Promise<void>;
-  post(id: string, text: string): Promise<Result<Msg>>;
+  post(id: string, text: string): Promise<Sent>;
   leaveRoom(id: string): Promise<Undo>; // or deletes it, for a room you created
   roomRequests(): Promise<RoomRequest[]>;
   requestRoom(name: string, cat: PathKey, desc: string): Promise<Result<Room>>;
+  // Safety: reports are checked straight away; serious ones also raise an urgent review.
+  report(username: string, reason: string): Promise<Result<{ urgent: boolean }>>;
+  requestReview(topic: string, text: string): Promise<Result<Review>>;
+  reviews(): Promise<Review[]>; // newest first
   unblock(username: string): Promise<void>;
   signOut(): Promise<void>;
   deleteAccount(): Promise<void>;

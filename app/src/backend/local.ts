@@ -6,14 +6,26 @@ import { SAMPLES } from '../data/people';
 import { DEMO_CHATS, DEMO_JOINED, ROOMS, repliesFor } from '../data/community';
 import { score } from '../lib/match';
 import { roomRequestError } from '../lib/rooms';
-import { Backend, Msg, Profile, Room, RoomRequest, blankProfile } from './types';
+import { demoDecision, Decision, URGENT_REASON } from '../lib/review';
+import { CRISIS, notAllowed } from '../lib/safety';
+import { Backend, Msg, Profile, Review, Room, RoomRequest, Sent, blankProfile } from './types';
 
 const KEY = 'user-app-v1';
 type Stored = { f: 'me' | 'them'; t: string; ts: number };
 type Chat = { msgs: Stored[]; unread: boolean };
 type MyRoom = { id: string; cat: Room['cat']; name: string; desc: string };
 type Rooms = { joined: string[]; posts: Record<string, Stored[]>; custom: MyRoom[]; requests: RoomRequest[] };
-type Account = { salt: string; hash: string; passkey: boolean; profile: Profile; blocked: string[]; chats?: Record<string, Chat>; rooms?: Rooms };
+type Case = Omit<Review, 'status' | 'note' | 'by'> & { at: number; decision: Decision };
+type Account = { salt: string; hash: string; passkey: boolean; profile: Profile; blocked: string[]; chats?: Record<string, Chat>; rooms?: Rooms; cases?: Case[] };
+
+// In the demo, a review is decided about 1.5 seconds after it's sent, as in the prototype.
+const DECIDE_AFTER = 1500;
+const dueDate = (urgent: boolean) => new Date(Date.now() + (urgent ? 24 : 72) * 3600000).toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short' });
+const asReview = (c: Case): Review => (Date.now() - c.at < DECIDE_AFTER ? { ...c, status: 'Being reviewed' }
+  : { ...c, status: 'Decided: ' + c.decision.decision, note: c.decision.note, by: 'automatic' });
+// The demo's stand-in for the safety check: the prototype's rules.
+const check = (text: string): { blocked: boolean; help: boolean } => ({ blocked: notAllowed(text), help: CRISIS.test(text) });
+const NOT_SENT = "It looks like it could be about buying or selling, or sharing links or other apps' contact details. User doesn't allow sourcing or off-app contact, to keep everyone safe. If you're struggling with cravings, the Help button has people to talk to right now.";
 type Store = { accounts: Record<string, Account>; device: string | null; current: string | null };
 
 const DEMO = 'quietheron';
@@ -62,6 +74,12 @@ export function localBackend(): Backend {
   const roomsOf = (a: Account) => (a.rooms = a.rooms || { joined: [], posts: {}, custom: [], requests: [] });
   const me = async () => { await queue.catch(() => undefined); const s = await load(); return (current && s.accounts[current]) || null; };
   const msg = (m: Stored, i: number, who?: string): Msg => ({ id: String(i), mine: m.f === 'me', text: m.t, at: m.ts, who: m.f === 'me' ? undefined : who });
+  const addCase = async (topic: string, text: string, auto: boolean): Promise<Review | null> => {
+    const a = await me(); if (!a) return null;
+    const c: Case = { id: 'HR-' + (1001 + (a.cases || []).length), topic, text, auto, due: dueDate(auto), at: Date.now(), decision: demoDecision(topic, text) };
+    await withMe(x => { x.cases = [c, ...(x.cases || [])]; });
+    return asReview(c);
+  };
   const allRooms = (a: Account) => [...ROOMS.map(r => ({ id: r.id, cat: r.cat, name: r.name, desc: r.desc, members: r.members, mine: false })),
     ...roomsOf(a).custom.map(r => ({ ...r, members: 1, mine: true }))];
 
@@ -124,10 +142,11 @@ export function localBackend(): Backend {
       await withMe(a => { const c = chatsOf(a)[w]; if (!c) return; c.unread = false; out = c.msgs.map((m, i) => msg(m, i)); });
       return out;
     },
-    async send(w, text) {
+    async send(w, text): Promise<Sent> {
+      const c = check(text); if (c.blocked) return { ok: false, blocked: NOT_SENT, error: 'Message not sent' };
       let out: Msg | null = null;
       await withMe(a => { const c = (chatsOf(a)[w] = chatsOf(a)[w] || { msgs: [], unread: false }); c.msgs.push({ f: 'me', t: text, ts: Date.now() }); out = msg(c.msgs[c.msgs.length - 1], c.msgs.length - 1); });
-      return out ? { ok: true, value: out } : { ok: false, error: 'Please sign in again.' };
+      return out ? { ok: true, msg: out, help: c.help } : { ok: false, error: 'Please sign in again.' };
     },
     async sampleReply(w) {
       if (!SAMPLES.some(m => m.username === w)) return null;
@@ -159,10 +178,11 @@ export function localBackend(): Backend {
         .map((m, i) => msg(m, i, m.who));
     },
     async joinRoom(id) { await withMe(a => { const r = roomsOf(a); if (!r.joined.includes(id)) r.joined.push(id); }); },
-    async post(id, text) {
+    async post(id, text): Promise<Sent> {
+      const c = check(text); if (c.blocked) return { ok: false, blocked: NOT_SENT, error: 'Message not sent' };
       let out: Msg | null = null;
       await withMe(a => { const r = roomsOf(a); const l = (r.posts[id] = r.posts[id] || []); l.push({ f: 'me', t: text, ts: Date.now() }); out = msg(l[l.length - 1], 1000 + l.length); });
-      return out ? { ok: true, value: out } : { ok: false, error: 'Please sign in again.' };
+      return out ? { ok: true, msg: out, help: c.help } : { ok: false, error: 'Please sign in again.' };
     },
     async leaveRoom(id) {
       let was: Rooms | undefined;
@@ -182,6 +202,16 @@ export function localBackend(): Backend {
       await withMe(x => { const r = roomsOf(x); r.custom.push(room); r.requests.push({ id: room.id, name, cat, status: 'Approved' }); if (!r.joined.includes(room.id)) r.joined.push(room.id); });
       return { ok: true, value: { ...room, members: 1, joined: true, mine: true } };
     },
+    async report(username, reason) {
+      const urgent = URGENT_REASON.test(reason);
+      if (urgent) await addCase('A report I made', 'Automatic: ' + reason, true); // reviewed urgently, raised automatically
+      return { ok: true, value: { urgent } };
+    },
+    async requestReview(topic, text) {
+      const r = await addCase(topic, text, false);
+      return r ? { ok: true, value: r } : { ok: false, error: 'Please sign in again.' };
+    },
+    async reviews() { const a = await me(); return (a?.cases || []).map(asReview); },
     async signOut() { current = null; },
     async deleteAccount() {
       const s = await load();

@@ -1,14 +1,14 @@
 // The Chats list, and a chat with one person.
 import React, { useEffect, useRef, useState } from 'react';
 import { ScrollView, Text, TextInput, View } from 'react-native';
-import { backend, ChatSummary, Msg } from '../backend';
+import { backend, ChatSummary, Msg, Sent } from '../backend';
 import { ICEBREAKERS } from '../data/community';
-import { CRISIS, notAllowed } from '../lib/safety';
 import { useApp } from '../state/app';
 import { SwipeRow } from '../components/Swipe';
 import { B, Btn, Card, H2, H3, Label, P, Row, s as ui } from '../components/ui';
 import { C, F, R } from '../theme';
 import { HelpSheet } from './HelpSheet';
+import { ReportSheet, ReviewSheet } from './Safety';
 
 export const timeAgo = (ts: number) => {
   const m = Math.round((Date.now() - ts) / 60000); if (m < 1) return 'now'; if (m < 60) return m + 'm';
@@ -85,16 +85,25 @@ export const Sys = ({ children, id }: { children: React.ReactNode; id?: string }
 );
 
 // "Message not sent": shown when a message looks like dealing or off-app contact.
-export function NotSent() {
-  const { toast } = useApp();
+// "Message not sent", with why (from the safety check) and a way to ask for a review.
+export function NotSent({ why }: { why: string }) {
+  const { openSheet } = useApp();
   return (
     <View role="alert" id="warn" style={{ marginHorizontal: 12, padding: 12, borderRadius: R.md, backgroundColor: C.dangerSoft, gap: 6 }}>
       <Text style={{ fontFamily: F.bold, color: C.danger, fontSize: 13 }}>Message not sent</Text>
-      <Text style={{ fontFamily: F.body, color: C.ink, fontSize: 13, lineHeight: 19 }}>It looks like it could be about buying or selling, or sharing links or other apps' contact details. User doesn't allow sourcing or off-app contact, to keep everyone safe. If you're struggling with cravings, the Help button has people to talk to right now.</Text>
-      {/* The review form arrives with reviews in step 4. */}
-      <Btn variant="quiet" sm label="Think this is wrong? Ask for a review" onPress={() => toast('Reviews open here.')} />
+      <Text style={{ fontFamily: F.body, color: C.ink, fontSize: 13, lineHeight: 19 }}>{why}</Text>
+      <Btn variant="quiet" sm label="Think this is wrong? Ask for a review" onPress={() => openSheet(<ReviewSheet topic="A message that was blocked" />)} />
     </View>
   );
+}
+// Sends through the safety check. Returns true when sent, so the message box can clear.
+export async function sendChecked(send: () => Promise<Sent>, setWhy: (w: string) => void, onSent: (m: Msg) => void, toast: (t: string) => void, help: () => void) {
+  setWhy('');
+  const r = await send();
+  if (!r.ok) { if (r.blocked) setWhy(r.blocked); else toast(r.error); return false; }
+  onSent(r.msg);
+  if (r.help) setTimeout(help, 400);
+  return true;
 }
 
 // The message box at the bottom of a chat or room.
@@ -119,7 +128,7 @@ export function Composer({ placeholder, button, onSend, text, setText }:
 export function Chat({ withUser }: { withUser: string }) {
   const { profile, openSheet, toast, chatsVer, refreshUnread } = useApp();
   const [draft, setDraft] = useState('');
-  const [msgs, setMsgs] = useState<Msg[] | null>(null); const [warn, setWarn] = useState(false); const [typing, setTyping] = useState(false);
+  const [msgs, setMsgs] = useState<Msg[] | null>(null); const [why, setWhy] = useState(''); const [typing, setTyping] = useState(false);
   const scroller = useRef<React.ComponentRef<typeof ScrollView>>(null);
   const here = useRef(true); useEffect(() => () => { here.current = false; }, []);
   useEffect(() => {
@@ -133,12 +142,9 @@ export function Chat({ withUser }: { withUser: string }) {
   const shown = (msgs || []).filter(m => !profile.prefs.disappearing || m.at > week);
 
   const send = async (t: string) => {
-    if (notAllowed(t)) { setWarn(true); return false; }
-    setWarn(false);
-    const r = await backend.send(withUser, t);
-    if (!r.ok) { toast(r.error); return false; }
-    setMsgs(l => [...(l || []), r.value]);
-    if (CRISIS.test(t)) setTimeout(() => openSheet(<HelpSheet intro="It sounds like things might be really hard right now. If you're thinking about ending your life or someone may have overdosed, please reach out now." />), 400);
+    const sent = await sendChecked(() => backend.send(withUser, t), setWhy, m => setMsgs(l => [...(l || []), m]), toast,
+      () => openSheet(<HelpSheet intro="It sounds like things might be really hard right now. If you're thinking about ending your life or someone may have overdosed, please reach out now." />));
+    if (!sent) return false;
     // Sample members reply after a moment, with a typing indicator.
     setTimeout(() => { if (here.current) setTyping(true); }, 700);
     setTimeout(async () => {
@@ -157,7 +163,7 @@ export function Chat({ withUser }: { withUser: string }) {
         {shown.map(m => <Bubble key={m.id} m={m} />)}
         {typing ? <Text id="typing" style={{ alignSelf: 'flex-start', color: C.muted, fontSize: 13, fontFamily: F.body, paddingVertical: 4, paddingHorizontal: 8 }}>{withUser} is typing…</Text> : null}
       </ScrollView>
-      {warn ? <NotSent /> : null}
+      {why ? <NotSent why={why} /> : null}
       {msgs && shown.length < 3 ? (
         <ScrollView horizontal aria-label="Conversation starters" id="starters" style={{ flexGrow: 0, backgroundColor: C.surface }} contentContainerStyle={{ gap: 6, paddingTop: 8, paddingHorizontal: 12 }}>
           {ICEBREAKERS.map(t => <Btn key={t} sm label={t} onPress={() => setDraft(t)} />)}
@@ -169,7 +175,7 @@ export function Chat({ withUser }: { withUser: string }) {
 }
 
 function ChatOptions({ withUser }: { withUser: string }) {
-  const { toast, closeSheet, setView, membersChanged } = useApp();
+  const { toast, openSheet, closeSheet, setView, membersChanged } = useApp();
   const block = async () => {
     try { await backend.block(withUser); } catch { toast(oops); return; }
     closeSheet(); setView(null); membersChanged(); toast(`${withUser} is blocked. They can't see or message you.`);
@@ -180,8 +186,7 @@ function ChatOptions({ withUser }: { withUser: string }) {
       <Card tone="calm"><H3>Meeting up safely</H3><P small>Meet in a busy public place in daylight, like a park entrance or café. Tell a friend where you'll be. Don't share your home address. Never use substances with someone you've just met. You can leave at any time.</P></Card>
       <View style={{ gap: 8 }}>
         <View style={ui.line}><Text style={ui.p}>Mute notifications</Text><Btn sm label="Mute" onPress={() => toast('Muted for 8 hours.')} /></View>
-        {/* Reports arrive in step 4. */}
-        <View style={ui.line}><Text style={ui.p}>Report a message or behaviour</Text><Btn sm label="Report" onPress={() => toast('Reporting opens here.')} /></View>
+        <View style={ui.line}><Text style={ui.p}>Report a message or behaviour</Text><Btn sm label="Report" onPress={() => openSheet(<ReportSheet username={withUser} />)} /></View>
         <View style={ui.line}><Text style={ui.p}>Block {withUser}</Text><Btn sm variant="danger" label="Block" onPress={block} /></View>
       </View>
     </>

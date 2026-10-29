@@ -3,7 +3,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { createClient } from '@supabase/supabase-js';
 import { SAMPLE_HANDLES } from '../data/reference';
 import { TAKEN_ROOM } from '../lib/rooms';
-import { Backend, Member, Msg, Profile, Room } from './types';
+import { Backend, Member, Msg, Profile, Review, Room, Sent } from './types';
 
 // Supabase Auth needs an email address, but members never give one. The app makes a
 // placeholder from the username. No email is sent ("Confirm email" is off in Supabase).
@@ -34,6 +34,12 @@ const toRow = (p: Partial<Profile>): Partial<Row> => {
   return r;
 };
 
+type ReviewRow = { id: string; topic: string; body: string; auto: boolean; status: string; note?: string | null; decided_by?: string | null; due_at: string };
+const asReview = (r: ReviewRow): Review => ({
+  id: r.id, topic: r.topic, text: r.body, auto: r.auto, status: r.status, note: r.note || undefined,
+  by: r.decided_by === 'arbitrator' ? 'arbitrator' : r.decided_by ? 'automatic' : undefined,
+  due: new Date(r.due_at).toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short' }),
+});
 const WRONG = "That username and password don't match. Check for typos, or sign in with a passkey.";
 const TROUBLE = "Something went wrong reaching User. Check your connection and try again.";
 const NO_PASSKEY = 'No passkey for User is saved on this device. Sign in with your username and password.';
@@ -65,6 +71,20 @@ export function supabaseBackend(url: string, anonKey: string): Backend {
   const settled = () => saving.catch(() => undefined);
   // Signing in again waits for any sign-out still finishing, so it can't end the new session.
   let leaving: Promise<unknown> = Promise.resolve();
+
+  // The safety-checked functions on Supabase (supabase/functions). null means they couldn't be reached.
+  const call = async <T,>(fn: string, body: object): Promise<T | null> => {
+    await settled();
+    const { data, error } = await db.functions.invoke(fn, { body });
+    if (error) { try { return await (error as { context?: Response }).context?.json() as T; } catch { return null; } }
+    return data as T;
+  };
+  const checked = async (kind: 'chat' | 'room', to: string, text: string): Promise<Sent> => {
+    const r = await call<{ ok: boolean; msg?: { id: string; created_at: string }; help?: boolean; blocked?: string; error?: string }>('send', { kind, to, text });
+    if (r?.ok && r.msg) return { ok: true, msg: { id: r.msg.id, mine: true, text, at: Date.parse(r.msg.created_at) }, help: !!r.help };
+    if (r?.blocked) return { ok: false, blocked: r.blocked, error: 'Message not sent' };
+    return { ok: false, error: r?.error && r.error.length > 20 ? r.error : TROUBLE };
+  };
 
   return {
     kind: 'supabase',
@@ -147,11 +167,7 @@ export function supabaseBackend(url: string, anonKey: string): Backend {
       const { data, error } = await db.rpc('chat_messages', { name: w }); must(error);
       return (data || []).map((r: { id: number; mine: boolean; body: string; created_at: string }): Msg => ({ id: String(r.id), mine: r.mine, text: r.body, at: Date.parse(r.created_at) }));
     },
-    async send(w, text) {
-      const { data, error } = await db.rpc('send_message', { name: w, body: text });
-      if (error) return { ok: false, error: /blocked/.test(error.message) ? "You can't message this person." : TROUBLE };
-      const r = data[0]; return { ok: true, value: { id: String(r.id), mine: true, text, at: Date.parse(r.created_at) } };
-    },
+    async send(w, text) { return checked('chat', w, text); },
     async sampleReply(w) {
       const { data, error } = await db.rpc('sample_reply', { name: w }); if (error || !data?.length) return null;
       const all = await this.messages(w); return all.find(m => m.id === String(data[0].id)) || null;
@@ -181,11 +197,7 @@ export function supabaseBackend(url: string, anonKey: string): Backend {
       }));
     },
     async joinRoom(id) { const { error } = await db.rpc('join_room', { room: id }); must(error); },
-    async post(id, text) {
-      const { data, error } = await db.rpc('post_in_room', { room: id, body: text });
-      if (error) return { ok: false, error: TROUBLE };
-      const r = data[0]; return { ok: true, value: { id: String(r.id), mine: true, text, at: Date.parse(r.created_at) } };
-    },
+    async post(id, text) { return checked('room', id, text); },
     async leaveRoom(id) {
       const { error } = await db.rpc('leave_room', { room: id }); must(error);
       return async () => { const r = await db.rpc('undo_leave_room', { room: id }); must(r.error); };
@@ -195,10 +207,23 @@ export function supabaseBackend(url: string, anonKey: string): Backend {
       return (data || []).map((r: { id: string; name: string; cat: Room['cat']; status: 'Approved' }) => ({ id: r.id, name: r.name, cat: r.cat, status: r.status }));
     },
     async requestRoom(name, cat, desc) {
-      const { data, error } = await db.rpc('request_room', { name, cat, descr: desc });
-      if (error) return { ok: false, error: /taken/.test(error.message) ? TAKEN_ROOM : /too many/.test(error.message) ? "You've asked for 5 rooms today. Try again tomorrow." : TROUBLE };
-      const room = (await this.rooms()).find(r => r.id === data);
+      const r = await call<{ ok: boolean; id?: string; error?: string }>('request-room', { name, cat, desc });
+      if (!r?.ok) return { ok: false, error: r?.error && r.error !== 'trouble' && r.error !== 'length' ? r.error : TROUBLE };
+      const room = (await this.rooms()).find(x => x.id === r.id);
       return room ? { ok: true, value: room } : { ok: false, error: TROUBLE };
+    },
+    async report(username, reason) {
+      const r = await call<{ ok: boolean; urgent?: boolean }>('report', { username, reason });
+      return r?.ok ? { ok: true, value: { urgent: !!r.urgent } } : { ok: false, error: TROUBLE };
+    },
+    async requestReview(topic, text) {
+      const r = await call<{ ok: boolean; review?: ReviewRow; error?: string }>('review', { topic, text });
+      if (!r?.ok || !r.review) return { ok: false, error: r?.error && r.error.length > 20 ? r.error : TROUBLE };
+      return { ok: true, value: asReview(r.review) };
+    },
+    async reviews() {
+      const { data, error } = await db.rpc('my_reviews'); must(error);
+      return (data || []).map(asReview);
     },
     async blocked() { const { data, error } = await db.rpc('my_blocked'); must(error); return (data || []).map((r: { username: string }) => r.username); },
     async unblock(username) { const { error } = await db.rpc('unblock', { name: username }); must(error); },
