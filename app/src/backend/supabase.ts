@@ -217,8 +217,8 @@ export function supabaseBackend(url: string, anonKey: string): Backend {
       return room ? { ok: true, value: room } : { ok: false, error: TROUBLE };
     },
     async report(username, reason) {
-      const r = await call<{ ok: boolean; urgent?: boolean }>('report', { username, reason });
-      return r?.ok ? { ok: true, value: { urgent: !!r.urgent } } : { ok: false, error: TROUBLE };
+      const r = await call<{ ok: boolean; urgent?: boolean; error?: string }>('report', { username, reason });
+      return r?.ok ? { ok: true, value: { urgent: !!r.urgent } } : { ok: false, error: r?.error && r.error.length > 20 ? r.error : TROUBLE };
     },
     async requestReview(topic, text) {
       const r = await call<{ ok: boolean; review?: ReviewRow; error?: string }>('review', { topic, text });

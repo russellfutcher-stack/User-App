@@ -49,7 +49,10 @@ Agreed changes from the prototype: the sign-in error now says "Check for typos, 
 - Still to do: choose the real arbitrator and give them an account, once the app has its web address (step 6).
 
 **Step 6 (in progress).** The app is online at https://russellfutcher-stack.github.io/User-App/ (GitHub Pages, chosen by Rusty 29 Oct 2026), published from the `gh-pages` branch with `bash app/scripts/deploy-web.sh`. It can be installed on a phone's home screen (`app/public/manifest.webmanifest`, a navy "U" icon) and opens offline with Help now working (`app/public/sw.js`, which never stores anything from the server). Members' data stays in Supabase in Sydney.
-- To do: passkey settings in Supabase for the new address; notifications; the public information website; the security and privacy review; checking every helpline number.
+- ~~Passkey settings in Supabase for the new address.~~ Done by Rusty, 29 Oct 2026.
+- ~~Checking every helpline number.~~ Done 29 Oct 2026: all 50 current (`docs/HELPLINE-CHECK.md`); lines that aren't open 24/7 now show their hours, and Poland and Kenya have a 24-hour line (agreed by Rusty). Someone still needs to phone each one before launch.
+- ~~Security and privacy review (first pass, by Max).~~ Done 1 Nov 2026 (`docs/SECURITY-REVIEW.md`). Fixed: hidden tags were shown to everyone once any two members had chatted (a step 3 bug); use limits so nobody can run up the Anthropic bill; closed member functions to signed-out visitors; a browser security policy on the live site. The independent review is still needed, and three settings need Rusty.
+- To do: notifications; the public information website.
 
 ## Phase 2
 

@@ -1,6 +1,6 @@
 // A member reports another member. Body: { username, reason }. Checked straight away; serious reports also raise an urgent review.
 import { CAREFUL, decide, quote, REPORT_SCHEMA, ReportCheck } from '../_shared/claude.ts';
-import { admin, must, reply, serve } from '../_shared/db.ts';
+import { admin, must, recent, reply, serve } from '../_shared/db.ts';
 import { REPORT_POLICY } from '../_shared/policy.ts';
 import { decideReview } from '../_shared/reviews.ts';
 
@@ -9,6 +9,7 @@ const REASONS = ['Offering or asking for drugs', 'Harassment or hate', 'Pressuri
 serve(async (me, b) => {
   const reason = String(b.reason || ''), username = String(b.username || '');
   if (!REASONS.includes(reason)) return reply({ ok: false, error: 'bad reason' }, 400);
+  if (await recent('reports', 'reporter', me.id, 24) >= 20) return reply({ ok: false, error: "You've made a lot of reports today. If someone is in danger, call your emergency number." });
   const them = must(await admin.rpc('member_id', { name: username })) as string | null;
   if (!them || them === me.id) return reply({ ok: false, error: 'no such member' }, 404);
   const [rep] = must(await admin.from('reports').insert({ reporter: me.id, reported: them, reason }).select('id')) as { id: number }[];

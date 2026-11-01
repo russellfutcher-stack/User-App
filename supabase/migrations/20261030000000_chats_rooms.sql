@@ -53,7 +53,8 @@ $$;
 
 -- "People I chat with": both have sent at least one message. Replaces the step 2 placeholder.
 create or replace function public.chat_partners(a uuid, b uuid) returns boolean language sql stable set search_path = '' as $$
-  select exists (select 1 from public.chats c where c.a = least(a, b) and c.b = greatest(a, b)
+  -- $1 and $2, not a and b: inside this query a and b would mean the chats table's own columns (fixed 29 Oct 2026).
+  select exists (select 1 from public.chats c where c.a = least($1, $2) and c.b = greatest($1, $2)
     and exists (select 1 from public.messages m where m.chat_id = c.id and m.sender = c.a)
     and exists (select 1 from public.messages m where m.chat_id = c.id and m.sender = c.b));
 $$;

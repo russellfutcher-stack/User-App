@@ -25,4 +25,11 @@ export function serve(handler: (me: { id: string }, body: Record<string, unknown
     try { return await handler(me, body); } catch (e) { console.error(e); return reply({ ok: false, error: 'trouble' }, 500); }
   });
 }
+// How many of a member's rows a table has since `hours` ago. Used for limits that stop anyone running up the safety check's costs.
+export async function recent(table: string, column: string, id: string, hours: number, kinds?: string[]) {
+  let q = admin.from(table).select('id', { count: 'exact', head: true }).eq(column, id).gte('created_at', new Date(Date.now() - hours * 3600e3).toISOString());
+  if (kinds) q = q.in('kind', kinds);
+  const { count, error } = await q; if (error) throw new Error(error.message);
+  return count || 0;
+}
 export const must = <T>(r: { data: T; error: { message: string } | null }) => { if (r.error) throw new Error(r.error.message); return r.data; };

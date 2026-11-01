@@ -1,5 +1,5 @@
 // Sends a chat message or room post after the safety check. Body: { kind: 'chat' | 'room', to: username or room id, text }.
-import { admin, must, reply, serve } from '../_shared/db.ts';
+import { admin, must, recent, reply, serve } from '../_shared/db.ts';
 import { checkMessage } from '../_shared/moderate.ts';
 
 const HELD = "This message couldn't be checked just now, so it wasn't sent. Please try again in a moment.";
@@ -25,6 +25,8 @@ serve(async (me, b) => {
   if (state.muted_until && Date.parse(state.muted_until) > now) return reply({ ok: false, error: `You can't send messages until ${until(state.muted_until)}.` });
   const age = must(await admin.from('profiles').select('age_check_at').eq('id', me.id).single()) as { age_check_at: string | null };
   if (age.age_check_at) return reply({ ok: false, error: 'Please confirm you are 18 or older to carry on.', ageCheck: 'ask' });
+
+  if (await recent('moderation', 'member', me.id, 1, ['message', 'post']) >= 60) return reply({ ok: false, error: "You've sent a lot of messages in the last hour. Please wait a little, then try again." });
 
   let where = 'a one-to-one chat';
   if (kind === 'room') {
