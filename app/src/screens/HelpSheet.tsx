@@ -14,7 +14,7 @@ export function HelpSheet({ intro }: { intro?: string }) {
   const { closeSheet, setTab, profile } = useApp();
   return (
     <>
-      <H2>{intro ? "You don't have to hold this alone" : 'Help now'}</H2>
+      <H2>{intro ? "You don't have to hold this alone" : 'Help'}</H2>
       <P>{intro || 'If you are in danger or someone may have overdosed, call emergency services now. If you have naloxone, use it and stay with them.'}</P>
       <View style={{ gap: 8 }}>
         {LINES.map(([a, b]) => (

@@ -14,22 +14,22 @@ const openReviewFromBlocked = async page => {
 };
 
 test('HS-01 Help sheet: emergency advice, 7 helplines, grounding, Support and Close', async ({ page }) => {
-  await H.btn(page, 'Help now').click();
+  await H.btn(page, 'Help').click();
   await expect(sheet(page)).toContainText('If you are in danger or someone may have overdosed, call emergency services now.');
   await expect(sheet(page)).toContainText('Grounding, right now');
   for (const l of ['988', '116 123', '13 11 14', '1737', '911 · 999 · 112 · 000', '1-800-484-3731', '0300 123 6600']) await expect(sheet(page)).toContainText(l);
 });
 test('HS-01 The Help sheet closes', async ({ page }) => {
-  await H.btn(page, 'Help now').click(); await sheet(page).getByRole('button', { name: 'Close', exact: true }).click();
+  await H.btn(page, 'Help').click(); await sheet(page).getByRole('button', { name: 'Close', exact: true }).click();
   await expect(sheet(page)).toHaveCount(0);
 });
 test('HS-02 Help sheet links to the Support page', async ({ page }) => {
-  await H.signInDemo(page); await H.btn(page, 'Help now').click();
+  await H.signInDemo(page); await H.btn(page, 'Help').click();
   await sheet(page).getByRole('button', { name: 'See help services for every country' }).click();
   await expect(H.tab(page, 'Support')).toHaveAttribute('aria-selected', 'true');
 });
 test('HS-02 From a chat too', async ({ page }) => {
-  await H.signInDemo(page); await H.openChat(page, 'SteadyBadger'); await H.btn(page, 'Help now').click();
+  await H.signInDemo(page); await H.openChat(page, 'SteadyBadger'); await H.btn(page, 'Help').click();
   await sheet(page).getByRole('button', { name: 'See help services for every country' }).click();
   await expect(H.tab(page, 'Support')).toHaveAttribute('aria-selected', 'true');
 });
@@ -140,11 +140,11 @@ test('HS-08 Saying you are under 18 pauses the account', async ({ page }) => {
   const chat = (await H.stored(page)).accounts.quietheron.chats.SteadyBadger.msgs;
   expect(chat.some(m => /I'm 15/.test(m.t))).toBe(false);
 });
-test('HS-08 The account stays paused after signing in again, and Help now still works', async ({ page }) => {
+test('HS-08 The account stays paused after signing in again, and Help still works', async ({ page }) => {
   await pausedBySaying(page, 'I am in Year 10 at school');
   await H.btn(page, 'Sign out').click(); await H.signIn(page);
   await expect(page.getByRole('heading', { name: 'Please confirm your age' })).toBeVisible();
-  await H.btn(page, 'Help now').click(); await expect(sheet(page)).toContainText('Grounding, right now');
+  await H.btn(page, 'Help').click(); await expect(sheet(page)).toContainText('Grounding, right now');
 });
 test('HS-08 Recovery talk with a number is not an age sign', async ({ page }) => {
   await H.signInDemo(page); await H.openChat(page, 'SteadyBadger'); await H.send(page, "I'm 9 months sober today");

@@ -9,7 +9,7 @@ const BENEFITS: [string, string][] = [
   ['Find people who get it.', 'We match you on shared interests, drug use and mental health, so conversations start from common ground.'],
   ['Stay anonymous.', 'No real name, email or phone number. You decide who sees what.'],
   ['Feel less alone, day or night.', 'One-to-one chats, small group rooms, and peer supporters who have been there too.'],
-  ['Safe by design.', 'Every message is checked for safety, drug dealing is blocked, and Help now is one tap away.']];
+  ['Safe by design.', 'Every message is checked for safety, drug dealing is blocked, and Help is one tap away.']];
 const HOWTO = [
   'Create an anonymous account with a username and password.',
   "Set up your profile using the three choices: Interest, Drug use and Mental health, and say if you'd like peer support.",

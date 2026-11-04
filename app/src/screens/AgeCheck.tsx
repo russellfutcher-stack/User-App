@@ -11,7 +11,7 @@ export function AgeCheck() {
   if (paused === 'review') return (
     <Card>
       <H2>Your account is paused</H2>
-      <P>Your account is paused while it is reviewed. Help now is still at the top if you need it.</P>
+      <P>Your account is paused while it is reviewed. Help is still at the top if you need it.</P>
       <Btn block variant="quiet" label="Sign out" onPress={signOut} />
     </Card>
   );

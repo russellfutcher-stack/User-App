@@ -55,7 +55,7 @@ Agreed changes from the prototype: the sign-in error now says "Check for typos, 
 - ~~Text retention.~~ Rusty, 4 Nov 2026: the text of blocked messages (and re-check misses and room requests) is deleted after 30 days, every night (`supabase/migrations/20261104000000_retention.sql`).
 - ~~The public information website.~~ Done 4 Nov 2026 at https://russellfutcher-stack.github.io/User-App/about/: about, how it works, safety and the community agreement, and help services for all 33 countries, built from the app's own wording by `app/scripts/make-site.js` on every publish. The privacy policy is written and appears once `app/site/settings.json` names who runs User and a contact email (Rusty chose a placeholder for now).
 - ~~Notifications.~~ Done 4 Nov 2026 (Rusty: new messages and reviews). A neutral alert, never names or message text; members turn it on per device on the Me page (M-25); Mute in a chat silences it for 8 hours (C-11). Web Push from `supabase/functions/push` and `_shared/push.ts`; the signing key is made on the server and never leaves it. `app/scripts/live-notify.js` passes on the real server. On iPhone it only works once User is added to the home screen.
-- ~~Phoning each helpline; who runs User.~~ Done (Rusty, 4 Nov 2026): every helpline passed; User is run by Logical Rules, contact russellfutcher@gmail.com, so the privacy policy is now on the website.
+- ~~Phoning each helpline; who runs User.~~ Done (Rusty, 4 Nov 2026): every helpline passed; User is run by Logical Rules (no email address is published; questions go through Ask for a review), so the privacy policy is now on the website.
 - Still to do before launch: the independent security review, and the three settings in `docs/SECURITY-REVIEW.md`.
 
 ## Phase 2

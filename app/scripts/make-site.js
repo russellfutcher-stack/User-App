@@ -1,7 +1,7 @@
 // Writes the public information website (public/about/index.html), served at /User-App/about/ and readable without an account.
 // The wording comes from the app itself (the Welcome page, the community agreement, and the Support page's help services),
-// so the two never drift apart. The privacy policy is only included once site/settings.json names who runs User and how to
-// contact them (Rusty, 4 Nov 2026). Run from app/:  node scripts/make-site.js   (deploy-web.sh runs it too)
+// so the two never drift apart. The privacy policy is only included once site/settings.json names who runs User. No email
+// address is published; questions go through Ask for a review in the app (Rusty, 4 Nov 2026). Run from app/:  node scripts/make-site.js   (deploy-web.sh runs it too)
 const fs = require('fs'), path = require('path');
 const root = path.join(__dirname, '..');
 const read = f => fs.readFileSync(path.join(root, f), 'utf8');
@@ -17,14 +17,14 @@ const BENEFITS = literal(welcome, 'const BENEFITS'), HOWTO = literal(welcome, 'c
 const AGREEMENT = [...signup.matchAll(/<Bullet>([^<]+)<\/Bullet>/g)].map(m => m[1]).slice(0, 4);
 const SERVICES = literal(read('src/data/support.ts'), 'export const SERVICES');
 const settings = JSON.parse(read('site/settings.json'));
-const ready = !!(settings.organisation.trim() && settings.contactEmail.trim());
+const ready = !!settings.organisation.trim();
 if (AGREEMENT.length !== 4 || !BENEFITS.length || !HOWTO.length || SERVICES.length < 30) throw new Error("Couldn't read the app's wording");
 
 const esc = s => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 const services = s => `<div class="lines"><div class="line em"><span>Emergency</span><b>${esc(s.emergency)}</b></div>${s.lines.map(([a, b]) => `<div class="line"><span>${esc(a)}</span><b>${esc(b)}</b></div>`).join('')}</div>`;
 const privacy = ready ? `
 <section id="privacy"><h2>Privacy policy</h2>
-<p>User is run by ${esc(settings.organisation)}. Questions about your data: <a href="mailto:${esc(settings.contactEmail)}">${esc(settings.contactEmail)}</a>.</p>
+<p>User is run by ${esc(settings.organisation)}. Questions about your data: in User, open Support, tap Ask for a review and choose Something else. Replies come back on the Support page.</p>
 <h3>What we keep</h3>
 <ul><li>Your username and password. Your password is stored only as a salted hash, so nobody can read it.</li>
 <li>Your profile: byline, stage, what you're looking for, your interest, drug use and mental health choices, and who can see each.</li>
@@ -73,7 +73,7 @@ details summary{cursor:pointer;font-weight:700;margin:4px 0}
 <header><div class="in">
 <h1>User</h1>
 <p>Connection and Recovery. Anonymous peer support for people who use drugs, are in recovery, or live with a mental health condition. For adults, 18 and over.</p>
-<a class="btn" href="../">Open User</a><a class="help" href="#help">Help now</a>
+<a class="btn" href="../">Open User</a><a class="help" href="#help">Help</a>
 <nav><a href="#about">About</a><a href="#how">How it works</a><a href="#safety">Safety</a>${ready ? '<a href="#privacy">Privacy</a>' : ''}<a href="#help">Help services</a></nav>
 </div></header>
 <main>

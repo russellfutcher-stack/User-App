@@ -2,22 +2,22 @@ const { test } = require('@playwright/test');
 const H = require('./helpers'); const { expect } = H;
 test.beforeEach(async ({ page }) => { await H.open(page); });
 
-test('G-01 Header shows the name, Exit and Help now', async ({ page }) => {
+test('G-01 Header shows the name, Exit and Help', async ({ page }) => {
   const bar = page.locator('#bar');
   await expect(bar).toContainText('User'); await expect(bar).toContainText('CONNECTION AND RECOVERY');
-  await expect(H.btn(page, 'Exit to Home')).toBeVisible(); await expect(H.btn(page, 'Help now')).toBeVisible();
+  await expect(H.btn(page, 'Exit to Home')).toBeVisible(); await expect(H.btn(page, 'Help')).toBeVisible();
 });
 test('G-01 Sign-up shows Back and the page name', async ({ page }) => {
   await H.startSignup(page);
   await expect(H.btn(page, 'Back')).toBeVisible(); await expect(page.locator('#bar')).toContainText('Create account');
 });
-test('G-02 Help now opens the Help sheet', async ({ page }) => {
-  await H.btn(page, 'Help now').click();
-  await expect(H.sheet(page).getByRole('heading', { name: 'Help now' })).toBeVisible();
+test('G-02 Help opens the Help sheet', async ({ page }) => {
+  await H.btn(page, 'Help').click();
+  await expect(H.sheet(page).getByRole('heading', { name: 'Help' })).toBeVisible();
   await expect(H.sheet(page)).toContainText('13 11 14');
 });
-test('G-02 Help now works after signing in', async ({ page }) => {
-  await H.signInDemo(page); await H.tab(page, 'Me').click(); await H.btn(page, 'Help now').click();
+test('G-02 Help works after signing in', async ({ page }) => {
+  await H.signInDemo(page); await H.tab(page, 'Me').click(); await H.btn(page, 'Help').click();
   await expect(H.sheet(page)).toContainText('Grounding, right now');
 });
 test('G-03 Exit goes to the Home page', async ({ page }) => {
@@ -26,7 +26,7 @@ test('G-03 Exit goes to the Home page', async ({ page }) => {
   await expect(page.getByText('Shopping list')).toHaveCount(0);
 });
 test('G-03 Exit closes an open sheet or chat first', async ({ page }) => {
-  await H.signInDemo(page); await H.openChat(page, 'SteadyBadger'); await H.btn(page, 'Help now').click();
+  await H.signInDemo(page); await H.openChat(page, 'SteadyBadger'); await H.btn(page, 'Help').click();
   await H.btn(page, 'Exit to Home').click();
   await expect(H.sheet(page)).toHaveCount(0); await expect(page.locator('#msg')).toHaveCount(0);
   await expect(H.tab(page, 'Home')).toHaveAttribute('aria-selected', 'true');
@@ -61,15 +61,15 @@ test('G-07 The toast goes after about 2.4 seconds', async ({ page }) => {
   await expect(H.toast(page)).toBeVisible(); await page.waitForTimeout(2700); await expect(H.toast(page)).toHaveCount(0);
 });
 test('G-08 Sheets close with Escape', async ({ page }) => {
-  await H.btn(page, 'Help now').click(); await expect(H.sheet(page)).toBeVisible();
+  await H.btn(page, 'Help').click(); await expect(H.sheet(page)).toBeVisible();
   await page.keyboard.press('Escape'); await expect(H.sheet(page)).toHaveCount(0);
 });
 test('G-08 Sheets close by tapping outside or Close', async ({ page }) => {
-  await H.btn(page, 'Help now').click();
+  await H.btn(page, 'Help').click();
   const top = (await H.sheet(page).boundingBox()).y, frame = await page.locator('#device').boundingBox();
   await page.mouse.click(frame.x + 20, top - 8);
   await expect(H.sheet(page)).toHaveCount(0);
-  await H.btn(page, 'Help now').click(); await H.sheet(page).getByRole('button', { name: 'Close', exact: true }).click();
+  await H.btn(page, 'Help').click(); await H.sheet(page).getByRole('button', { name: 'Close', exact: true }).click();
   await expect(H.sheet(page)).toHaveCount(0);
 });
 test('G-09 Stays light in dark mode', async ({ page }) => {
@@ -138,10 +138,10 @@ test("G-16 Back doesn't bring User back, and you're signed out", async ({ page }
 });
 test('G-16 Hide is in the header next to Exit, signed in or out, and fits on a small phone', async ({ page }) => {
   await page.setViewportSize({ width: 320, height: 760 });
-  for (const b of ['Exit to Home', 'Quick exit: leave User', 'Help now']) await expect(H.btn(page, b)).toBeInViewport({ ratio: 1 });
+  for (const b of ['Exit to Home', 'Quick exit: leave User', 'Help']) await expect(H.btn(page, b)).toBeInViewport({ ratio: 1 });
   await H.signInDemo(page);
-  for (const b of ['Exit to Home', 'Quick exit: leave User', 'Help now']) await expect(H.btn(page, b)).toBeInViewport({ ratio: 1 });
+  for (const b of ['Exit to Home', 'Quick exit: leave User', 'Help']) await expect(H.btn(page, b)).toBeInViewport({ ratio: 1 });
   await H.openChat(page, 'SteadyBadger');
-  for (const b of ['Back', 'Exit to Home', 'Quick exit: leave User', 'Help now']) await expect(H.btn(page, b)).toBeInViewport({ ratio: 1 });
+  for (const b of ['Back', 'Exit to Home', 'Quick exit: leave User', 'Help']) await expect(H.btn(page, b)).toBeInViewport({ ratio: 1 });
   expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(320);
 });

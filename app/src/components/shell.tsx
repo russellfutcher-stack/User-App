@@ -1,4 +1,4 @@
-// The header (brand or Back, Exit, Hide, Help now), the tab bar, the bottom sheet and the toast.
+// The header (brand or Back, Exit, Hide, Help), the tab bar, the bottom sheet and the toast.
 import React, { ReactNode } from 'react';
 import { Platform, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -23,7 +23,7 @@ export function Bar({ back, title }: { back?: () => void; title?: string }) {
       <View style={{ flex: 1, minWidth: 0 }}>{title ? <Text numberOfLines={1} style={s.title}>{title}</Text> : null}</View>
       <Pressable role="button" aria-label="Exit to Home" onPress={exit} style={s.iconbtn}><Text style={s.iconText}>Exit</Text></Pressable>
       {Platform.OS === 'web' ? <Pressable role="button" aria-label="Quick exit: leave User" onPress={hide} style={s.iconbtn}><Text style={s.iconText}>Hide</Text></Pressable> : null}
-      <Pressable role="button" aria-label="Help now" onPress={() => openSheet(<HelpSheet />)} style={[s.iconbtn, { backgroundColor: C.danger }]}><Text style={[s.iconText, { color: '#fff' }]}>Help now</Text></Pressable>
+      <Pressable role="button" aria-label="Help" onPress={() => openSheet(<HelpSheet />)} style={[s.iconbtn, { backgroundColor: C.danger }]}><Text style={[s.iconText, { color: '#fff' }]}>Help</Text></Pressable>
     </View>
   );
 }
