@@ -9,13 +9,13 @@ Prototype version 24. Every function a person can use in the prototype, each wit
 - **Saved only**: the choice is saved but has no visible effect yet.
 - **Placeholder**: the button only shows a message.
 
-Totals: Working 147, Simulated 7, Saved only 2, Placeholder 2, 158 functions in all.
+Totals: Working 148, Simulated 7, Saved only 2, Placeholder 2, 159 functions in all.
 
 ## Global
 
 | ID | Function | How to trigger | Expected result / rules | Status | Needs a backend |
 |---|---|---|---|---|---|
-| G-01 | App header | Visible on every screen | 'User / Connection and Recovery', an Exit button and a red Help now button. In chats, rooms and sign-up it shows a Back button (the word Back) and the page name. | Working | - |
+| G-01 | App header | Visible on every screen | 'User / Connection and Recovery', an Exit button, a Hide button and a red Help now button. In chats, rooms and sign-up it shows a Back button (the word Back) and the page name. | Working | - |
 | G-02 | Help now | Tap Help now on any screen | Opens the Help sheet (see Help & Safety). | Working | - |
 | G-03 | Exit | Tap Exit | Closes any sheet, chat or room and goes to the Home page (Rusty, 4 Nov 2026). Replaces the fake notes screen. | Working | - |
 | G-04 | Exit when signed out | Tap Exit before signing in | Goes to the Welcome page. Exit never signs you out. | Working | - |
@@ -30,6 +30,7 @@ Totals: Working 147, Simulated 7, Saved only 2, Placeholder 2, 158 functions in 
 | G-13 | No avatars | Look at every page and profile | No avatar pictures anywhere. People are shown by username only. | Working | - |
 | G-14 | Plain safety wording | Look through every page | No mention of AI agents, staff, volunteers, moderators or Night Owls. The app says 'every message is checked for safety'. | Working | - |
 | G-15 | Sample community | Use the app | 100 fictional members (12 written by hand, 88 generated the same way every time), 21 of them peer supporters. Every room has 4 to 6 posts, and the demo account has 6 chats, 3 unread. | Working | - |
+| G-16 | Hide (quick exit) | Tap Hide | User is replaced by Google's home page; Back doesn't bring it back, and you're signed out (Rusty, 4 Nov 2026). | Working | Web app only. |
 
 ## Welcome & Sign in
 

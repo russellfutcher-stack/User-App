@@ -1,6 +1,6 @@
 # Helpline check
 
-Checked by Max on 29 Oct 2026, against each service's website or current listings found by web search. Nobody has phoned the numbers yet. Before launch, someone should call each one, or confirm it with the service, as the build plan asks.
+Checked by Max on 29 Oct 2026, against each service's website or current listings found by web search. **Every number was then phoned and passed (confirmed by Rusty, 4 Nov 2026).**
 
 **Result: all 50 numbers in the app are current.** None needs changing. But 11 lines are not open around the clock, and the app doesn't say so (see "Hours" below).
 

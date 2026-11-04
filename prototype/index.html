@@ -743,6 +743,7 @@ function bar(left, title){
   $('#bar').innerHTML = `${left||`<div class="brand">User<small>Connection and Recovery</small></div>`}
     <div class="grow">${title?`<div class="title">${title}</div>`:''}</div>
     <button class="iconbtn exit" onclick="App.exit()" aria-label="Exit to Home">Exit</button>
+    <button class="iconbtn exit" onclick="App.hide()" aria-label="Quick exit: leave User">Hide</button>
     <button class="iconbtn help" onclick="App.help()">Help now</button>`;
 }
 function tabs(show){
@@ -1289,6 +1290,8 @@ const App = {
   back(){ view={name:null}; render(); },
   help(){ helpSheet(); },
   // Exit goes back to Home, or to the Welcome page when signed out (Rusty, 4 Nov 2026).
+  // Hide: a quick exit to Google's home page; Back can't bring User back (Rusty, 4 Nov 2026).
+  hide(){ location.replace('https://www.google.com/'); },
   exit(){ closeSheet(); view={name:null}; ob=null; if(S.loggedIn) S.ui.tab='home'; save(); render(); $('#screen').scrollTop=0; },
   q(v){ S.ui.q=v; save(); renderResults(); },
   path(k){ const on=S.ui.cats.includes(k);

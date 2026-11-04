@@ -124,3 +124,24 @@ test('G-14 Setup and Me wording', async ({ page }) => {
   await H.createAccount(page, 'Words_1'); expect(await H.screen(page).innerText()).not.toMatch(BANNED);
   await H.finishSetup(page); await H.tab(page, 'Me').click(); expect(await H.screen(page).innerText()).not.toMatch(BANNED);
 });
+// G-16 Hide: a quick exit to Google's home page (Rusty, 4 Nov 2026). The jump is caught, so the test needs no internet.
+const hidden = async page => { await page.route('https://www.google.com/**', r => r.fulfill({ status: 200, contentType: 'text/html', body: '<title>Google</title>' })); };
+test('G-16 Hide leaves User for Google', async ({ page }) => {
+  await hidden(page); await H.signInDemo(page); await H.btn(page, 'Quick exit: leave User').click();
+  await expect(page).toHaveURL('https://www.google.com/'); await expect(page).toHaveTitle('Google');
+});
+test("G-16 Back doesn't bring User back, and you're signed out", async ({ page }) => {
+  await hidden(page); await H.open(page); await H.signInDemo(page); await H.btn(page, 'Quick exit: leave User').click();
+  await expect(page).toHaveURL('https://www.google.com/');
+  await page.goBack().catch(() => undefined);
+  await expect(page.getByRole('tab', { name: 'Home' })).toHaveCount(0);
+});
+test('G-16 Hide is in the header next to Exit, signed in or out, and fits on a small phone', async ({ page }) => {
+  await page.setViewportSize({ width: 320, height: 760 });
+  for (const b of ['Exit to Home', 'Quick exit: leave User', 'Help now']) await expect(H.btn(page, b)).toBeInViewport({ ratio: 1 });
+  await H.signInDemo(page);
+  for (const b of ['Exit to Home', 'Quick exit: leave User', 'Help now']) await expect(H.btn(page, b)).toBeInViewport({ ratio: 1 });
+  await H.openChat(page, 'SteadyBadger');
+  for (const b of ['Back', 'Exit to Home', 'Quick exit: leave User', 'Help now']) await expect(H.btn(page, b)).toBeInViewport({ ratio: 1 });
+  expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(320);
+});

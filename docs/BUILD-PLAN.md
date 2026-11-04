@@ -50,12 +50,13 @@ Agreed changes from the prototype: the sign-in error now says "Check for typos, 
 
 **Step 6 (in progress).** The app is online at https://russellfutcher-stack.github.io/User-App/ (GitHub Pages, chosen by Rusty 29 Oct 2026), published from the `gh-pages` branch with `bash app/scripts/deploy-web.sh`. It can be installed on a phone's home screen (`app/public/manifest.webmanifest`, a navy "U" icon) and opens offline with Help now working (`app/public/sw.js`, which never stores anything from the server). Members' data stays in Supabase in Sydney.
 - ~~Passkey settings in Supabase for the new address.~~ Done by Rusty, 29 Oct 2026.
-- ~~Checking every helpline number.~~ Done 29 Oct 2026: all 50 current (`docs/HELPLINE-CHECK.md`); lines that aren't open 24/7 now show their hours, and Poland and Kenya have a 24-hour line (agreed by Rusty). Someone still needs to phone each one before launch.
+- ~~Checking every helpline number.~~ Done 29 Oct 2026: all 50 current (`docs/HELPLINE-CHECK.md`); lines that aren't open 24/7 now show their hours, and Poland and Kenya have a 24-hour line (agreed by Rusty). All phoned and passed (Rusty, 4 Nov 2026).
 - ~~Security and privacy review (first pass, by Max).~~ Done 1 Nov 2026 (`docs/SECURITY-REVIEW.md`). Fixed: hidden tags were shown to everyone once any two members had chatted (a step 3 bug); use limits so nobody can run up the Anthropic bill; closed member functions to signed-out visitors; a browser security policy on the live site. The independent review is still needed, and three settings need Rusty.
 - ~~Text retention.~~ Rusty, 4 Nov 2026: the text of blocked messages (and re-check misses and room requests) is deleted after 30 days, every night (`supabase/migrations/20261104000000_retention.sql`).
 - ~~The public information website.~~ Done 4 Nov 2026 at https://russellfutcher-stack.github.io/User-App/about/: about, how it works, safety and the community agreement, and help services for all 33 countries, built from the app's own wording by `app/scripts/make-site.js` on every publish. The privacy policy is written and appears once `app/site/settings.json` names who runs User and a contact email (Rusty chose a placeholder for now).
 - ~~Notifications.~~ Done 4 Nov 2026 (Rusty: new messages and reviews). A neutral alert, never names or message text; members turn it on per device on the Me page (M-25); Mute in a chat silences it for 8 hours (C-11). Web Push from `supabase/functions/push` and `_shared/push.ts`; the signing key is made on the server and never leaves it. `app/scripts/live-notify.js` passes on the real server. On iPhone it only works once User is added to the home screen.
-- Still to do before launch: the independent security review, phoning each helpline, filling in `app/site/settings.json`, and the three settings in `docs/SECURITY-REVIEW.md`.
+- ~~Phoning each helpline; who runs User.~~ Done (Rusty, 4 Nov 2026): every helpline passed; User is run by Logical Rules, contact russellfutcher@gmail.com, so the privacy policy is now on the website.
+- Still to do before launch: the independent security review, and the three settings in `docs/SECURITY-REVIEW.md`.
 
 ## Phase 2
 

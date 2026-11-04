@@ -1,5 +1,5 @@
 ﻿ID,Area,Function,How to trigger,Expected result / rules,Status,Needs a backend to test fully
-G-01,Global,App header,Visible on every screen,"'User / Connection and Recovery', an Exit button and a red Help now button. In chats, rooms and sign-up it shows a Back button (the word Back) and the page name.",Working,
+G-01,Global,App header,Visible on every screen,"'User / Connection and Recovery', an Exit button, a Hide button and a red Help now button. In chats, rooms and sign-up it shows a Back button (the word Back) and the page name.",Working,
 G-02,Global,Help now,Tap Help now on any screen,Opens the Help sheet (see Help & Safety).,Working,
 G-03,Global,Exit,Tap Exit,"Closes any sheet, chat or room and goes to the Home page (Rusty, 4 Nov 2026). Replaces the fake notes screen.",Working,
 G-04,Global,Exit when signed out,Tap Exit before signing in,Goes to the Welcome page. Exit never signs you out.,Working,
@@ -14,6 +14,7 @@ G-12,Global,Always opens signed out,Reload the page,"Opens on the Welcome page, 
 G-13,Global,No avatars,Look at every page and profile,No avatar pictures anywhere. People are shown by username only.,Working,
 G-14,Global,Plain safety wording,Look through every page,"No mention of AI agents, staff, volunteers, moderators or Night Owls. The app says 'every message is checked for safety'.",Working,
 G-15,Global,Sample community,Use the app,"100 fictional members (12 written by hand, 88 generated the same way every time), 21 of them peer supporters. Every room has 4 to 6 posts, and the demo account has 6 chats, 3 unread.",Working,
+G-16,Global,Hide (quick exit),Tap Hide,"User is replaced by Google's home page; Back doesn't bring it back, and you're signed out (Rusty, 4 Nov 2026).",Working,Web app only.
 WS-01,Welcome & Sign in,Welcome page,Open the app,"The User name, the byline 'Connection and Recovery' and a one-line description.",Working,
 WS-02,Welcome & Sign in,Benefits,Open the app,'Why people use User' lists 4 benefits.,Working,
 WS-03,Welcome & Sign in,How to use it,Open the app,5 numbered steps. The last explains how to become a peer supporter.,Working,
