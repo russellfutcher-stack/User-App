@@ -9,7 +9,7 @@ Prototype version 24. Every function a person can use in the prototype, each wit
 - **Saved only**: the choice is saved but has no visible effect yet.
 - **Placeholder**: the button only shows a message.
 
-Totals: Working 144, Simulated 7, Saved only 2, Placeholder 4, 157 functions in all.
+Totals: Working 147, Simulated 7, Saved only 2, Placeholder 2, 158 functions in all.
 
 ## Global
 
@@ -119,6 +119,7 @@ Totals: Working 144, Simulated 7, Saved only 2, Placeholder 4, 157 functions in 
 | M-22 | Sign out | Tap Sign out | Back to Welcome. | Working | - |
 | M-23 | Delete account | Tap Delete account | Confirm or keep. | Working | - |
 | M-24 | Delete everything | Confirm | Erases data and restores the demo account. | Working | Deleting an account everywhere needs a server. |
+| M-25 | Notifications on this device | Turn on the switch under Privacy & visibility | Off at first. A neutral alert for new messages and review decisions ('You have a new message.', 'A review has been decided.'), never names or message text. Per device; on iPhone only once User is on the home screen. | Working | Real on the Supabase server (Web Push); checked with app/scripts/live-notify.js. |
 
 ## Search page
 
@@ -155,7 +156,7 @@ Totals: Working 144, Simulated 7, Saved only 2, Placeholder 4, 157 functions in 
 | C-08 | Phone numbers allowed | Send a phone number | The message is sent. | Working | The real check is the AI Moderator on a server. |
 | C-09 | Crisis detection | Crisis words | Sent, then the Help sheet opens. | Working | The real check is the AI Moderator on a server. |
 | C-10 | Chat options | Tap 'Safety & options' | Safe meeting tips, Mute, Report and Block. | Working | - |
-| C-11 | Mute | Tap Mute | Message only. | Placeholder | Mute needs real notifications. |
+| C-11 | Mute | Tap Mute | 'Muted for 8 hours.' No notifications from this chat for 8 hours. | Working | Real on the Supabase server; checked with app/scripts/live-notify.js. |
 | C-12 | Back | Tap Back | Returns to the chat list. | Working | - |
 | C-13 | Unblock from Chats | Block someone, open Chats | A Blocked section lists them with an Unblock button; unblocking brings their chat back. | Working | Blocks must be enforced on a server. |
 | C-14 | Review from a blocked message | Tap 'Think this is wrong? Ask for a review' | Opens the review form with 'A message that was blocked' chosen. | Working | - |

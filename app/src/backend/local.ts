@@ -19,7 +19,7 @@ type Rooms = { joined: string[]; posts: Record<string, Stored[]>; custom: MyRoom
 type ArbDecision = { outcome: ArbOutcome; note: string };
 type Case = Omit<Review, 'status' | 'note' | 'by'> & { at: number; decision: Decision; arb?: ArbDecision };
 type Account = { salt: string; hash: string; passkey: boolean; profile: Profile; blocked: string[]; chats?: Record<string, Chat>; rooms?: Rooms; cases?: Case[];
-  checkin?: boolean; ageCheck?: AgeCheck; ageConfirmed?: boolean };
+  checkin?: boolean; ageCheck?: AgeCheck; ageConfirmed?: boolean; notify?: boolean; muted?: Record<string, number> };
 
 // In the demo, a review is decided about 1.5 seconds after it's sent, as in the prototype.
 const DECIDE_AFTER = 1500;
@@ -235,6 +235,10 @@ export function localBackend(): Backend {
     },
     async reviews() { const a = await me(); return (a?.cases || []).map(asReview); },
     async notices() { const a = await me(); return { checkin: !!a?.checkin, ageCheck: a?.ageCheck || null }; },
+    // The demo has no server to send notifications, so it only remembers the choices.
+    async notificationsOn() { return !!(await me())?.notify; },
+    async setNotifications(on) { await withMe(a => { a.notify = on; }); return { ok: true, value: null }; },
+    async muteChat(w) { await withMe(a => { a.muted = { ...a.muted, [w]: Date.now() + 8 * 3600000 }; }); },
     async isArbitrator() { return current === ARB; },
     async arbFigures() { return { ...SAMPLE_FIGURES }; },
     async arbCases() {

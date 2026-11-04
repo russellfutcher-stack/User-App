@@ -78,6 +78,7 @@ M-21,Me,Page order,Scroll Me,"Username and byline, Peer support, My profile, Edi
 M-22,Me,Sign out,Tap Sign out,Back to Welcome.,Working,
 M-23,Me,Delete account,Tap Delete account,Confirm or keep.,Working,
 M-24,Me,Delete everything,Confirm,Erases data and restores the demo account.,Working,Deleting an account everywhere needs a server.
+M-25,Me,Notifications on this device,Turn on the switch under Privacy & visibility,"Off at first. A neutral alert for new messages and review decisions ('You have a new message.', 'A review has been decided.'), never names or message text. Per device; on iPhone only once User is on the home screen.",Working,Real on the Supabase server (Web Push); checked with app/scripts/live-notify.js.
 DS-01,Search page,Your Matches,Open Search,"At the top with a count, sorted by match score.",Working,Real matches come from real members on a server.
 DS-02,Search page,Top 3 / show all,Tap Show all / Show top 3,Expands or shrinks the list.,Working,
 DS-03,Search page,Choice tiles On/Off,"Tap Interest, Drug use or Mental health","Labelled '1. Choose', with no Search heading above. All On by default. Off hides that choice's items and removes its picks.",Working,
@@ -104,7 +105,7 @@ C-07,Chats,Dealing and contact filter,"Selling words, prices, links, other apps'
 C-08,Chats,Phone numbers allowed,Send a phone number,The message is sent.,Working,The real check is the AI Moderator on a server.
 C-09,Chats,Crisis detection,Crisis words,"Sent, then the Help sheet opens.",Working,The real check is the AI Moderator on a server.
 C-10,Chats,Chat options,Tap 'Safety & options',"Safe meeting tips, Mute, Report and Block.",Working,
-C-11,Chats,Mute,Tap Mute,Message only.,Placeholder,Mute needs real notifications.
+C-11,Chats,Mute,Tap Mute,'Muted for 8 hours.' No notifications from this chat for 8 hours.,Working,Real on the Supabase server; checked with app/scripts/live-notify.js.
 C-12,Chats,Back,Tap Back,Returns to the chat list.,Working,
 C-13,Chats,Unblock from Chats,"Block someone, open Chats",A Blocked section lists them with an Unblock button; unblocking brings their chat back.,Working,Blocks must be enforced on a server.
 C-14,Chats,Review from a blocked message,Tap 'Think this is wrong? Ask for a review',Opens the review form with 'A message that was blocked' chosen.,Working,

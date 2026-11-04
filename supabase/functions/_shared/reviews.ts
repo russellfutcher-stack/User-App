@@ -4,6 +4,7 @@
 import { CAREFUL, decide, quote, REVIEW_SCHEMA, ReviewCheck } from './claude.ts';
 import { admin, must } from './db.ts';
 import { REVIEW_POLICY } from './policy.ts';
+import { notify } from './push.ts';
 
 const SURE = 0.85;
 const UNSURE_NOTE = "Reviewed automatically: we couldn't confirm the message was safe, so the decision stays. It will be checked again.";
@@ -37,4 +38,5 @@ export async function decideReview(id: string) {
     if (s.length) await admin.from('strikes').delete().eq('id', s[0].id);
   }
   if (v.decision === 'Overturned' && c.topic === 'A report about me') await admin.from('profiles').update({ muted_until: null }).eq('id', c.member);
+  await notify(c.member, 'review').catch(e => console.error(e));
 }

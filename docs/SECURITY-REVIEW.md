@@ -39,7 +39,7 @@ Done by Max on 29 Oct to 1 Nov 2026. **This is not the independent review the bu
 ## For the independent reviewer, and decisions for Rusty
 
 - **Claude processes message text outside Australia.** Messages are stored in Sydney, but every message is sent to Anthropic's API to be checked, and Anthropic processes it in other countries. The privacy policy and information website must say so.
-- **How long blocked messages and decision logs are kept.** The text of blocked messages, and of misses found by the nightly re-check, is kept with the decision for reviews and the test set, with no end date. A retention period (for example 90 days) should be chosen.
+- **How long blocked messages are kept:** decided by Rusty, 4 Nov 2026. The text is deleted after 30 days; the record of the decision stays without it.
 - **Account sign-up limits.** Anyone can make many accounts; Supabase limits sign-ups per address by default. A CAPTCHA could be added if abuse appears.
 - **Two add-ons sit in the main database area** (citext and pg_net), which Supabase flags as a low risk. Moving them is possible but could break things, so it's left for the reviewer.
 - Room posts show the poster's username to every member, including in rooms they haven't joined. That's by design (people can look at a room before joining), but worth confirming.

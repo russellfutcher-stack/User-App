@@ -178,6 +178,7 @@ export function Chat({ withUser }: { withUser: string }) {
 
 function ChatOptions({ withUser }: { withUser: string }) {
   const { toast, openSheet, closeSheet, setView, membersChanged } = useApp();
+  const mute = async () => { try { await backend.muteChat(withUser); } catch { toast(oops); return; } toast('Muted for 8 hours.'); };
   const block = async () => {
     try { await backend.block(withUser); } catch { toast(oops); return; }
     closeSheet(); setView(null); membersChanged(); toast(`${withUser} is blocked. They can't see or message you.`);
@@ -187,7 +188,7 @@ function ChatOptions({ withUser }: { withUser: string }) {
       <H2>{withUser}</H2>
       <Card tone="calm"><H3>Meeting up safely</H3><P small>Meet in a busy public place in daylight, like a park entrance or café. Tell a friend where you'll be. Don't share your home address. Never use substances with someone you've just met. You can leave at any time.</P></Card>
       <View style={{ gap: 8 }}>
-        <View style={ui.line}><Text style={ui.p}>Mute notifications</Text><Btn sm label="Mute" onPress={() => toast('Muted for 8 hours.')} /></View>
+        <View style={ui.line}><Text style={ui.p}>Mute notifications</Text><Btn sm label="Mute" onPress={mute} /></View>
         <View style={ui.line}><Text style={ui.p}>Report a message or behaviour</Text><Btn sm label="Report" onPress={() => openSheet(<ReportSheet username={withUser} />)} /></View>
         <View style={ui.line}><Text style={ui.p}>Block {withUser}</Text><Btn sm variant="danger" label="Block" onPress={block} /></View>
       </View>

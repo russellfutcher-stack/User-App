@@ -3,6 +3,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { createClient } from '@supabase/supabase-js';
 import { SAMPLE_HANDLES } from '../data/reference';
 import { TAKEN_ROOM } from '../lib/rooms';
+import { currentDevice, subscribe } from '../lib/push';
 import { AgeCheck, ArbCase, Backend, Member, Msg, Profile, Review, Room, Sent } from './types';
 
 // Supabase Auth needs an email address, but members never give one. The app makes a
@@ -234,6 +235,23 @@ export function supabaseBackend(url: string, anonKey: string): Backend {
       const n = (data || [])[0] as { checkin: boolean; age_check: AgeCheck | null } | undefined;
       return { checkin: !!n?.checkin, ageCheck: n?.age_check || null };
     },
+    async notificationsOn() {
+      const sub = await currentDevice().catch(() => null); if (!sub) return false;
+      const r = await call<{ ok: boolean; on?: boolean }>('push', { action: 'status', endpoint: sub.endpoint });
+      return !!r?.on;
+    },
+    async setNotifications(on) {
+      if (!on) {
+        const sub = await currentDevice().catch(() => null);
+        if (sub) { await call('push', { action: 'off', endpoint: sub.endpoint }); await sub.unsubscribe().catch(() => undefined); }
+        return { ok: true, value: null };
+      }
+      const k = await call<{ ok: boolean; key?: string }>('push', { action: 'key' }); if (!k?.key) return { ok: false, error: TROUBLE };
+      const s = await subscribe(k.key).catch(() => ({ error: TROUBLE })); if ('error' in s) return { ok: false, error: s.error };
+      const r = await call<{ ok: boolean }>('push', { action: 'on', sub: s.sub });
+      return r?.ok ? { ok: true, value: null } : { ok: false, error: TROUBLE };
+    },
+    async muteChat(withUser) { const { error } = await db.rpc('mute_chat', { name: withUser }); must(error); },
     async isArbitrator() { const { data } = await db.rpc('am_arbitrator'); return data === true; },
     async arbFigures() {
       const { data, error } = await db.rpc('arb_figures'); must(error);
@@ -249,6 +267,7 @@ export function supabaseBackend(url: string, anonKey: string): Backend {
     },
     async arbDecide(id, outcome, note) {
       const { error } = await db.rpc('arb_decide', { case_id: id, outcome, why: note });
+      if (!error) call('push', { action: 'review', id }).catch(() => undefined); // tells the member, if they have notifications on
       return error ? { ok: false, error: /note/.test(error.message) ? 'Add a short note explaining your decision.' : TROUBLE } : { ok: true, value: null };
     },
     async seenCheckin() { const { error } = await db.rpc('seen_checkin'); must(error); },

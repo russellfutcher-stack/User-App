@@ -107,6 +107,12 @@ test('C-11 Mute keeps the chat open', async ({ page }) => {
   await H.signInDemo(page); await H.openChat(page, 'SteadyBadger'); await H.btn(page, 'Safety & options').click();
   await H.btn(page, 'Mute').click(); await expect(page.locator('#msg')).toBeVisible();
 });
+test('C-11 Mute is remembered for 8 hours', async ({ page }) => {
+  await H.signInDemo(page); await H.openChat(page, 'SteadyBadger'); await H.btn(page, 'Safety & options').click();
+  await H.btn(page, 'Mute').click(); await expect(H.toast(page)).toHaveText('Muted for 8 hours.');
+  const until = (await H.stored(page)).accounts.quietheron.muted.SteadyBadger;
+  expect(until - Date.now()).toBeGreaterThan(7.9 * 3600000);
+});
 test('C-12 Back returns to the chat list', async ({ page }) => {
   await H.signInDemo(page); await H.openChat(page, 'SteadyBadger'); await H.btn(page, 'Back').click();
   await expect(rows(page)).toHaveCount(6); await expect(page.locator('#tabs')).toBeVisible();

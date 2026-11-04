@@ -1,6 +1,7 @@
 // Sends a chat message or room post after the safety check. Body: { kind: 'chat' | 'room', to: username or room id, text }.
 import { admin, must, recent, reply, serve } from '../_shared/db.ts';
 import { checkMessage } from '../_shared/moderate.ts';
+import { notify } from '../_shared/push.ts';
 
 const HELD = "This message couldn't be checked just now, so it wasn't sent. Please try again in a moment.";
 const until = (t: string) => new Date(t).toLocaleString('en-GB', { weekday: 'short', hour: 'numeric', minute: '2-digit', timeZone: 'UTC' }) + ' (UTC)';
@@ -55,5 +56,15 @@ serve(async (me, b) => {
     : await admin.rpc('deliver_message', { sender: me.id, name: to, body: text });
   if (r.error) return reply({ ok: false, error: /blocked/.test(r.error.message) ? "You can't message this person." : 'trouble' });
   const row = (r.data as { id: number; created_at: string }[])[0];
+  // A neutral notification for the other person, unless they've muted this chat. Sent after the reply, so nobody waits.
+  if (kind === 'chat') {
+    // deno-lint-ignore no-explicit-any
+    (globalThis as any).EdgeRuntime?.waitUntil((async () => {
+      const them = must(await admin.rpc('member_id', { name: to })) as string | null; if (!them) return;
+      const chat = must(await admin.rpc('chat_with', { me: me.id, them })) as string | null;
+      const st = chat ? must(await admin.from('chat_state').select('muted_until').eq('chat_id', chat).eq('member', them).maybeSingle()) as { muted_until: string | null } | null : null;
+      if (!st?.muted_until || Date.parse(st.muted_until) < Date.now()) await notify(them, 'message');
+    })().catch(e => console.error(e)));
+  }
   return reply({ ok: true, msg: { id: String(row.id), created_at: row.created_at }, help: out.action === 'help' });
 });

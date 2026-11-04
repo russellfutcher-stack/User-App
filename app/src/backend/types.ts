@@ -91,6 +91,10 @@ export interface Backend {
   notices(): Promise<Notices>;
   seenCheckin(): Promise<void>;
   confirmAge(): Promise<Result<null>>; // ticks 'I am 18 or older' and unpauses the account
+  // Notifications on this device: a neutral alert for new messages and review decisions (Rusty, 4 Nov 2026).
+  notificationsOn(): Promise<boolean>;
+  setNotifications(on: boolean): Promise<Result<null>>;
+  muteChat(withUser: string): Promise<void>; // no notifications from this chat for 8 hours
   // The arbitrator: an ordinary sign-in listed as an arbitrator sees the dashboard instead of the member pages.
   isArbitrator(): Promise<boolean>;
   arbFigures(): Promise<ArbFigures>;
