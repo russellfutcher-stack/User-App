@@ -6,6 +6,7 @@ set -euo pipefail
 : "${EXPO_PUBLIC_SUPABASE_URL:?Set EXPO_PUBLIC_SUPABASE_URL first}" "${EXPO_PUBLIC_SUPABASE_KEY:?Set EXPO_PUBLIC_SUPABASE_KEY first}"
 case "$EXPO_PUBLIC_SUPABASE_KEY" in sb_secret_*) echo "That's the secret key. Use the publishable one."; exit 2;; esac
 remote=$(git -C .. remote get-url origin)
+node scripts/make-site.js
 rm -rf dist-pages && EXPO_BASE_URL=/User-App npx expo export --platform web --output-dir dist-pages
 # The live site may only run its own code and talk to its own Supabase project (a content security policy).
 host=${EXPO_PUBLIC_SUPABASE_URL#https://}; host=${host%%/*}
