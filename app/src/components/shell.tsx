@@ -16,7 +16,7 @@ export function Bar({ back, title }: { back?: () => void; title?: string }) {
       {back ? <Pressable role="button" aria-label="Back" onPress={back} style={s.iconbtn}><Text style={s.iconText}>Back</Text></Pressable>
         : title === undefined ? <View><Text style={s.brand}>User</Text><Text style={s.brandSmall}>CONNECTION AND RECOVERY</Text></View> : null}
       <View style={{ flex: 1, minWidth: 0 }}>{title ? <Text numberOfLines={1} style={s.title}>{title}</Text> : null}</View>
-      <Pressable role="button" aria-label="Quick exit: hide the app" onPress={exit} style={s.iconbtn}><Text style={s.iconText}>Exit</Text></Pressable>
+      <Pressable role="button" aria-label="Exit to Home" onPress={exit} style={s.iconbtn}><Text style={s.iconText}>Exit</Text></Pressable>
       <Pressable role="button" aria-label="Help now" onPress={() => openSheet(<HelpSheet />)} style={[s.iconbtn, { backgroundColor: C.danger }]}><Text style={[s.iconText, { color: '#fff' }]}>Help now</Text></Pressable>
     </View>
   );

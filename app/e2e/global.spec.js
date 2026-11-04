@@ -5,7 +5,7 @@ test.beforeEach(async ({ page }) => { await H.open(page); });
 test('G-01 Header shows the name, Exit and Help now', async ({ page }) => {
   const bar = page.locator('#bar');
   await expect(bar).toContainText('User'); await expect(bar).toContainText('CONNECTION AND RECOVERY');
-  await expect(H.btn(page, 'Quick exit: hide the app')).toBeVisible(); await expect(H.btn(page, 'Help now')).toBeVisible();
+  await expect(H.btn(page, 'Exit to Home')).toBeVisible(); await expect(H.btn(page, 'Help now')).toBeVisible();
 });
 test('G-01 Sign-up shows Back and the page name', async ({ page }) => {
   await H.startSignup(page);
@@ -20,24 +20,24 @@ test('G-02 Help now works after signing in', async ({ page }) => {
   await H.signInDemo(page); await H.tab(page, 'Me').click(); await H.btn(page, 'Help now').click();
   await expect(H.sheet(page)).toContainText('Grounding, right now');
 });
-test('G-03 Exit shows a shopping list and hides the app', async ({ page }) => {
-  await H.btn(page, 'Quick exit: hide the app').click();
-  await expect(page.getByText('Shopping list')).toBeVisible();
-  await expect(page.locator('#bar')).toHaveCount(0); await expect(page.locator('#tabs')).toHaveCount(0);
+test('G-03 Exit goes to the Home page', async ({ page }) => {
+  await H.signInDemo(page); await H.tab(page, 'Me').click(); await H.btn(page, 'Exit to Home').click();
+  await expect(H.tab(page, 'Home')).toHaveAttribute('aria-selected', 'true');
+  await expect(page.getByText('Shopping list')).toHaveCount(0);
 });
-test('G-03 Exit works over an open sheet', async ({ page }) => {
-  await H.btn(page, 'Help now').click(); await H.btn(page, 'Quick exit: hide the app').click();
-  await expect(page.getByText('Shopping list')).toBeVisible(); await expect(H.sheet(page)).toHaveCount(0);
+test('G-03 Exit closes an open sheet or chat first', async ({ page }) => {
+  await H.signInDemo(page); await H.openChat(page, 'SteadyBadger'); await H.btn(page, 'Help now').click();
+  await H.btn(page, 'Exit to Home').click();
+  await expect(H.sheet(page)).toHaveCount(0); await expect(page.locator('#msg')).toHaveCount(0);
+  await expect(H.tab(page, 'Home')).toHaveAttribute('aria-selected', 'true');
 });
-test('G-04 Three taps on the note return to the app', async ({ page }) => {
-  await H.btn(page, 'Quick exit: hide the app').click();
-  for (let i = 0; i < 3; i++) await page.getByTestId('fake-note').click();
+test('G-04 Signed out, Exit goes to the Welcome page', async ({ page }) => {
+  await H.startSignup(page); await H.btn(page, 'Exit to Home').click();
   await expect(page.getByRole('heading', { name: H.WELCOME })).toBeVisible();
 });
-test('G-04 Two taps are not enough', async ({ page }) => {
-  await H.btn(page, 'Quick exit: hide the app').click();
-  for (let i = 0; i < 2; i++) await page.getByTestId('fake-note').click();
-  await expect(page.getByText('Shopping list')).toBeVisible();
+test('G-04 Exit keeps you signed in', async ({ page }) => {
+  await H.signInDemo(page); await H.tab(page, 'Search').click(); await H.btn(page, 'Exit to Home').click();
+  await expect(H.tab(page, 'Me')).toBeVisible(); await expect(page.locator('#li-h')).toHaveCount(0); // no sign-in box
 });
 test('G-05 Six tabs after sign-in, current one highlighted', async ({ page }) => {
   await H.signInDemo(page);

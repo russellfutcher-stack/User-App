@@ -167,9 +167,6 @@ select.input{appearance:auto}
 .lamp{width:100%;height:120px;border-radius:20px;background:
   radial-gradient(circle at 78% 30%, var(--accent-soft) 0 22%, transparent 23%),
   radial-gradient(circle at 78% 30%, var(--accent) 0 7%, transparent 8%), var(--sage-soft)}
-.fake{background:#fff;color:#222;flex:1;padding:24px;font-family:Georgia,serif}
-.fake h1{font-size:22px;margin:0 0 12px}
-.fake li{margin:6px 0}
 .bighead{font-size:28px;letter-spacing:-.02em}
 
 /* ---------- v2 frame: straight lines, square corners, obvious borders ---------- */
@@ -741,11 +738,11 @@ const IC = {
  me:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="8" r="4"/><path d="M4 21c1-4 4.5-6 8-6s7 2 8 6"/></svg>'};
 
 /* ---------- Shell ---------- */
-let view = {name:null}; let quickExit=false; let ob=null;
+let view = {name:null}; let ob=null;
 function bar(left, title){
   $('#bar').innerHTML = `${left||`<div class="brand">User<small>Connection and Recovery</small></div>`}
     <div class="grow">${title?`<div class="title">${title}</div>`:''}</div>
-    <button class="iconbtn exit" onclick="App.exit()" aria-label="Quick exit: hide the app">Exit</button>
+    <button class="iconbtn exit" onclick="App.exit()" aria-label="Exit to Home">Exit</button>
     <button class="iconbtn help" onclick="App.help()">Help now</button>`;
 }
 function tabs(show){
@@ -756,8 +753,6 @@ function tabs(show){
 }
 function render(){
   const sc=$('#screen'); sc.className='screen';
-  if(quickExit){ bar('<div class="brand" style="font-family:Georgia,serif">Notes</div>',''); $('#bar').innerHTML='<div class="brand" style="font-family:Georgia,serif;font-weight:400">Notes</div>'; tabs(false); sc.className='screen flush';
-    sc.innerHTML=`<div class="fake" onclick="App.unexit(event)"><h1>Shopping list</h1><ul><li>Milk</li><li>Bread</li><li>Dog food</li><li>Batteries (AA)</li><li>Call about boiler</li></ul><p style="color:#999;font-size:12px;margin-top:40px">Tap this note three times to return.</p></div>`; return; }
   if(S.arbMode) return renderDashboard();
   if(!S.loggedIn){ return ob ? renderOnboard() : renderWelcome(); }
   if(S.me.setupDone===false) return renderSetup();
@@ -1293,8 +1288,8 @@ const App = {
   tab(t){ view={name:null}; S.ui.tab=t; save(); render(); $('#screen').scrollTop=0; },
   back(){ view={name:null}; render(); },
   help(){ helpSheet(); },
-  exit(){ closeSheet(); quickExit=true; App._taps=0; render(); },
-  unexit(){ App._taps=(App._taps||0)+1; if(App._taps>=3){ quickExit=false; render(); } },
+  // Exit goes back to Home, or to the Welcome page when signed out (Rusty, 4 Nov 2026).
+  exit(){ closeSheet(); view={name:null}; ob=null; if(S.loggedIn) S.ui.tab='home'; save(); render(); $('#screen').scrollTop=0; },
   q(v){ S.ui.q=v; save(); renderResults(); },
   path(k){ const on=S.ui.cats.includes(k);
     if(S.ui.tab==='find'&&!view.name){ if(on){ S.ui.cats=S.ui.cats.filter(x=>x!==k); const cs=pathOf(k).cats; S.ui.f=S.ui.f.filter(t=>!cs.includes(catOf(t))); } else S.ui.cats.push(k); }

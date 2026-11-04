@@ -17,14 +17,13 @@ import { Chat, Chats } from './src/screens/Chats';
 import { Rooms, RoomScreen } from './src/screens/Rooms';
 import { Search } from './src/screens/Search';
 import { Matches } from './src/screens/Matches';
-import { QuickExit } from './src/screens/QuickExit';
 import { AgeCheck } from './src/screens/AgeCheck';
 import { Dashboard } from './src/screens/Dashboard';
 import { HelpSheet } from './src/screens/HelpSheet';
 import { C } from './src/theme';
 
 function Screen() {
-  const { page, profile, tab, quickExit, go, matches, view, setView, paused, checkin, checkinShown, openSheet, arbitrator } = useApp();
+  const { page, profile, tab, go, matches, view, setView, paused, checkin, checkinShown, openSheet, arbitrator } = useApp();
   const scroller = useRef<React.ComponentRef<typeof ScrollView>>(null);
   const toTop = () => scroller.current?.scrollTo({ y: 0, animated: false });
   const signup = useSignUp();
@@ -32,7 +31,6 @@ function Screen() {
   useEffect(() => { if (page !== 'signup' || profile) reset(); }, [page, profile]); // eslint-disable-line react-hooks/exhaustive-deps
   // After a danger report, the Help sheet opens once with a short, kind note. It never says who reported them.
   useEffect(() => { if (checkin && !paused) { openSheet(<HelpSheet intro={CHECKIN} />); checkinShown(); } }, [checkin, paused]); // eslint-disable-line react-hooks/exhaustive-deps
-  if (quickExit) return <QuickExit />;
 
   let bar = <Bar />; let body: React.ReactNode; let tabs = false; let full: React.ReactNode = null; // `full` fills the screen itself
   if (page === 'signup' && !profile) {

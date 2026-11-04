@@ -11,14 +11,14 @@ export type Page = 'welcome' | 'signup' | 'main';
 export type View = { name: 'chat'; with: string } | { name: 'room'; id: string; title: string } | null; // a chat or room, opened over the tabs
 
 type Ctx = {
-  profile: Profile | null; page: Page; tab: Tab; quickExit: boolean;
+  profile: Profile | null; page: Page; tab: Tab;
   sheet: ReactNode | null; toastMsg: { text: string; n: number; undo?: () => void } | null;
   go: (p: Page) => void; setTab: (t: Tab) => void;
   signedIn: (p: Profile) => void; signOut: () => void;
   update: (patch: Partial<Profile>) => void;
   toast: (text: string, undo?: () => void) => void; // with undo, the toast offers Undo for 5 seconds
   openSheet: (n: ReactNode) => void; closeSheet: () => void;
-  exit: () => void; unexit: () => void;
+  exit: () => void; // the Exit button: back to Home, or to the Welcome page when signed out (Rusty, 4 Nov 2026)
   // Search: the choices being made (`query`), the last search run (`applied`), and whether all matches show.
   query: Query; setQuery: (q: Query) => void; applied: Query; setApplied: (q: Query) => void;
   showAll: boolean; setShowAll: (v: boolean) => void;
@@ -39,7 +39,6 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const [profile, setProfile] = useState<Profile | null>(null);
   const [page, setPage] = useState<Page>('welcome');
   const [tab, setTabState] = useState<Tab>('home');
-  const [quickExit, setQuickExit] = useState(false);
   const [sheet, setSheet] = useState<ReactNode | null>(null);
   const [toastMsg, setToast] = useState<{ text: string; n: number; undo?: () => void } | null>(null);
   const [view, setView] = useState<View>(null); const [roomCat, setRoomCat] = useState<PathKey>('interests');
@@ -48,7 +47,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const chatsChanged = useCallback(() => setChatsVer(v => v + 1), []);
   const [query, setQuery] = useState<Query>(blankQuery); const [applied, setApplied] = useState<Query>(blankQuery);
   const [showAll, setShowAll] = useState(false); const [matches, setMatches] = useState(false); const [membersVer, setVer] = useState(0);
-  const taps = useRef(0); const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const toast = useCallback((text: string, undo?: () => void) => {
     if (timer.current) clearTimeout(timer.current);
@@ -70,7 +69,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const value: Ctx = {
-    profile, page, tab, quickExit, sheet, toastMsg, toast, closeSheet,
+    profile, page, tab, sheet, toastMsg, toast, closeSheet,
     openSheet: n => setSheet(n),
     go: p => { setSheet(null); setPage(p); },
     setTab: t => { setView(null); setTabState(t); },
@@ -88,8 +87,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
       setProfile(p => (p ? { ...p, ...patch } : p));
       backend.saveProfile(patch).catch(() => toast("Couldn't save. Check your connection and try again."));
     },
-    exit: () => { setSheet(null); taps.current = 0; setQuickExit(true); },
-    unexit: () => { taps.current += 1; if (taps.current >= 3) setQuickExit(false); },
+    exit: () => { setSheet(null); setView(null); setMatches(false); if (profile) setTabState('home'); else setPage('welcome'); },
     query, setQuery, applied, setApplied, showAll, setShowAll, matches, setMatches,
     membersVer, membersChanged: () => { setVer(v => v + 1); chatsChanged(); },
     view, setView: v => { setSheet(null); setView(v); }, roomCat, setRoomCat, chatsVer, unread, chatsChanged, refreshUnread,

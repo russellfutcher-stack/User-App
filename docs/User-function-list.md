@@ -17,8 +17,8 @@ Totals: Working 147, Simulated 7, Saved only 2, Placeholder 2, 158 functions in 
 |---|---|---|---|---|---|
 | G-01 | App header | Visible on every screen | 'User / Connection and Recovery', an Exit button and a red Help now button. In chats, rooms and sign-up it shows a Back button (the word Back) and the page name. | Working | - |
 | G-02 | Help now | Tap Help now on any screen | Opens the Help sheet (see Help & Safety). | Working | - |
-| G-03 | Quick exit | Tap Exit | Replaces the app with a fake 'Notes / Shopping list' screen. Header and tabs are hidden. | Working | - |
-| G-04 | Return from quick exit | Tap the fake note 3 times | Returns to the app. Two taps are not enough. | Working | - |
+| G-03 | Exit | Tap Exit | Closes any sheet, chat or room and goes to the Home page (Rusty, 4 Nov 2026). Replaces the fake notes screen. | Working | - |
+| G-04 | Exit when signed out | Tap Exit before signing in | Goes to the Welcome page. Exit never signs you out. | Working | - |
 | G-05 | Bottom tab bar | Visible after sign-in on main pages | 6 tabs: Home, Me, Search, Chats, Rooms, Support. The current tab's icon sits in a yellow pill. Hidden on Welcome, sign-up, setup, the matches screen, chats, rooms and the arbitrator dashboard. | Working | - |
 | G-06 | Unread dot | Have an unread chat | A dot shows on the Chats tab until the chat is opened. | Simulated | Real messages from other members need a server. |
 | G-07 | Toast messages | After actions such as Save, Block, Report | A short message near the bottom for about 2.4 seconds. | Working | - |
