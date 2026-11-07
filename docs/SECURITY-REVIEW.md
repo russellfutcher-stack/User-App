@@ -33,7 +33,7 @@ Done by Max on 29 Oct to 1 Nov 2026. **This is not the independent review the bu
 ## Needs Rusty (settings Max can't change)
 
 1. **Turn on leaked-password protection** in Supabase: Authentication, then Sign In / Providers or Attack Protection, then "Prevent use of leaked passwords". It stops people using passwords already stolen in other breaches. (It may need a paid Supabase plan.)
-2. **Set a monthly spending limit in the Anthropic Console** (Settings, then Limits), and think about turning off auto-reload. The use limits above make abuse slow, but a spending cap is the real safety net.
+2. ~~**Set a monthly spending limit in the Anthropic Console.**~~ Done by Rusty, 7 Nov 2026: $20 a month (platform.claude.com/settings/limits). If it's reached, safety checks stop and messages can't be sent until the next month or the limit is raised.
 3. **Delete the old `moderation-eval` function** in Supabase (Edge Functions). It's switched off but can't be deleted from here.
 
 ## For the independent reviewer, and decisions for Rusty
