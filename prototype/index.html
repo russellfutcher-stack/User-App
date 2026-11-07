@@ -1209,6 +1209,7 @@ const ARB = {
   rooms:[['15','rooms'],['9','room requests approved this week'],['4','room requests refused this week']],
   health:[['99.97%','uptime, last 30 days'],['3','messages waiting for a check now'],['0','reviews overdue']]
 };
+const ARB_ACTS = [['warning','Give a warning','warning'],['mute','Mute for 24 hours','24-hour mute'],['pause','Pause for 7 days','7-day pause'],['unpause','Lift any mute or pause','mute or pause lifted'],['remove','Remove the account','account removed']];
 const fmt = n => n.toLocaleString('en-GB');
 function hbars(rows, label){
   const max=Math.max(...rows.map(r=>r[1]));
@@ -1293,7 +1294,9 @@ const App = {
   // Exit goes back to Home, or to the Welcome page when signed out (Rusty, 4 Nov 2026).
   // Hide: a quick exit to Google's home page; Back can't bring User back (Rusty, 4 Nov 2026).
   hide(){ location.replace('https://www.google.com/'); },
-  exit(){ closeSheet(); view={name:null}; ob=null; if(S.loggedIn) S.ui.tab='home'; save(); render(); $('#screen').scrollTop=0; },
+  // On Home (or the dashboard), Exit signs out to the sign-in screen (Rusty, 8 Nov 2026).
+  exit(){ closeSheet(); if(S.arbMode) return App.arbSignOut(); if(S.loggedIn && S.ui.tab==='home' && !view.name) return App.signOut();
+    view={name:null}; ob=null; if(S.loggedIn) S.ui.tab='home'; save(); render(); $('#screen').scrollTop=0; },
   q(v){ S.ui.q=v; save(); renderResults(); },
   path(k){ const on=S.ui.cats.includes(k);
     if(S.ui.tab==='find'&&!view.name){ if(on){ S.ui.cats=S.ui.cats.filter(x=>x!==k); const cs=pathOf(k).cats; S.ui.f=S.ui.f.filter(t=>!cs.includes(catOf(t))); } else S.ui.cats.push(k); }
@@ -1360,11 +1363,17 @@ const App = {
     <div class="card ai-rec"><h3>AI Review Agent</h3><p class="small"><b>${esc(c.ai.decision)}</b> · ${Math.round(c.ai.confidence*100)}% confident${c.ai.flagged?' · flagged for a check':''}</p><p class="small">${esc(c.ai.reason)}</p></div>
     <div class="field"><label for="arb-note">Your decision note (shown to the member)</label><textarea class="input" id="arb-note" rows="3" maxlength="400" placeholder="Explain the decision in plain words."></textarea></div>
     <div id="arb-err" class="hint" role="alert"></div>
-    <div class="row wrap"><button class="btn primary sm" onclick="App.decide('${c.id}','Upheld')">Uphold the decision</button><button class="btn sm" onclick="App.decide('${c.id}','Overturned')">Overturn it</button><button class="btn sm" onclick="App.decide('${c.id}','Action changed')">Change the action</button></div>`); },
-  decide(id,outcome){ const note=$('#arb-note').value.trim(); if(note.length<5){ $('#arb-err').textContent='Add a short note explaining your decision.'; return; }
-    const st='Decided: '+outcome, mine=S.cases.find(c=>c.id===id);
+    <div id="arb-effects" class="small"><p><b>Uphold:</b> ${c.topic==='Account removal proposed'?'removes the member\'s account and everything in it.':'keeps things as they are.'}</p><p><b>Overturn:</b> lifts any mute, pause or age check on the member and takes back their latest warning.</p><p><b>Change the action:</b> choose what happens instead.</p></div>
+    <div class="row wrap"><button class="btn primary sm" onclick="App.decide('${c.id}','Upheld')">Uphold the decision</button><button class="btn sm" onclick="App.decide('${c.id}','Overturned')">Overturn it</button><button class="btn sm" onclick="document.getElementById('arb-change').hidden=false">Change the action</button></div>
+    <div id="arb-change" hidden><div class="field"><label for="arb-act">What to change</label><select class="input" id="arb-act"><option value="">Choose…</option>${ARB_ACTS.map(([k,l])=>`<option value="${k}">${l}</option>`).join('')}</select></div>
+    <button class="btn primary sm" onclick="App.decide('${c.id}','Action changed')">Confirm the change</button></div>`); },
+  // Decisions take effect on the member the case is about (Rusty, 8 Nov 2026); in the prototype they are recorded only.
+  decide(id,outcome){ const note=$('#arb-note').value.trim(); if(note.length<5){ $('#arb-err').textContent='Add a short note explaining your decision first. The member sees it.'; return; }
+    const act=outcome==='Action changed'?$('#arb-act').value:''; if(outcome==='Action changed'&&!act){ $('#arb-err').textContent='Choose what to change.'; return; }
+    const c0=arbCases().find(x=>x.id===id); if((act==='remove'||(outcome==='Upheld'&&c0&&c0.topic==='Account removal proposed'))&&!confirm('Remove this account? This deletes everything in it and can\'t be undone.')) return;
+    const st='Decided: '+outcome+(act?' ('+ARB_ACTS.find(x=>x[0]===act)[2]+')':''), mine=S.cases.find(c=>c.id===id);
     if(mine){ mine.status=st; mine.note=note; mine.by='Arbitrator'; } else S.arb.decided[id]={status:st,note};
-    save(); closeSheet(); renderDashboard(); toast(id+' decided: '+outcome+'.'); },
+    save(); closeSheet(); renderDashboard(); toast(id+' decided: '+st.replace('Decided: ','')+'.'); },
   showAll(){ S.ui.all=!S.ui.all; save(); renderResults(); },
   clearAll(){ S.ui.cats=['interests','drugs','mh']; S.ui.f=[]; S.ui.q=''; S.ui.look=[]; S.ui.peerOnly=false; S.ui.applied=draft(); save(); renderFind(); },
   search(){ S.ui.applied=draft(); save(); renderFind(); $('#screen').scrollTop=0; const n=$('#match-count'); toast('Search updated: '+(n?n.textContent:'')+'.'); },

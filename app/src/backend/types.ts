@@ -37,11 +37,17 @@ export type Review = {
 
 // The arbitrator dashboard (AI-agents-spec.md, section 3.5). Figures are live on the server and samples in the demo.
 export type ArbCase = {
-  id: string; member?: string; topic: string; text: string; raised: 'Automatic' | 'Member'; urgent: boolean; due: string;
+  // subject: who the arbitrator's actions apply to (the reported member for an urgent report; otherwise the member).
+  id: string; member?: string; subject?: string; topic: string; text: string; raised: 'Automatic' | 'Member'; urgent: boolean; due: string;
   status: string; confidence: number; reason: string; note?: string; flagged: boolean; by: 'automatic' | 'arbitrator' | null;
   live?: boolean; // in the demo: raised in this browser
 };
 export type ArbOutcome = 'Upheld' | 'Overturned' | 'Action changed';
+// What 'Change the action' does to the member the case is about (Rusty, 8 Nov 2026).
+export type ArbAct = 'warning' | 'mute' | 'pause' | 'unpause' | 'remove';
+export const ARB_ACTS: [ArbAct, string, string][] = [
+  ['warning', 'Give a warning', 'warning'], ['mute', 'Mute for 24 hours', '24-hour mute'], ['pause', 'Pause for 7 days', '7-day pause'],
+  ['unpause', 'Lift any mute or pause', 'mute or pause lifted'], ['remove', 'Remove the account', 'account removed']];
 export type ArbFigures = {
   sample: boolean; activeToday: number; activeWeek: number; newMembers: number; peers: number; wantPeers: number;
   checked: number; blocked: number; help: number; held: number; blockedBy: [string, number][]; reports: [string, number][];
@@ -99,7 +105,8 @@ export interface Backend {
   isArbitrator(): Promise<boolean>;
   arbFigures(): Promise<ArbFigures>;
   arbCases(): Promise<ArbCase[]>;
-  arbDecide(id: string, outcome: ArbOutcome, note: string): Promise<Result<null>>; // the note (5+ characters) is shown to the member
+  // The note (5+ characters) is shown to the member. Overturn lifts restrictions; Uphold on a removal removes the account; act is for 'Action changed'.
+  arbDecide(id: string, outcome: ArbOutcome, note: string, act?: ArbAct): Promise<Result<null>>;
   unblock(username: string): Promise<void>;
   signOut(): Promise<void>;
   deleteAccount(): Promise<void>;

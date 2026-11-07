@@ -9,14 +9,14 @@ import { roomRequestError } from '../lib/rooms';
 import { demoDecision, Decision, URGENT_REASON } from '../lib/review';
 import { CRISIS, notAllowed } from '../lib/safety';
 import { SAMPLE_CASES, SAMPLE_FIGURES } from '../data/arbitrator';
-import { AgeCheck, ArbCase, ArbOutcome, Backend, Msg, Profile, Review, Room, RoomRequest, Sent, blankProfile } from './types';
+import { AgeCheck, ARB_ACTS, ArbAct, ArbCase, ArbOutcome, Backend, Msg, Profile, Review, Room, RoomRequest, Sent, blankProfile } from './types';
 
 const KEY = 'user-app-v1';
 type Stored = { f: 'me' | 'them'; t: string; ts: number };
 type Chat = { msgs: Stored[]; unread: boolean };
 type MyRoom = { id: string; cat: Room['cat']; name: string; desc: string };
 type Rooms = { joined: string[]; posts: Record<string, Stored[]>; custom: MyRoom[]; requests: RoomRequest[] };
-type ArbDecision = { outcome: ArbOutcome; note: string };
+type ArbDecision = { outcome: ArbOutcome; note: string; act?: ArbAct };
 type Case = Omit<Review, 'status' | 'note' | 'by'> & { at: number; decision: Decision; arb?: ArbDecision };
 type Account = { salt: string; hash: string; passkey: boolean; profile: Profile; blocked: string[]; chats?: Record<string, Chat>; rooms?: Rooms; cases?: Case[];
   checkin?: boolean; ageCheck?: AgeCheck; ageConfirmed?: boolean; notify?: boolean; muted?: Record<string, number> };
@@ -244,19 +244,23 @@ export function localBackend(): Backend {
     async arbCases() {
       const s = await load(); if (current !== ARB) return [];
       const decided = (c: Omit<ArbCase, 'status' | 'note' | 'by'>, d: Decision, arb?: ArbDecision): ArbCase => (arb
-        ? { ...c, status: 'Decided: ' + arb.outcome, note: arb.note, by: 'arbitrator' } : { ...c, status: 'Decided: ' + d.decision, note: d.note, by: 'automatic' });
+        ? { ...c, status: 'Decided: ' + arb.outcome + (arb.act ? ` (${ARB_ACTS.find(x => x[0] === arb.act)![2]})` : ''), note: arb.note, by: 'arbitrator' } : { ...c, status: 'Decided: ' + d.decision, note: d.note, by: 'automatic' });
       const live = Object.values(s.accounts).flatMap(a => (a.cases || []).map(c => decided({
-        id: c.id, member: a.profile.username, topic: c.topic, text: c.text, raised: c.auto ? 'Automatic' : 'Member', urgent: c.auto, due: c.due,
+        id: c.id, member: a.profile.username, subject: a.profile.username, topic: c.topic, text: c.text, raised: c.auto ? 'Automatic' : 'Member', urgent: c.auto, due: c.due,
         confidence: c.decision.confidence, reason: c.decision.reason, flagged: c.decision.flagged, live: true }, c.decision, c.arb)));
       const sample = SAMPLE_CASES.map(c => { const d = demoDecision(c.topic, c.text);
         return decided({ ...c, urgent: !!c.urgent, confidence: d.confidence, reason: d.reason, flagged: d.flagged }, d, s.arb?.[c.id]); });
       return [...live, ...sample];
     },
-    async arbDecide(id, outcome, note) {
+    async arbDecide(id, outcome, note, act) {
       if (current !== ARB) return { ok: false, error: 'Please sign in again.' };
       if (note.trim().length < 5) return { ok: false, error: 'Add a short note explaining your decision.' };
-      const s = await load(); const arb = { outcome, note: note.trim() };
-      const mine = Object.values(s.accounts).flatMap(a => a.cases || []).find(c => c.id === id);
+      if (outcome === 'Action changed' && !act) return { ok: false, error: 'Choose what to change.' };
+      const s = await load(); const arb: ArbDecision = { outcome, note: note.trim(), act: outcome === 'Action changed' ? act : undefined };
+      // In the demo, lifting restrictions lifts the age check on a case raised in this browser; other actions are recorded only.
+      const owner = Object.values(s.accounts).find(a => (a.cases || []).some(c => c.id === id));
+      const mine = owner?.cases?.find(c => c.id === id);
+      if (owner && (outcome === 'Overturned' || arb.act === 'unpause')) delete owner.ageCheck;
       if (mine) mine.arb = arb; else s.arb = { ...s.arb, [id]: arb };
       await save(s); return { ok: true, value: null };
     },

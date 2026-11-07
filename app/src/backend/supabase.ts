@@ -36,7 +36,7 @@ const toRow = (p: Partial<Profile>): Partial<Row> => {
   return r;
 };
 
-type CaseRow = { id: string; member: string; topic: string; body: string; auto: boolean; urgent: boolean; status: string; confidence: number | null;
+type CaseRow = { id: string; member: string; subject: string; topic: string; body: string; auto: boolean; urgent: boolean; status: string; confidence: number | null;
   reason: string | null; note: string | null; flagged: boolean; decided_by: 'automatic' | 'arbitrator' | null; due_at: string };
 const dayTime = (t: string) => new Date(t).toLocaleString('en-GB', { weekday: 'short', day: 'numeric', month: 'short', hour: 'numeric', minute: '2-digit' });
 type ReviewRow = { id: string; topic: string; body: string; auto: boolean; status: string; note?: string | null; decided_by?: string | null; due_at: string };
@@ -260,15 +260,17 @@ export function supabaseBackend(url: string, anonKey: string): Backend {
     async arbCases() {
       const { data, error } = await db.rpc('arb_cases'); must(error);
       return ((data || []) as CaseRow[]).map((c): ArbCase => ({
-        id: c.id, member: c.member, topic: c.topic, text: c.body, raised: c.auto ? 'Automatic' : 'Member', urgent: c.urgent,
+        id: c.id, member: c.member, subject: c.subject, topic: c.topic, text: c.body, raised: c.auto ? 'Automatic' : 'Member', urgent: c.urgent,
         due: dayTime(c.due_at), status: c.status, confidence: c.confidence ?? 0, reason: c.reason || '', note: c.note || undefined,
         flagged: c.flagged, by: c.decided_by,
       }));
     },
-    async arbDecide(id, outcome, note) {
-      const { error } = await db.rpc('arb_decide', { case_id: id, outcome, why: note });
-      if (!error) call('push', { action: 'review', id }).catch(() => undefined); // tells the member, if they have notifications on
-      return error ? { ok: false, error: /note/.test(error.message) ? 'Add a short note explaining your decision.' : TROUBLE } : { ok: true, value: null };
+    async arbDecide(id, outcome, note, act) {
+      const { data, error } = await db.rpc('arb_decide', { case_id: id, outcome, why: note, act: act ?? null });
+      if (!error && data !== 'removed') call('push', { action: 'review', id }).catch(() => undefined); // tells the member, if they have notifications on
+      if (!error) return { ok: true, value: null };
+      return { ok: false, error: /note/.test(error.message) ? 'Add a short note explaining your decision.' : /arbitrator account/.test(error.message)
+        ? "This case is about an arbitrator account, so it can't be changed here." : /bad action/.test(error.message) ? 'Choose what to change.' : TROUBLE };
     },
     async seenCheckin() { const { error } = await db.rpc('seen_checkin'); must(error); },
     async confirmAge() {

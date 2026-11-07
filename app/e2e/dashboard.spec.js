@@ -56,13 +56,14 @@ test('AD-04 Changing a decision needs a note', async ({ page }) => {
   await asArbitrator(page); await check(page, 'HR-0978');
   await expect(H.sheet(page)).toContainText('AI Review Agent'); await expect(H.sheet(page)).toContainText('Recovery or harm-reduction context');
   await H.btn(page, 'Uphold the decision').click();
-  await expect(page.locator('#arb-err')).toHaveText('Add a short note explaining your decision.');
+  await expect(page.locator('#arb-err')).toHaveText('Add a short note explaining your decision first. The member sees it.');
 });
 test("AD-04 The case then shows 'by Arbitrator'", async ({ page }) => {
   await asArbitrator(page); await check(page, 'HR-0974');
   await page.fill('#arb-note', 'Telegram details are not allowed, even for groups.'); await H.btn(page, 'Change the action').click();
-  await expect(H.toast(page)).toHaveText('HR-0974 decided: Action changed.');
-  await expect(caseRow(page, 'HR-0974')).toContainText('Decided: Action changed'); await expect(caseRow(page, 'HR-0974')).toContainText('by Arbitrator');
+  await page.getByRole('radio', { name: 'Give a warning' }).click(); await H.btn(page, 'Confirm the change').click();
+  await expect(H.toast(page)).toHaveText('HR-0974 decided: Action changed (warning).');
+  await expect(caseRow(page, 'HR-0974')).toContainText('Decided: Action changed (warning)'); await expect(caseRow(page, 'HR-0974')).toContainText('by Arbitrator');
 });
 test('AD-05 The decision reaches the member on the Support page', async ({ page }) => {
   await memberReview(page, 'I am not sure why this happened to me.'); await asArbitrator(page); await check(page, 'HR-1001');
@@ -128,4 +129,31 @@ test('AD-12 Sign out goes back to the Welcome page', async ({ page }) => {
 test('AD-12 A member signing in afterwards sees the member pages', async ({ page }) => {
   await asArbitrator(page); await H.btn(page, 'Sign out').click(); await H.signInDemo(page);
   await expect(H.tab(page, 'Home')).toBeVisible(); await expect(page.getByRole('heading', { name: 'Arbitrator dashboard' })).toHaveCount(0);
+});
+
+// AD-14: decisions take effect (Rusty, 8 Nov 2026).
+test('AD-14 Change the action offers five actions and needs one chosen', async ({ page }) => {
+  await asArbitrator(page); await check(page, 'HR-0976'); await page.fill('#arb-note', 'Looking at this again.');
+  await H.btn(page, 'Change the action').click();
+  for (const a of ['Give a warning', 'Mute for 24 hours', 'Pause for 7 days', 'Lift any mute or pause', 'Remove the account']) await expect(page.getByRole('radio', { name: a })).toBeVisible();
+  await H.btn(page, 'Confirm the change').click(); await expect(page.locator('#arb-err')).toHaveText('Choose what to change.');
+});
+test('AD-14 Removing an account asks to confirm first', async ({ page }) => {
+  await asArbitrator(page); await check(page, 'HR-0985'); await page.fill('#arb-note', 'Repeated dealing; the removal stands.');
+  await expect(page.locator('#arb-effects')).toContainText("Uphold: removes the member in this case's account");
+  await H.btn(page, 'Uphold the decision').click();
+  await expect(H.sheet(page)).toContainText("This deletes everything in it and can't be undone.");
+  await H.btn(page, 'Cancel').click(); await expect(H.btn(page, 'Uphold the decision')).toBeVisible();
+});
+test('AD-14 Overturning lifts an age check for the member', async ({ page }) => {
+  await H.signInDemo(page); await H.openChat(page, 'SteadyBadger'); await H.send(page, "I'm 15 and my dad drinks a lot");
+  await expect(page.getByRole('heading', { name: 'Please confirm your age' })).toBeVisible();
+  await H.btn(page, 'Sign out').click();
+  await H.editStore(page, s => { const a = s.accounts.quietheron; a.cases = [{ id: 'HR-1001', topic: 'A report about me', text: 'I am 34, it was a joke.', auto: false, due: 'Mon', at: 0,
+    decision: { decision: 'Upheld', confidence: .6, reason: 'r', note: 'n', flagged: true } }]; });
+  await asArbitrator(page); await check(page, 'HR-1001');
+  await expect(H.sheet(page)).toContainText('Actions apply to'); await expect(H.sheet(page)).toContainText('QuietHeron');
+  await page.fill('#arb-note', 'Clearly an adult; the pause is lifted.'); await H.btn(page, 'Overturn it').click();
+  await H.btn(page, 'Sign out').click(); await H.signInDemo(page);
+  await expect(H.tab(page, 'Home')).toBeVisible();
 });

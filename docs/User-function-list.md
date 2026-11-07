@@ -9,7 +9,7 @@ Prototype version 24. Every function a person can use in the prototype, each wit
 - **Saved only**: the choice is saved but has no visible effect yet.
 - **Placeholder**: the button only shows a message.
 
-Totals: Working 149, Simulated 7, Saved only 2, Placeholder 2, 160 functions in all.
+Totals: Working 150, Simulated 7, Saved only 2, Placeholder 2, 161 functions in all.
 
 ## Global
 
@@ -17,8 +17,8 @@ Totals: Working 149, Simulated 7, Saved only 2, Placeholder 2, 160 functions in 
 |---|---|---|---|---|---|
 | G-01 | App header | Visible on every screen | 'User / Connection and Recovery', an Exit button, a Hide button and a red Help now button. In chats, rooms and sign-up it shows a Back button (the word Back) and the page name. | Working | - |
 | G-02 | Help now | Tap Help now on any screen | Opens the Help sheet (see Help & Safety). | Working | - |
-| G-03 | Exit | Tap Exit | Closes any sheet, chat or room and goes to the Home page (Rusty, 4 Nov 2026). Replaces the fake notes screen. | Working | - |
-| G-04 | Exit when signed out | Tap Exit before signing in | Goes to the Welcome page. Exit never signs you out. | Working | - |
+| G-03 | Exit | Tap Exit | Closes any sheet, chat or room and goes to the Home page. On the Home page, it signs you out to the sign-in screen (Rusty, 4 and 8 Nov 2026). | Working | - |
+| G-04 | Exit when signed out or on Home | Tap Exit before signing in, or on the Home page | Goes to the Welcome (sign-in) page. From Home it signs you out first; the arbitrator dashboard and the age check do the same. | Working | - |
 | G-05 | Bottom tab bar | Visible after sign-in on main pages | 6 tabs: Home, Me, Search, Chats, Rooms, Support. The current tab's icon sits in a yellow pill. Hidden on Welcome, sign-up, setup, the matches screen, chats, rooms and the arbitrator dashboard. | Working | - |
 | G-06 | Unread dot | Have an unread chat | A dot shows on the Chats tab until the chat is opened. | Simulated | Real messages from other members need a server. |
 | G-07 | Toast messages | After actions such as Save, Block, Report | A short message near the bottom for about 2.4 seconds. | Working | - |
@@ -221,7 +221,8 @@ Totals: Working 149, Simulated 7, Saved only 2, Placeholder 2, 160 functions in 
 | AD-02 | Summary figures | Open the dashboard | Active today, active in 7 days, new members, peer supporters, members who want peer support, cases flagged for a check, urgent cases. | Working | Live figures on the Supabase server; samples in the demo. |
 | AD-03 | Review queue | Open the dashboard | One Decided table: every case with its decision, the agent's confidence, who decided it, and a Flagged tag when under 85%. Urgent cases are red. Live cases are marked 'This browser'. | Working | Live queue on the Supabase server. |
 | AD-13 | AI Review Agent | Every case | Decides every case, including danger, under 18 and account removal. Under 85% confidence it keeps the safest outcome and flags the case. The naloxone and 'I used to sell' cases are overturned. | Working | Real decisions come from the review check on the Supabase server. |
-| AD-04 | Change a decision | Tap Check, write a note, choose an outcome | Shows the agent's decision and reason. Uphold, Overturn or Change the action; a note of at least 5 characters is required. The case then shows 'by Arbitrator'. | Working | - |
+| AD-14 | Decisions take effect | Decide a case | Overturn lifts any mute, pause or age check and takes back the latest warning. Uphold on 'Account removal proposed' removes the account. Change the action: a warning, a 24-hour mute, a 7-day pause, lift a mute or pause, or remove the account. Removing asks to confirm (Rusty, 8 Nov 2026). | Working | Real on the Supabase server; checked with app/scripts/live-arbitrator.js. |
+| AD-04 | Change a decision | Tap Check, write a note, choose an outcome | Shows the agent's decision and reason, and who actions apply to. Uphold, Overturn or Change the action; a note of at least 5 characters is required, shown in red if missing. The case then shows 'by Arbitrator'. | Working | - |
 | AD-05 | Decision reaches the member | Decide a case raised in this browser, then sign in as the member | The Support page shows the decision and note. | Working | Real on the Supabase server; checked with app/scripts/live-arbitrator.js. |
 | AD-06 | Message safety | Open the dashboard | Messages checked, blocked, Help shown, check time, and blocked messages by reason. | Working | Live figures on the Supabase server; samples in the demo. |
 | AD-07 | Reports | Open the dashboard | Reports by reason (7), plus reports made in this browser. | Working | Live figures on the Supabase server; samples in the demo. |
