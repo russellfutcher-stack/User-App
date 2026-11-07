@@ -1,6 +1,7 @@
 // Sends a chat message or room post after the safety check. Body: { kind: 'chat' | 'room', to: username or room id, text }.
-import { admin, must, reply, serve } from '../_shared/db.ts';
+import { admin, must, recent, reply, serve } from '../_shared/db.ts';
 import { checkMessage } from '../_shared/moderate.ts';
+import { notify } from '../_shared/push.ts';
 
 const HELD = "This message couldn't be checked just now, so it wasn't sent. Please try again in a moment.";
 const until = (t: string) => new Date(t).toLocaleString('en-GB', { weekday: 'short', hour: 'numeric', minute: '2-digit', timeZone: 'UTC' }) + ' (UTC)';
@@ -11,14 +12,22 @@ const LADDER: Record<string, string> = {
   removal: ' Your account is paused while it is reviewed, because of repeated dealing messages.',
 };
 const TYPE: Record<string, string> = { interests: 'Interest', drugs: 'Drug use', mh: 'Mental health' };
+// Signs of being under 18 pause the account until the member confirms their age (Rusty, 29 Oct 2026).
+const AGE = "User is for adults, so this message wasn't sent. Please confirm you are 18 or older to carry on.";
+const AGE_REVIEW = "User is for adults, so this message wasn't sent. Your account is paused while it is reviewed.";
 
 serve(async (me, b) => {
   const kind = b.kind === 'room' ? 'room' : 'chat', to = String(b.to || ''), text = String(b.text || '').trim();
   if (!to || !text || text.length > 1000) return reply({ ok: false, error: 'length' }, 400);
   const [state] = must(await admin.rpc('member_state', { m: me.id })) as { strikes: number; muted_until: string | null; suspended_until: string | null }[];
   const now = Date.now();
-  if (state.suspended_until && Date.parse(state.suspended_until) > now) return reply({ ok: false, error: state.suspended_until === 'infinity' ? 'Your account is paused while it is reviewed.' : `Your account is paused until ${until(state.suspended_until)}.` });
+  // 'infinity' (paused while reviewed) isn't a date JavaScript can read, so it's checked by name.
+  if (state.suspended_until === 'infinity' || (state.suspended_until && Date.parse(state.suspended_until) > now)) return reply({ ok: false, error: state.suspended_until === 'infinity' ? 'Your account is paused while it is reviewed.' : `Your account is paused until ${until(state.suspended_until)}.` });
   if (state.muted_until && Date.parse(state.muted_until) > now) return reply({ ok: false, error: `You can't send messages until ${until(state.muted_until)}.` });
+  const age = must(await admin.from('profiles').select('age_check_at').eq('id', me.id).single()) as { age_check_at: string | null };
+  if (age.age_check_at) return reply({ ok: false, error: 'Please confirm you are 18 or older to carry on.', ageCheck: 'ask' });
+
+  if (await recent('moderation', 'member', me.id, 1, ['message', 'post']) >= 60) return reply({ ok: false, error: "You've sent a lot of messages in the last hour. Please wait a little, then try again." });
 
   let where = 'a one-to-one chat';
   if (kind === 'room') {
@@ -34,6 +43,10 @@ serve(async (me, b) => {
   }).select('id')) as { id: number }[];
 
   if (out.action === 'hold') return reply({ ok: false, error: HELD });
+  if (out.action === 'block' && out.category === 'under_18') {
+    const step = must(await admin.rpc('flag_under_18', { m: me.id, why: 'their own message' })) as 'ask' | 'review';
+    return reply({ ok: false, blocked: step === 'ask' ? AGE : AGE_REVIEW, error: 'Message not sent', ageCheck: step });
+  }
   if (out.action === 'block') {
     const step = out.strike ? must(await admin.rpc('add_strike', { m: me.id, cat: out.category, mod_id: log.id })) as string : '';
     return reply({ ok: false, blocked: out.note + (LADDER[step] || ''), error: 'Message not sent' });
@@ -43,5 +56,15 @@ serve(async (me, b) => {
     : await admin.rpc('deliver_message', { sender: me.id, name: to, body: text });
   if (r.error) return reply({ ok: false, error: /blocked/.test(r.error.message) ? "You can't message this person." : 'trouble' });
   const row = (r.data as { id: number; created_at: string }[])[0];
+  // A neutral notification for the other person, unless they've muted this chat. Sent after the reply, so nobody waits.
+  if (kind === 'chat') {
+    // deno-lint-ignore no-explicit-any
+    (globalThis as any).EdgeRuntime?.waitUntil((async () => {
+      const them = must(await admin.rpc('member_id', { name: to })) as string | null; if (!them) return;
+      const chat = must(await admin.rpc('chat_with', { me: me.id, them })) as string | null;
+      const st = chat ? must(await admin.from('chat_state').select('muted_until').eq('chat_id', chat).eq('member', them).maybeSingle()) as { muted_until: string | null } | null : null;
+      if (!st?.muted_until || Date.parse(st.muted_until) < Date.now()) await notify(them, 'message');
+    })().catch(e => console.error(e)));
+  }
   return reply({ ok: true, msg: { id: String(row.id), created_at: row.created_at }, help: out.action === 'help' });
 });

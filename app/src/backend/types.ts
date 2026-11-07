@@ -13,6 +13,7 @@ export type Profile = {
   vis: Record<VisKey, Vis>;
   prefs: { searchable: boolean; disappearing: boolean; lock: boolean };
   setupDone: boolean;
+  country: string; // chosen on the Support page for its help services; '' until then
 };
 
 // A chat message or room post. `who` names the poster in rooms.
@@ -23,11 +24,30 @@ export type RoomRequest = { id: string; name: string; cat: PathKey; status: 'Che
 export type Undo = () => Promise<void>;
 // Every message and post is checked for safety before anyone sees it.
 // `help` means it was sent and the Help sheet should open; `blocked` holds why it wasn't sent.
-export type Sent = { ok: true; msg: Msg; help: boolean } | { ok: false; blocked?: string; error: string };
+// `ageCheck` means the account is now paused: 'ask' until they confirm they are 18 or older, 'review' while it is reviewed.
+export type Sent = { ok: true; msg: Msg; help: boolean } | { ok: false; blocked?: string; error: string; ageCheck?: AgeCheck };
+export type AgeCheck = 'ask' | 'review';
+// What a member needs to see when they open the app: a check-in after a danger report, or the age check.
+export type Notices = { checkin: boolean; ageCheck: AgeCheck | null };
 export type Review = {
   id: string; topic: string; text: string; auto: boolean; due: string;
   status: string; // "Being reviewed", or "Decided: Upheld" and so on
   note?: string; by?: 'automatic' | 'arbitrator';
+};
+
+// The arbitrator dashboard (AI-agents-spec.md, section 3.5). Figures are live on the server and samples in the demo.
+export type ArbCase = {
+  id: string; member?: string; topic: string; text: string; raised: 'Automatic' | 'Member'; urgent: boolean; due: string;
+  status: string; confidence: number; reason: string; note?: string; flagged: boolean; by: 'automatic' | 'arbitrator' | null;
+  live?: boolean; // in the demo: raised in this browser
+};
+export type ArbOutcome = 'Upheld' | 'Overturned' | 'Action changed';
+export type ArbFigures = {
+  sample: boolean; activeToday: number; activeWeek: number; newMembers: number; peers: number; wantPeers: number;
+  checked: number; blocked: number; help: number; held: number; blockedBy: [string, number][]; reports: [string, number][];
+  blocksWeek: number; muted: number; suspended: number; ageChecks: number; topBlocked: [string, number, number][]; countries: [string, number][];
+  peerChats: number; rooms: number; roomsApproved: number; roomsRefused: number;
+  autoDecided: number; reviewsWeek: number; autoSeconds: number | null; changedByArbitrator: number; overdue: number; missed: number;
 };
 
 export type Result<T> = { ok: true; value: T } | { ok: false; error: string };
@@ -68,6 +88,18 @@ export interface Backend {
   report(username: string, reason: string): Promise<Result<{ urgent: boolean }>>;
   requestReview(topic: string, text: string): Promise<Result<Review>>;
   reviews(): Promise<Review[]>; // newest first
+  notices(): Promise<Notices>;
+  seenCheckin(): Promise<void>;
+  confirmAge(): Promise<Result<null>>; // ticks 'I am 18 or older' and unpauses the account
+  // Notifications on this device: a neutral alert for new messages and review decisions (Rusty, 4 Nov 2026).
+  notificationsOn(): Promise<boolean>;
+  setNotifications(on: boolean): Promise<Result<null>>;
+  muteChat(withUser: string): Promise<void>; // no notifications from this chat for 8 hours
+  // The arbitrator: an ordinary sign-in listed as an arbitrator sees the dashboard instead of the member pages.
+  isArbitrator(): Promise<boolean>;
+  arbFigures(): Promise<ArbFigures>;
+  arbCases(): Promise<ArbCase[]>;
+  arbDecide(id: string, outcome: ArbOutcome, note: string): Promise<Result<null>>; // the note (5+ characters) is shown to the member
   unblock(username: string): Promise<void>;
   signOut(): Promise<void>;
   deleteAccount(): Promise<void>;
@@ -76,5 +108,5 @@ export interface Backend {
 export const blankProfile = (username: string): Profile => ({
   username, byline: '', stage: 'na', looking: ['chat'], wantsPeer: null, isPeer: false, tags: [],
   vis: { interests: 'everyone', mh: 'matches', subs: 'matches' },
-  prefs: { searchable: true, disappearing: false, lock: false }, setupDone: false,
+  prefs: { searchable: true, disappearing: false, lock: false }, setupDone: false, country: '',
 });

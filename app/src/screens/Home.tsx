@@ -32,13 +32,10 @@ export function Home() {
       <Card tone="calm">
         <View id="help-card" style={{ gap: 8 }}>
           <H3>Help is always here</H3>
-          <P small>Tap <B>Help now</B> at the top of any screen, or open the <B>Support</B> page for help services in your country, overdose information and peer supporters.</P>
+          <P small>Tap <B>Help</B> at the top of any screen, or open the <B>Support</B> page for help services in your country, overdose information and peer supporters.</P>
         </View>
       </Card>
       <Disclaimer />
     </>
   );
-}
-export function Later({ name }: { name: string }) {
-  return <Card><H2>{name}</H2><P muted>Coming in a later build step.</P></Card>;
 }

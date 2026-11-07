@@ -62,6 +62,20 @@ function ChangePassword() {
   );
 }
 
+// Notifications are per device, so the switch asks the device, not the profile. Off until the member turns it on.
+function Notifications() {
+  const { toast } = useApp();
+  const [on, setOn] = useState(false); const [busy, setBusy] = useState(false);
+  useEffect(() => { backend.notificationsOn().then(setOn).catch(() => setOn(false)); }, []);
+  const change = async (v: boolean) => {
+    if (busy) return; setBusy(true); const r = await backend.setNotifications(v).catch(() => null); setBusy(false);
+    if (!r?.ok) { toast(r?.error || "Couldn't change notifications. Check your connection and try again."); return; }
+    setOn(v); toast(v ? 'Notifications are on for this device.' : 'Notifications are off for this device.');
+  };
+  return <Toggle id="t-notify" label="Notifications on this device" value={on} onChange={change}
+    hint="A quiet alert for new messages and review decisions. It never shows names or what was said." />;
+}
+
 function Security() {
   const { toast, openSheet } = useApp();
   const [passkey, setPasskey] = useState(false); const [blocked, setBlocked] = useState<string[]>([]);
@@ -130,6 +144,7 @@ export function Me() {
           <Toggle id="t-disappearing" label="Disappearing messages (7 days)" value={profile.prefs.disappearing} onChange={pref('disappearing')}
             hint="Chat messages are deleted for both of you 7 days after they are sent, from the app and our servers. Room posts are not affected." />
           <Toggle id="t-lock" label="App lock with PIN or Face ID" value={profile.prefs.lock} onChange={pref('lock')} />
+          <Notifications />
         </View>
       </Card>
       <Security />

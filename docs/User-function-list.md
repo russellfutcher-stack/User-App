@@ -9,16 +9,16 @@ Prototype version 24. Every function a person can use in the prototype, each wit
 - **Saved only**: the choice is saved but has no visible effect yet.
 - **Placeholder**: the button only shows a message.
 
-Totals: Working 126, Simulated 22, Saved only 2, Placeholder 4, 154 functions in all.
+Totals: Working 149, Simulated 7, Saved only 2, Placeholder 2, 160 functions in all.
 
 ## Global
 
 | ID | Function | How to trigger | Expected result / rules | Status | Needs a backend |
 |---|---|---|---|---|---|
-| G-01 | App header | Visible on every screen | 'User / Connection and Recovery', an Exit button and a red Help now button. In chats, rooms and sign-up it shows a Back button (the word Back) and the page name. | Working | - |
+| G-01 | App header | Visible on every screen | 'User / Connection and Recovery', an Exit button, a Hide button and a red Help now button. In chats, rooms and sign-up it shows a Back button (the word Back) and the page name. | Working | - |
 | G-02 | Help now | Tap Help now on any screen | Opens the Help sheet (see Help & Safety). | Working | - |
-| G-03 | Quick exit | Tap Exit | Replaces the app with a fake 'Notes / Shopping list' screen. Header and tabs are hidden. | Working | - |
-| G-04 | Return from quick exit | Tap the fake note 3 times | Returns to the app. Two taps are not enough. | Working | - |
+| G-03 | Exit | Tap Exit | Closes any sheet, chat or room and goes to the Home page (Rusty, 4 Nov 2026). Replaces the fake notes screen. | Working | - |
+| G-04 | Exit when signed out | Tap Exit before signing in | Goes to the Welcome page. Exit never signs you out. | Working | - |
 | G-05 | Bottom tab bar | Visible after sign-in on main pages | 6 tabs: Home, Me, Search, Chats, Rooms, Support. The current tab's icon sits in a yellow pill. Hidden on Welcome, sign-up, setup, the matches screen, chats, rooms and the arbitrator dashboard. | Working | - |
 | G-06 | Unread dot | Have an unread chat | A dot shows on the Chats tab until the chat is opened. | Simulated | Real messages from other members need a server. |
 | G-07 | Toast messages | After actions such as Save, Block, Report | A short message near the bottom for about 2.4 seconds. | Working | - |
@@ -30,6 +30,7 @@ Totals: Working 126, Simulated 22, Saved only 2, Placeholder 4, 154 functions in
 | G-13 | No avatars | Look at every page and profile | No avatar pictures anywhere. People are shown by username only. | Working | - |
 | G-14 | Plain safety wording | Look through every page | No mention of AI agents, staff, volunteers, moderators or Night Owls. The app says 'every message is checked for safety'. | Working | - |
 | G-15 | Sample community | Use the app | 100 fictional members (12 written by hand, 88 generated the same way every time), 21 of them peer supporters. Every room has 4 to 6 posts, and the demo account has 6 chats, 3 unread. | Working | - |
+| G-16 | Hide (quick exit) | Tap Hide | User is replaced by Google's home page; Back doesn't bring it back, and you're signed out (Rusty, 4 Nov 2026). | Working | Web app only. |
 
 ## Welcome & Sign in
 
@@ -119,6 +120,7 @@ Totals: Working 126, Simulated 22, Saved only 2, Placeholder 4, 154 functions in
 | M-22 | Sign out | Tap Sign out | Back to Welcome. | Working | - |
 | M-23 | Delete account | Tap Delete account | Confirm or keep. | Working | - |
 | M-24 | Delete everything | Confirm | Erases data and restores the demo account. | Working | Deleting an account everywhere needs a server. |
+| M-25 | Notifications on this device | Turn on the switch under Privacy & visibility | Off at first. A neutral alert for new messages and review decisions ('You have a new message.', 'A review has been decided.'), never names or message text. Per device; on iPhone only once User is on the home screen. | Working | Real on the Supabase server (Web Push); checked with app/scripts/live-notify.js. |
 
 ## Search page
 
@@ -155,7 +157,7 @@ Totals: Working 126, Simulated 22, Saved only 2, Placeholder 4, 154 functions in
 | C-08 | Phone numbers allowed | Send a phone number | The message is sent. | Working | The real check is the AI Moderator on a server. |
 | C-09 | Crisis detection | Crisis words | Sent, then the Help sheet opens. | Working | The real check is the AI Moderator on a server. |
 | C-10 | Chat options | Tap 'Safety & options' | Safe meeting tips, Mute, Report and Block. | Working | - |
-| C-11 | Mute | Tap Mute | Message only. | Placeholder | Mute needs real notifications. |
+| C-11 | Mute | Tap Mute | 'Muted for 8 hours.' No notifications from this chat for 8 hours. | Working | Real on the Supabase server; checked with app/scripts/live-notify.js. |
 | C-12 | Back | Tap Back | Returns to the chat list. | Working | - |
 | C-13 | Unblock from Chats | Block someone, open Chats | A Blocked section lists them with an Unblock button; unblocking brings their chat back. | Working | Blocks must be enforced on a server. |
 | C-14 | Review from a blocked message | Tap 'Think this is wrong? Ask for a review' | Opens the review form with 'A message that was blocked' chosen. | Working | - |
@@ -192,9 +194,10 @@ Totals: Working 126, Simulated 22, Saved only 2, Placeholder 4, 154 functions in
 | SP-06 | Overdose information | Open Support | Signs of opioid and stimulant overdose, what to do (including naloxone) and lowering risk. | Working | - |
 | SP-07 | Ask for a review | Tap Ask for a review | Form: what it's about (5 options) and what happened (up to 500 characters). Says every review is decided straight away and an independent arbitrator checks decisions. | Working | - |
 | SP-08 | Review checks | Send under 10 characters | Refused with a message. | Working | - |
-| SP-09 | Review requested | Send a valid review | 'Review requested' with a case number; about 2 seconds later it shows the decision note. | Simulated | Real reviews are decided by the AI Review Agent on a server. |
-| SP-11 | Automatic review decision | Send any review | Every review is decided automatically. A naloxone or recovery message is overturned; an unclear one keeps the safest outcome and says it will be checked again. | Simulated | Real decisions come from the AI Review Agent. |
-| SP-10 | Arbitrator changes a decision | After the arbitrator changes it | The case shows the new decision with 'Arbitrator:' and their note. | Simulated | A decision reaching the member on another device needs a server. |
+| SP-09 | Review requested | Send a valid review | 'Review requested' with a case number; about 2 seconds later it shows the decision note. | Working | Real reviews are decided on the Supabase server. |
+| SP-11 | Automatic review decision | Send any review | Every review is decided automatically. A naloxone or recovery message is overturned; an unclear one keeps the safest outcome and says it will be checked again. | Working | Real decisions come from the review check on the Supabase server. |
+| SP-10 | Arbitrator changes a decision | After the arbitrator changes it | The case shows the new decision with 'Arbitrator:' and their note. | Working | Real on the Supabase server; checked with app/scripts/live-arbitrator.js. |
+| SP-13 | A question is answered | Ask for a review with a question, for example about your data | Answered and closed straight away ('Answered automatically: …') from the privacy policy's facts. Whoever runs User gets an email alert with the case number only (Rusty, 7 Nov 2026). | Working | Real answers come from the review check on the Supabase server. |
 
 ## Help & Safety
 
@@ -206,23 +209,26 @@ Totals: Working 126, Simulated 22, Saved only 2, Placeholder 4, 154 functions in
 | HS-04 | Report a person | Tap Report, then a reason | 7 reasons. Toast: 'Report sent. We're reviewing it now.' | Simulated | Reports must reach the AI Moderator on a server. |
 | HS-05 | Serious reports reviewed urgently | Report 'Seems to be in danger' or 'Under 18' | Toast says it's being reviewed urgently, and a review is raised automatically, marked 'raised automatically'. | Simulated | Urgent review needs the AI Review Agent on a server. |
 | HS-06 | Review from a report | Tap 'Think a decision is wrong? Ask for a review' | Opens the review form with 'A report I made' chosen. | Working | - |
+| HS-07 | Check-in after a danger report | Another member reports you as 'Seems to be in danger', then open the app | The Help sheet opens once, headed 'You don't have to hold this alone', with 'Someone here is thinking of you. If things are hard right now, these people can help.' and the helplines. It never says who reported you. | Working | Real on the Supabase server; checked with app/scripts/live-age-checkin.js. |
+| HS-08 | Age check | Say you are under 18 in a message (for example 'I'm 15'), or be reported as 'Under 18' | The message isn't sent and the account is paused: 'Please confirm your age', with a tick box 'I am 18 or older'. No tab bar; Help now still works; Sign out. Not confirmed within 7 days: the account and everything in it is removed. A report after you've confirmed doesn't pause you again. | Working | Real on the Supabase server; checked with app/scripts/live-age-checkin.js. |
+| HS-09 | Confirm your age | Tick 'I am 18 or older', then 'Confirm and continue' | Without the tick: 'Please tick the box to confirm you are 18 or older.' With it: 'Thanks. Your account is open again.' A new sign of being under 18 after confirming pauses the account while it is reviewed ('Your account is paused'). | Working | Real on the Supabase server; checked with app/scripts/live-age-checkin.js. |
 
 ## Arbitrator dashboard
 
 | ID | Function | How to trigger | Expected result / rules | Status | Needs a backend |
 |---|---|---|---|---|---|
-| AD-01 | Arbitrator sign-in | Sign in as Arbitrator / fair review | Opens the dashboard with no tab bar. | Working | A real arbitrator account with its own permissions needs a server. |
-| AD-02 | Summary figures | Open the dashboard | Active today, active in 7 days, new members, peer supporters, members who want peer support, cases flagged for a check, urgent cases. | Simulated | Live figures need server data. |
-| AD-03 | Review queue | Open the dashboard | One Decided table: every case with its decision, the agent's confidence, who decided it, and a Flagged tag when under 85%. Urgent cases are red. Live cases are marked 'This browser'. | Simulated | The live queue needs a server. |
-| AD-13 | AI Review Agent | Every case | Decides every case, including danger, under 18 and account removal. Under 85% confidence it keeps the safest outcome and flags the case. The naloxone and 'I used to sell' cases are overturned. | Simulated | Real decisions come from the AI Review Agent model. |
+| AD-01 | Arbitrator sign-in | Sign in as Arbitrator / fair review | Opens the dashboard with no tab bar. | Working | Real arbitrators are accounts listed in public.arbitrators; checked with app/scripts/live-arbitrator.js. |
+| AD-02 | Summary figures | Open the dashboard | Active today, active in 7 days, new members, peer supporters, members who want peer support, cases flagged for a check, urgent cases. | Working | Live figures on the Supabase server; samples in the demo. |
+| AD-03 | Review queue | Open the dashboard | One Decided table: every case with its decision, the agent's confidence, who decided it, and a Flagged tag when under 85%. Urgent cases are red. Live cases are marked 'This browser'. | Working | Live queue on the Supabase server. |
+| AD-13 | AI Review Agent | Every case | Decides every case, including danger, under 18 and account removal. Under 85% confidence it keeps the safest outcome and flags the case. The naloxone and 'I used to sell' cases are overturned. | Working | Real decisions come from the review check on the Supabase server. |
 | AD-04 | Change a decision | Tap Check, write a note, choose an outcome | Shows the agent's decision and reason. Uphold, Overturn or Change the action; a note of at least 5 characters is required. The case then shows 'by Arbitrator'. | Working | - |
-| AD-05 | Decision reaches the member | Decide a case raised in this browser, then sign in as the member | The Support page shows the decision and note. | Working | Decisions reaching members on their own devices need a server. |
-| AD-06 | Message safety | Open the dashboard | Messages checked, blocked, Help shown, check time, and blocked messages by reason. | Simulated | Live figures need server data. |
-| AD-07 | Reports | Open the dashboard | Reports by reason (7), plus reports made in this browser. | Simulated | Live figures need server data. |
-| AD-08 | Blocking and actions | Open the dashboard | Blocks, mutes, suspensions, removals, most-blocked members, and who is blocked in this browser. | Simulated | Live figures need server data. |
-| AD-09 | Country of origin | Open the dashboard | Members by country (8 rows), from the country members choose. | Simulated | Live figures need server data. |
-| AD-10 | Peer support | Open the dashboard | Peer support matches, chats with peer supporters and active peer supporters. | Simulated | Live figures need server data. |
-| AD-11 | Rooms and system health | Open the dashboard | Rooms, requests, uptime, waiting messages, overdue reviews. | Simulated | Live figures need server data. |
+| AD-05 | Decision reaches the member | Decide a case raised in this browser, then sign in as the member | The Support page shows the decision and note. | Working | Real on the Supabase server; checked with app/scripts/live-arbitrator.js. |
+| AD-06 | Message safety | Open the dashboard | Messages checked, blocked, Help shown, check time, and blocked messages by reason. | Working | Live figures on the Supabase server; samples in the demo. |
+| AD-07 | Reports | Open the dashboard | Reports by reason (7), plus reports made in this browser. | Working | Live figures on the Supabase server; samples in the demo. |
+| AD-08 | Blocking and actions | Open the dashboard | Blocks, mutes, suspensions, removals, most-blocked members, and who is blocked in this browser. | Working | Live figures on the Supabase server; samples in the demo. |
+| AD-09 | Country of origin | Open the dashboard | Members by country (8 rows), from the country members choose. | Working | Live figures on the Supabase server; samples in the demo. |
+| AD-10 | Peer support | Open the dashboard | Peer support matches, chats with peer supporters and active peer supporters. | Working | Live figures on the Supabase server; samples in the demo. |
+| AD-11 | Rooms and system health | Open the dashboard | Rooms, requests, uptime, waiting messages, overdue reviews. | Working | Live figures on the Supabase server; samples in the demo. |
 | AD-12 | Sign out | Tap Sign out | Back to the Welcome page. | Working | - |
 
 ## Test data

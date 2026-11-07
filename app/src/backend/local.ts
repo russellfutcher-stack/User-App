@@ -8,25 +8,35 @@ import { score } from '../lib/match';
 import { roomRequestError } from '../lib/rooms';
 import { demoDecision, Decision, URGENT_REASON } from '../lib/review';
 import { CRISIS, notAllowed } from '../lib/safety';
-import { Backend, Msg, Profile, Review, Room, RoomRequest, Sent, blankProfile } from './types';
+import { SAMPLE_CASES, SAMPLE_FIGURES } from '../data/arbitrator';
+import { AgeCheck, ArbCase, ArbOutcome, Backend, Msg, Profile, Review, Room, RoomRequest, Sent, blankProfile } from './types';
 
 const KEY = 'user-app-v1';
 type Stored = { f: 'me' | 'them'; t: string; ts: number };
 type Chat = { msgs: Stored[]; unread: boolean };
 type MyRoom = { id: string; cat: Room['cat']; name: string; desc: string };
 type Rooms = { joined: string[]; posts: Record<string, Stored[]>; custom: MyRoom[]; requests: RoomRequest[] };
-type Case = Omit<Review, 'status' | 'note' | 'by'> & { at: number; decision: Decision };
-type Account = { salt: string; hash: string; passkey: boolean; profile: Profile; blocked: string[]; chats?: Record<string, Chat>; rooms?: Rooms; cases?: Case[] };
+type ArbDecision = { outcome: ArbOutcome; note: string };
+type Case = Omit<Review, 'status' | 'note' | 'by'> & { at: number; decision: Decision; arb?: ArbDecision };
+type Account = { salt: string; hash: string; passkey: boolean; profile: Profile; blocked: string[]; chats?: Record<string, Chat>; rooms?: Rooms; cases?: Case[];
+  checkin?: boolean; ageCheck?: AgeCheck; ageConfirmed?: boolean; notify?: boolean; muted?: Record<string, number> };
 
 // In the demo, a review is decided about 1.5 seconds after it's sent, as in the prototype.
 const DECIDE_AFTER = 1500;
 const dueDate = (urgent: boolean) => new Date(Date.now() + (urgent ? 24 : 72) * 3600000).toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short' });
-const asReview = (c: Case): Review => (Date.now() - c.at < DECIDE_AFTER ? { ...c, status: 'Being reviewed' }
+const asReview = (c: Case): Review => (c.arb ? { ...c, status: 'Decided: ' + c.arb.outcome, note: c.arb.note, by: 'arbitrator' }
+  : Date.now() - c.at < DECIDE_AFTER ? { ...c, status: 'Being reviewed' }
   : { ...c, status: 'Decided: ' + c.decision.decision, note: c.decision.note, by: 'automatic' });
 // The demo's stand-in for the safety check: the prototype's rules.
-const check = (text: string): { blocked: boolean; help: boolean } => ({ blocked: notAllowed(text), help: CRISIS.test(text) });
+const check = (text: string): { blocked: boolean; help: boolean; young: boolean } => ({ blocked: notAllowed(text), help: CRISIS.test(text), young: YOUNG.test(text) });
+// Signs of being under 18, such as "I'm 15" or "in Year 10". On the server the safety check spots these instead.
+const YOUNG = /\b(i'?m|i am|im) (1[0-7]|[1-9])\b(?! ?(days?|weeks?|months?|years?|hours?|minutes?|mins?|times?|drinks?)\b)|\b(1[0-7]|[1-9]) ?(years? old|yo|y\/o)\b|\bin year ([7-9]|1[01])\b/i;
+const AGE = "User is for adults, so this message wasn't sent. Please confirm you are 18 or older to carry on.";
+const AGE_REVIEW = "User is for adults, so this message wasn't sent. Your account is paused while it is reviewed.";
 const NOT_SENT = "It looks like it could be about buying or selling, or sharing links or other apps' contact details. User doesn't allow sourcing or off-app contact, to keep everyone safe. If you're struggling with cravings, the Help button has people to talk to right now.";
-type Store = { accounts: Record<string, Account>; device: string | null; current: string | null };
+type Store = { accounts: Record<string, Account>; device: string | null; current: string | null; arb?: Record<string, ArbDecision> };
+// The demo arbitrator, as in the prototype: username Arbitrator, password "fair review". Not a member account.
+const ARB = '~arbitrator';
 
 const DEMO = 'quietheron';
 const demoAccount = (): Account => ({
@@ -38,7 +48,7 @@ const demoAccount = (): Account => ({
     stage: 'early', looking: ['chat', 'walk', 'pets'], wantsPeer: true, isPeer: false,
     tags: ['I01', 'I02', 'I04', 'D02', 'D03', 'O01', 'M05'],
     vis: { interests: 'everyone', mh: 'matches', subs: 'matches' },
-    prefs: { searchable: true, disappearing: false, lock: false }, setupDone: true,
+    prefs: { searchable: true, disappearing: false, lock: false }, setupDone: true, country: '',
   },
 });
 
@@ -80,6 +90,17 @@ export function localBackend(): Backend {
     await withMe(x => { x.cases = [c, ...(x.cases || [])]; });
     return asReview(c);
   };
+  // Why a message can't be sent, or null. A sign of being under 18 pauses the account until they confirm their age;
+  // after confirming once, another sign pauses it for review.
+  const refused = async (c: ReturnType<typeof check>): Promise<Sent | null> => {
+    const a = await me(); if (!a) return { ok: false, error: 'Please sign in again.' };
+    if (a.ageCheck) return { ok: false, error: 'Please confirm you are 18 or older to carry on.', ageCheck: a.ageCheck };
+    if (c.blocked) return { ok: false, blocked: NOT_SENT, error: 'Message not sent' };
+    if (!c.young) return null;
+    const step: AgeCheck = a.ageConfirmed ? 'review' : 'ask';
+    await withMe(x => { x.ageCheck = step; });
+    return { ok: false, blocked: step === 'ask' ? AGE : AGE_REVIEW, error: 'Message not sent', ageCheck: step };
+  };
   const allRooms = (a: Account) => [...ROOMS.map(r => ({ id: r.id, cat: r.cat, name: r.name, desc: r.desc, members: r.members, mine: false })),
     ...roomsOf(a).custom.map(r => ({ ...r, members: 1, mine: true }))];
 
@@ -88,11 +109,11 @@ export function localBackend(): Backend {
     passkeysReady: true,
     async usernameTaken(name) {
       const n = name.toLowerCase(); const s = await load();
-      return !!s.accounts[n] || SAMPLE_HANDLES.some(h => h.toLowerCase() === n);
+      return !!s.accounts[n] || n === 'arbitrator' || SAMPLE_HANDLES.some(h => h.toLowerCase() === n);
     },
     async signUp(username, password) {
       const s = await load(); const n = username.toLowerCase();
-      if (s.accounts[n] || SAMPLE_HANDLES.some(h => h.toLowerCase() === n)) return { ok: false, error: 'That username is taken. Try another, or tap Suggest.' };
+      if (s.accounts[n] || n === 'arbitrator' || SAMPLE_HANDLES.some(h => h.toLowerCase() === n)) return { ok: false, error: 'That username is taken. Try another, or tap Suggest.' };
       const salt = newSalt();
       s.accounts[n] = { salt, hash: await hash(password, salt), passkey: false, profile: blankProfile(username), blocked: [] };
       s.device = n; current = n; await save(s);
@@ -100,6 +121,7 @@ export function localBackend(): Backend {
     },
     async signIn(username, password) {
       const s = await load(); const n = username.trim().toLowerCase(); const a = s.accounts[n];
+      if (n === 'arbitrator' && password.trim().toLowerCase() === 'fair review') { current = ARB; return { ok: true, value: { ...blankProfile('Arbitrator'), setupDone: true } }; }
       const ok = !!a && (a.hash === 'demo' ? password.trim().toLowerCase() === 'quiet heron walks' : (await hash(password, a.salt)) === a.hash);
       if (!ok) return { ok: false, error: "That username and password don't match. Check for typos, or sign in with a passkey." };
       s.device = n; current = n; await save(s);
@@ -143,7 +165,7 @@ export function localBackend(): Backend {
       return out;
     },
     async send(w, text): Promise<Sent> {
-      const c = check(text); if (c.blocked) return { ok: false, blocked: NOT_SENT, error: 'Message not sent' };
+      const c = check(text), no = await refused(c); if (no) return no;
       let out: Msg | null = null;
       await withMe(a => { const c = (chatsOf(a)[w] = chatsOf(a)[w] || { msgs: [], unread: false }); c.msgs.push({ f: 'me', t: text, ts: Date.now() }); out = msg(c.msgs[c.msgs.length - 1], c.msgs.length - 1); });
       return out ? { ok: true, msg: out, help: c.help } : { ok: false, error: 'Please sign in again.' };
@@ -179,7 +201,7 @@ export function localBackend(): Backend {
     },
     async joinRoom(id) { await withMe(a => { const r = roomsOf(a); if (!r.joined.includes(id)) r.joined.push(id); }); },
     async post(id, text): Promise<Sent> {
-      const c = check(text); if (c.blocked) return { ok: false, blocked: NOT_SENT, error: 'Message not sent' };
+      const c = check(text), no = await refused(c); if (no) return no;
       let out: Msg | null = null;
       await withMe(a => { const r = roomsOf(a); const l = (r.posts[id] = r.posts[id] || []); l.push({ f: 'me', t: text, ts: Date.now() }); out = msg(l[l.length - 1], 1000 + l.length); });
       return out ? { ok: true, msg: out, help: c.help } : { ok: false, error: 'Please sign in again.' };
@@ -212,6 +234,38 @@ export function localBackend(): Backend {
       return r ? { ok: true, value: r } : { ok: false, error: 'Please sign in again.' };
     },
     async reviews() { const a = await me(); return (a?.cases || []).map(asReview); },
+    async notices() { const a = await me(); return { checkin: !!a?.checkin, ageCheck: a?.ageCheck || null }; },
+    // The demo has no server to send notifications, so it only remembers the choices.
+    async notificationsOn() { return !!(await me())?.notify; },
+    async setNotifications(on) { await withMe(a => { a.notify = on; }); return { ok: true, value: null }; },
+    async muteChat(w) { await withMe(a => { a.muted = { ...a.muted, [w]: Date.now() + 8 * 3600000 }; }); },
+    async isArbitrator() { return current === ARB; },
+    async arbFigures() { return { ...SAMPLE_FIGURES }; },
+    async arbCases() {
+      const s = await load(); if (current !== ARB) return [];
+      const decided = (c: Omit<ArbCase, 'status' | 'note' | 'by'>, d: Decision, arb?: ArbDecision): ArbCase => (arb
+        ? { ...c, status: 'Decided: ' + arb.outcome, note: arb.note, by: 'arbitrator' } : { ...c, status: 'Decided: ' + d.decision, note: d.note, by: 'automatic' });
+      const live = Object.values(s.accounts).flatMap(a => (a.cases || []).map(c => decided({
+        id: c.id, member: a.profile.username, topic: c.topic, text: c.text, raised: c.auto ? 'Automatic' : 'Member', urgent: c.auto, due: c.due,
+        confidence: c.decision.confidence, reason: c.decision.reason, flagged: c.decision.flagged, live: true }, c.decision, c.arb)));
+      const sample = SAMPLE_CASES.map(c => { const d = demoDecision(c.topic, c.text);
+        return decided({ ...c, urgent: !!c.urgent, confidence: d.confidence, reason: d.reason, flagged: d.flagged }, d, s.arb?.[c.id]); });
+      return [...live, ...sample];
+    },
+    async arbDecide(id, outcome, note) {
+      if (current !== ARB) return { ok: false, error: 'Please sign in again.' };
+      if (note.trim().length < 5) return { ok: false, error: 'Add a short note explaining your decision.' };
+      const s = await load(); const arb = { outcome, note: note.trim() };
+      const mine = Object.values(s.accounts).flatMap(a => a.cases || []).find(c => c.id === id);
+      if (mine) mine.arb = arb; else s.arb = { ...s.arb, [id]: arb };
+      await save(s); return { ok: true, value: null };
+    },
+    async seenCheckin() { await withMe(a => { delete a.checkin; }); },
+    async confirmAge() {
+      const a = await me(); if (!a) return { ok: false, error: 'Please sign in again.' };
+      if (a.ageCheck !== 'ask') return { ok: false, error: 'Your account is paused while it is reviewed.' };
+      await withMe(x => { delete x.ageCheck; x.ageConfirmed = true; }); return { ok: true, value: null };
+    },
     async signOut() { current = null; },
     async deleteAccount() {
       const s = await load();

@@ -84,7 +84,7 @@ export function PeerCard() {
       <Toggle id="pe-want" label="I would like peer support" hint="You'll see peer supporters at the top of your matches." value={!!profile.wantsPeer}
         onChange={v => { update({ wantsPeer: v }); toast(v ? 'Peer support turned on. Peer supporters will show first in your matches.' : 'Peer support turned off.'); }} />
       <Toggle id="pe-be" label="Nominate myself as a peer supporter"
-        hint="You agree to listen without judgement, never give medical or dosing advice, and point people to Help now if they're at risk."
+        hint="You agree to listen without judgement, never give medical or dosing advice, and point people to Help if they're at risk."
         value={profile.isPeer} onChange={v => { update({ isPeer: v }); toast(v ? 'You are now a peer supporter. Thank you.' : 'You are no longer listed as a peer supporter.'); }} />
       {profile.isPeer ? <View role="status" id="peer-on" style={{ flexDirection: 'row', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
         <Pill peer text="Peer supporter" /><P small>People who want peer support can now be matched with you.</P></View> : null}

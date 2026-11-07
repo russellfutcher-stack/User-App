@@ -40,7 +40,7 @@ test('H-07 Shows How to use it', async ({ page }) => {
 });
 test('H-08 Help is always here card', async ({ page }) => {
   await H.open(page); await H.signInDemo(page);
-  await expect(page.locator('#help-card')).toContainText('Tap Help now at the top of any screen, or open the Support page');
+  await expect(page.locator('#help-card')).toContainText('Tap Help at the top of any screen, or open the Support page');
 });
 test('H-08 Help card is the last card, before the disclaimer', async ({ page }) => {
   await H.open(page); await H.signInDemo(page);

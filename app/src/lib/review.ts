@@ -8,12 +8,14 @@ export const URGENT_REASON = /danger|Under 18/;
 // At or above this confidence a decision is final; below it, the safest outcome is kept and the case is flagged for the arbitrator.
 export const SURE = 0.85;
 
-export type Decision = { decision: 'Upheld' | 'Overturned' | 'Action changed'; confidence: number; reason: string; note: string; flagged: boolean };
+export type Decision = { decision: 'Upheld' | 'Overturned' | 'Action changed' | 'Answered'; confidence: number; reason: string; note: string; flagged: boolean };
 
 export function demoDecision(topic: string, text: string): Decision {
   const t = (topic + ' ' + text).toLowerCase();
   let r: Omit<Decision, 'flagged'>;
-  if (/danger/.test(t)) r = {decision: 'Action changed', confidence: .9, reason: 'Possible risk to life. Help now and local crisis lines were shown to the member at once, a supportive check-in message was sent, and their recent messages were reviewed for further risk.', note: 'Reviewed automatically and urgently: support and crisis lines have been offered. Thank you for reporting.'};
+  // A question, not a decision to look at again, is answered (Rusty, 7 Nov 2026).
+  if (/\b(my data|privacy|what do you (store|keep)|who can see|delete my account|where is my)\b/.test(t)) r = {decision: 'Answered', confidence: .9, reason: 'A question about data and privacy, answered from the privacy policy.', note: 'Answered automatically: User never asks for your real name, email or phone number, and members\' data is stored in Australia. You choose who sees your drug use and mental health choices on the Me page, and Delete account there erases everything. The privacy policy is on the User website.'};
+  else if (/danger/.test(t)) r = {decision: 'Action changed', confidence: .9, reason: 'Possible risk to life. Help and local crisis lines were shown to the member at once, a supportive check-in message was sent, and their recent messages were reviewed for further risk.', note: 'Reviewed automatically and urgently: support and crisis lines have been offered. Thank you for reporting.'};
   else if (/under 18|under-18/.test(t)) r = {decision: 'Action changed', confidence: .88, reason: 'Signs the member may be under 18. Their account is paused and they have been asked to confirm their age. It is removed if they don\'t confirm within 7 days.', note: 'Reviewed automatically: the account has been paused while age is checked. Thank you for reporting.'};
   else if (/removal/.test(t)) r = {decision: 'Action changed', confidence: .9, reason: '3 or more blocked dealing messages in 7 days. Under the strike ladder this means removal. The account has been removed and the member told which rule they broke.', note: 'Reviewed automatically: the account has been removed for repeated dealing.'};
   else if (/naloxone|recovery|stay clean|help others|harm reduction|used to sell|used to deal|support group|test strips/.test(t)&&!HARD.test(text)) r = {decision: 'Overturned', confidence: .93, reason: 'Recovery or harm-reduction context, with no buying, selling, prices or contact details.', note: 'Reviewed automatically: your message was about recovery or harm reduction, which is allowed. The block has been removed.'};

@@ -1,5 +1,6 @@
 // Live check of chats and rooms on the Supabase project: two throwaway members message each other (with Realtime),
-// a sample member replies, they use rooms, then both are deleted. Run from app/ with the two Supabase settings set:
+// a sample member replies, they use rooms, then both are deleted. Messages, posts and room requests go through the safety
+// check (supabase/functions), as in the app, so this makes a few real Claude calls. Run from app/ with the two Supabase settings set:
 //   node scripts/live-chats.js
 const { createClient } = require('@supabase/supabase-js');
 const url = process.env.EXPO_PUBLIC_SUPABASE_URL, key = process.env.EXPO_PUBLIC_SUPABASE_KEY;
@@ -17,30 +18,33 @@ const wait = ms => new Promise(r => setTimeout(r, ms));
     return db;
   };
   const rpc = async (db, fn, args) => { const { data, error } = await db.rpc(fn, args); if (error) throw new Error(fn + ': ' + error.message); return data; };
+  const fn = async (db, f, body) => { const r = await db.functions.invoke(f, { body }); if (!r.error) return r.data; try { return await r.error.context.json(); } catch { return { error: r.error.message }; } };
+  const say = async (db, to, text, kind = 'chat') => { const r = await fn(db, 'send', { kind, to, text }); if (!r.ok) throw new Error('send: ' + (r.blocked || r.error)); return r; };
   try {
     const A = 'zzchata' + n, B = 'zzchatb' + n, a = await member(A), b = await member(B);
     let heard = 0;
     const ch = b.channel('t').on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages' }, () => { heard++; });
     await new Promise(res => ch.subscribe(s => { if (s === 'SUBSCRIBED') res(); }));
     await wait(1500); // the server takes a moment to start sending changes
-    await rpc(a, 'send_message', { name: B, body: 'Hi there' });
+    check('sending directly is closed', !!(await a.rpc('send_message', { name: B, body: 'Hi there' })).error);
+    await say(a, B, 'Hi there');
     await wait(2500); check('Realtime delivers the message', heard > 0, heard + ' events');
     const bc = await rpc(b, 'my_chats');
     check('the other person sees a New chat', bc.length === 1 && bc[0].with_name === A && bc[0].unread);
     check('they see the message', (await rpc(b, 'chat_messages', { name: A }))[0]?.body === 'Hi there');
     check('opening it marks it read', !(await rpc(b, 'my_chats'))[0].unread);
     const seenBefore = (await rpc(a, 'find_members')).find(m => m.username === B).tags.join();
-    await rpc(b, 'send_message', { name: A, body: 'Hello!' });
+    await say(b, A, 'Hello!');
     const seenAfter = (await rpc(a, 'find_members')).find(m => m.username === B).tags.join();
     check('"People I chat with" tags show once both have written', seenBefore === 'I02' && seenAfter === 'I02,D02', seenBefore + ' then ' + seenAfter);
     await rpc(a, 'hide_chat', { name: B, hide: true }); check('deleting a chat hides it', (await rpc(a, 'my_chats')).length === 0);
     await rpc(a, 'hide_chat', { name: B, hide: false }); check('Undo brings it back', (await rpc(a, 'my_chats')).length === 1);
     await rpc(a, 'block', { name: B });
-    const sendBlocked = await b.rpc('send_message', { name: A, body: 'still there?' });
-    check('a blocked person cannot message', !!sendBlocked.error);
+    const sendBlocked = await fn(b, 'send', { kind: 'chat', to: A, text: 'still there?' });
+    check('a blocked person cannot message', sendBlocked.ok === false, sendBlocked.error);
     check('and the chat is hidden for both', (await rpc(a, 'my_chats')).length === 0 && (await rpc(b, 'my_chats')).length === 0);
     await rpc(a, 'unblock', { name: B }); check('unblocking brings the chat back', (await rpc(a, 'my_chats')).length === 1);
-    await rpc(a, 'send_message', { name: 'MossyOtter', body: 'Hello Mossy' });
+    await say(a, 'MossyOtter', 'Hello Mossy, how is your week going?');
     const rep = await rpc(a, 'sample_reply', { name: 'MossyOtter' });
     const mossy = await rpc(a, 'chat_messages', { name: 'MossyOtter' });
     check('a sample member replies', rep.length === 1 && mossy.some(m => !m.mine && /Biscuit/.test(m.body)));
@@ -50,13 +54,14 @@ const wait = ms => new Promise(r => setTimeout(r, ms));
     const rooms = await rpc(a, 'my_rooms');
     check('14 built-in rooms', rooms.length >= 14 && rooms[0].name === "Dog Walkers' Bench");
     check('rooms have their sample posts', (await rpc(a, 'room_posts_of', { room: 'r1' })).length >= 6);
-    check("can't post before joining", !!(await a.rpc('post_in_room', { room: 'r1', body: 'hi' })).error);
-    await rpc(a, 'join_room', { room: 'r1' }); await rpc(a, 'post_in_room', { room: 'r1', body: 'Hello room' });
+    check("can't post before joining", (await fn(a, 'send', { kind: 'room', to: 'r1', text: 'Hello room' })).ok === false);
+    await rpc(a, 'join_room', { room: 'r1' }); await say(a, 'r1', 'Hello room', 'room');
     const posts = await rpc(b, 'room_posts_of', { room: 'r1' });
     check('others see your room post', posts.some(p => p.who === A && p.body === 'Hello room'));
-    const rid = await rpc(a, 'request_room', { name: 'Zz Test Room ' + n, cat: 'interests', descr: 'A test room, deleted straight away.' });
+    const made = await fn(a, 'request-room', { name: 'Zz Birdwatchers ' + n, cat: 'interests', desc: 'Spotting local birds, sharing photos and tips on binoculars and field guides.' });
+    const rid = made.id; check('the room check approves a good request', made.ok === true, made.error);
     check('a room request creates the room', (await rpc(b, 'my_rooms')).some(r => r.id === rid));
-    check('names are checked ignoring capitals', /taken/.test((await a.rpc('request_room', { name: 'zz test room ' + n, cat: 'interests', descr: 'A duplicate test room.' })).error?.message || ''));
+    check('names are checked ignoring capitals', /already exists/.test((await fn(a, 'request-room', { name: 'zz birdwatchers ' + n, cat: 'interests', desc: 'A duplicate of the room above.' })).error || ''));
     await rpc(a, 'leave_room', { room: rid }); check('deleting your room removes it for everyone', !(await rpc(b, 'my_rooms')).some(r => r.id === rid));
     b.removeChannel(ch);
   } catch (e) { check('run', false, e.message); }

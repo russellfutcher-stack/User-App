@@ -3,7 +3,8 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { createClient } from '@supabase/supabase-js';
 import { SAMPLE_HANDLES } from '../data/reference';
 import { TAKEN_ROOM } from '../lib/rooms';
-import { Backend, Member, Msg, Profile, Review, Room, Sent } from './types';
+import { currentDevice, subscribe } from '../lib/push';
+import { AgeCheck, ArbCase, Backend, Member, Msg, Profile, Review, Room, Sent } from './types';
 
 // Supabase Auth needs an email address, but members never give one. The app makes a
 // placeholder from the username. No email is sent ("Confirm email" is off in Supabase).
@@ -13,12 +14,12 @@ const emailFor = (username: string) => `${username.trim().toLowerCase()}@${EMAIL
 type Row = {
   username: string; byline: string; stage: string; looking: string[]; wants_peer: boolean | null; is_peer: boolean;
   tags: string[]; vis_interests: Profile['vis']['interests']; vis_mh: Profile['vis']['mh']; vis_subs: Profile['vis']['subs'];
-  searchable: boolean; disappearing: boolean; app_lock: boolean; setup_done: boolean;
+  searchable: boolean; disappearing: boolean; app_lock: boolean; setup_done: boolean; country: string | null;
 };
 const fromRow = (r: Row): Profile => ({
   username: r.username, byline: r.byline, stage: r.stage, looking: r.looking, wantsPeer: r.wants_peer, isPeer: r.is_peer,
   tags: r.tags, vis: { interests: r.vis_interests, mh: r.vis_mh, subs: r.vis_subs },
-  prefs: { searchable: r.searchable, disappearing: r.disappearing, lock: r.app_lock }, setupDone: r.setup_done,
+  prefs: { searchable: r.searchable, disappearing: r.disappearing, lock: r.app_lock }, setupDone: r.setup_done, country: r.country || '',
 });
 const toRow = (p: Partial<Profile>): Partial<Row> => {
   const r: Partial<Row> = {};
@@ -31,9 +32,13 @@ const toRow = (p: Partial<Profile>): Partial<Row> => {
   if (p.vis) { r.vis_interests = p.vis.interests; r.vis_mh = p.vis.mh; r.vis_subs = p.vis.subs; }
   if (p.prefs) { r.searchable = p.prefs.searchable; r.disappearing = p.prefs.disappearing; r.app_lock = p.prefs.lock; }
   if (p.setupDone !== undefined) r.setup_done = p.setupDone;
+  if (p.country !== undefined) r.country = p.country;
   return r;
 };
 
+type CaseRow = { id: string; member: string; topic: string; body: string; auto: boolean; urgent: boolean; status: string; confidence: number | null;
+  reason: string | null; note: string | null; flagged: boolean; decided_by: 'automatic' | 'arbitrator' | null; due_at: string };
+const dayTime = (t: string) => new Date(t).toLocaleString('en-GB', { weekday: 'short', day: 'numeric', month: 'short', hour: 'numeric', minute: '2-digit' });
 type ReviewRow = { id: string; topic: string; body: string; auto: boolean; status: string; note?: string | null; decided_by?: string | null; due_at: string };
 const asReview = (r: ReviewRow): Review => ({
   id: r.id, topic: r.topic, text: r.body, auto: r.auto, status: r.status, note: r.note || undefined,
@@ -80,10 +85,10 @@ export function supabaseBackend(url: string, anonKey: string): Backend {
     return data as T;
   };
   const checked = async (kind: 'chat' | 'room', to: string, text: string): Promise<Sent> => {
-    const r = await call<{ ok: boolean; msg?: { id: string; created_at: string }; help?: boolean; blocked?: string; error?: string }>('send', { kind, to, text });
+    const r = await call<{ ok: boolean; msg?: { id: string; created_at: string }; help?: boolean; blocked?: string; error?: string; ageCheck?: AgeCheck }>('send', { kind, to, text });
     if (r?.ok && r.msg) return { ok: true, msg: { id: r.msg.id, mine: true, text, at: Date.parse(r.msg.created_at) }, help: !!r.help };
-    if (r?.blocked) return { ok: false, blocked: r.blocked, error: 'Message not sent' };
-    return { ok: false, error: r?.error && r.error.length > 20 ? r.error : TROUBLE };
+    if (r?.blocked) return { ok: false, blocked: r.blocked, error: 'Message not sent', ageCheck: r.ageCheck };
+    return { ok: false, error: r?.error && r.error.length > 20 ? r.error : TROUBLE, ageCheck: r?.ageCheck };
   };
 
   return {
@@ -213,8 +218,8 @@ export function supabaseBackend(url: string, anonKey: string): Backend {
       return room ? { ok: true, value: room } : { ok: false, error: TROUBLE };
     },
     async report(username, reason) {
-      const r = await call<{ ok: boolean; urgent?: boolean }>('report', { username, reason });
-      return r?.ok ? { ok: true, value: { urgent: !!r.urgent } } : { ok: false, error: TROUBLE };
+      const r = await call<{ ok: boolean; urgent?: boolean; error?: string }>('report', { username, reason });
+      return r?.ok ? { ok: true, value: { urgent: !!r.urgent } } : { ok: false, error: r?.error && r.error.length > 20 ? r.error : TROUBLE };
     },
     async requestReview(topic, text) {
       const r = await call<{ ok: boolean; review?: ReviewRow; error?: string }>('review', { topic, text });
@@ -224,6 +229,51 @@ export function supabaseBackend(url: string, anonKey: string): Backend {
     async reviews() {
       const { data, error } = await db.rpc('my_reviews'); must(error);
       return (data || []).map(asReview);
+    },
+    async notices() {
+      const { data, error } = await db.rpc('my_notices'); must(error);
+      const n = (data || [])[0] as { checkin: boolean; age_check: AgeCheck | null } | undefined;
+      return { checkin: !!n?.checkin, ageCheck: n?.age_check || null };
+    },
+    async notificationsOn() {
+      const sub = await currentDevice().catch(() => null); if (!sub) return false;
+      const r = await call<{ ok: boolean; on?: boolean }>('push', { action: 'status', endpoint: sub.endpoint });
+      return !!r?.on;
+    },
+    async setNotifications(on) {
+      if (!on) {
+        const sub = await currentDevice().catch(() => null);
+        if (sub) { await call('push', { action: 'off', endpoint: sub.endpoint }); await sub.unsubscribe().catch(() => undefined); }
+        return { ok: true, value: null };
+      }
+      const k = await call<{ ok: boolean; key?: string }>('push', { action: 'key' }); if (!k?.key) return { ok: false, error: TROUBLE };
+      const s = await subscribe(k.key).catch(() => ({ error: TROUBLE })); if ('error' in s) return { ok: false, error: s.error };
+      const r = await call<{ ok: boolean }>('push', { action: 'on', sub: s.sub });
+      return r?.ok ? { ok: true, value: null } : { ok: false, error: TROUBLE };
+    },
+    async muteChat(withUser) { const { error } = await db.rpc('mute_chat', { name: withUser }); must(error); },
+    async isArbitrator() { const { data } = await db.rpc('am_arbitrator'); return data === true; },
+    async arbFigures() {
+      const { data, error } = await db.rpc('arb_figures'); must(error);
+      return { ...(data as object), sample: false } as Awaited<ReturnType<Backend['arbFigures']>>;
+    },
+    async arbCases() {
+      const { data, error } = await db.rpc('arb_cases'); must(error);
+      return ((data || []) as CaseRow[]).map((c): ArbCase => ({
+        id: c.id, member: c.member, topic: c.topic, text: c.body, raised: c.auto ? 'Automatic' : 'Member', urgent: c.urgent,
+        due: dayTime(c.due_at), status: c.status, confidence: c.confidence ?? 0, reason: c.reason || '', note: c.note || undefined,
+        flagged: c.flagged, by: c.decided_by,
+      }));
+    },
+    async arbDecide(id, outcome, note) {
+      const { error } = await db.rpc('arb_decide', { case_id: id, outcome, why: note });
+      if (!error) call('push', { action: 'review', id }).catch(() => undefined); // tells the member, if they have notifications on
+      return error ? { ok: false, error: /note/.test(error.message) ? 'Add a short note explaining your decision.' : TROUBLE } : { ok: true, value: null };
+    },
+    async seenCheckin() { const { error } = await db.rpc('seen_checkin'); must(error); },
+    async confirmAge() {
+      const { data, error } = await db.rpc('confirm_age');
+      return error ? { ok: false, error: TROUBLE } : data ? { ok: true, value: null } : { ok: false, error: 'Your account is paused while it is reviewed.' };
     },
     async blocked() { const { data, error } = await db.rpc('my_blocked'); must(error); return (data || []).map((r: { username: string }) => r.username); },
     async unblock(username) { const { error } = await db.rpc('unblock', { name: username }); must(error); },

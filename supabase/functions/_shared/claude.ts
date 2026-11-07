@@ -2,7 +2,7 @@
 // Claude Haiku 5.5 makes the quick first check; anything unclear goes to Claude Opus 5.5 (Rusty, 29 Oct 2026).
 import Anthropic from 'npm:@anthropic-ai/sdk@1.3.0';
 
-const client = new Anthropic(); // reads ANTHROPIC_API_KEY from the function's secrets
+export const client = new Anthropic(); // reads ANTHROPIC_API_KEY from the function's secrets
 export const FIRST = 'claude-haiku-5-5';
 export const CAREFUL = 'claude-opus-5-5';
 export type Effort = 'low' | 'medium' | 'high';
@@ -52,9 +52,9 @@ export type ReportCheck = { outcome: 'no_action' | 'warn' | 'mute' | 'remove'; c
 
 export const REVIEW_SCHEMA = {
   type: 'object', additionalProperties: false, required: ['decision', 'confidence', 'reason', 'member_note'],
-  properties: { decision: { type: 'string', enum: ['Upheld', 'Overturned', 'Action changed'] }, confidence: { type: 'number' }, reason: { type: 'string' }, member_note: { type: 'string' } },
+  properties: { decision: { type: 'string', enum: ['Upheld', 'Overturned', 'Action changed', 'Answered'] }, confidence: { type: 'number' }, reason: { type: 'string' }, member_note: { type: 'string' } },
 };
-export type ReviewCheck = { decision: 'Upheld' | 'Overturned' | 'Action changed'; confidence: number; reason: string; member_note: string };
+export type ReviewCheck = { decision: 'Upheld' | 'Overturned' | 'Action changed' | 'Answered'; confidence: number; reason: string; member_note: string };
 
 export const ROOM_SCHEMA = {
   type: 'object', additionalProperties: false, required: ['decision', 'type', 'reason', 'welcome_message'],

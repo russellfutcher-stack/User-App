@@ -203,3 +203,20 @@ test('M-24 The demo account is restored', async ({ page }) => {
   await expect(H.toast(page)).toHaveText('Account deleted. The demo account has been restored for testing.');
   await H.signInDemo(page); await me(page); await expect(H.chip(page, 'Music')).toHaveAttribute('aria-checked', 'false');
 });
+
+test('M-25 Notifications are off at first, and say they never show names or what was said', async ({ page }) => {
+  await expect(H.toggle(page, 'Notifications on this device')).toHaveAttribute('aria-checked', 'false');
+  await expect(H.screen(page)).toContainText('A quiet alert for new messages and review decisions. It never shows names or what was said.');
+});
+test('M-25 Turning notifications on and off', async ({ page }) => {
+  await H.toggle(page, 'Notifications on this device').click();
+  await expect(H.toast(page)).toHaveText('Notifications are on for this device.');
+  await expect(H.toggle(page, 'Notifications on this device')).toHaveAttribute('aria-checked', 'true');
+  await H.toggle(page, 'Notifications on this device').click();
+  await expect(H.toast(page)).toHaveText('Notifications are off for this device.');
+});
+test('M-25 The choice is kept after signing in again', async ({ page }) => {
+  await H.toggle(page, 'Notifications on this device').click(); await expect(H.toast(page)).toHaveText('Notifications are on for this device.');
+  await H.signOut(page); await H.signInDemo(page); await H.tab(page, 'Me').click();
+  await expect(H.toggle(page, 'Notifications on this device')).toHaveAttribute('aria-checked', 'true');
+});

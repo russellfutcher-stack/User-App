@@ -167,9 +167,6 @@ select.input{appearance:auto}
 .lamp{width:100%;height:120px;border-radius:20px;background:
   radial-gradient(circle at 78% 30%, var(--accent-soft) 0 22%, transparent 23%),
   radial-gradient(circle at 78% 30%, var(--accent) 0 7%, transparent 8%), var(--sage-soft)}
-.fake{background:#fff;color:#222;flex:1;padding:24px;font-family:Georgia,serif}
-.fake h1{font-size:22px;margin:0 0 12px}
-.fake li{margin:6px 0}
 .bighead{font-size:28px;letter-spacing:-.02em}
 
 /* ---------- v2 frame: straight lines, square corners, obvious borders ---------- */
@@ -265,7 +262,7 @@ div.path{cursor:default}
 :focus-visible{border-radius:8px}
 .device{border:1px solid var(--line-soft);border-radius:32px;box-shadow:0 24px 60px rgba(10,30,61,.18)}
 @media (max-width: 820px){.device{border:0;border-radius:0;box-shadow:none}}
-.bar{border-bottom:0;position:relative;z-index:25} /* Exit and Help now stay tappable above open sheets */
+.bar{border-bottom:0;position:relative;z-index:25} /* Exit and Help stay tappable above open sheets */
 .bar .iconbtn{border:0;border-radius:999px;background:rgba(255,255,255,.92);box-shadow:none}
 .bar .iconbtn.help{background:var(--danger);color:#fff}
 .tabs{border-top:1px solid var(--line-soft)}
@@ -741,12 +738,13 @@ const IC = {
  me:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="8" r="4"/><path d="M4 21c1-4 4.5-6 8-6s7 2 8 6"/></svg>'};
 
 /* ---------- Shell ---------- */
-let view = {name:null}; let quickExit=false; let ob=null;
+let view = {name:null}; let ob=null;
 function bar(left, title){
   $('#bar').innerHTML = `${left||`<div class="brand">User<small>Connection and Recovery</small></div>`}
     <div class="grow">${title?`<div class="title">${title}</div>`:''}</div>
-    <button class="iconbtn exit" onclick="App.exit()" aria-label="Quick exit: hide the app">Exit</button>
-    <button class="iconbtn help" onclick="App.help()">Help now</button>`;
+    <button class="iconbtn exit" onclick="App.exit()" aria-label="Exit to Home">Exit</button>
+    <button class="iconbtn exit" onclick="App.hide()" aria-label="Quick exit: leave User">Hide</button>
+    <button class="iconbtn help" onclick="App.help()">Help</button>`;
 }
 function tabs(show){
   const n=$('#tabs'); n.hidden=!show; if(!show) return;
@@ -756,8 +754,6 @@ function tabs(show){
 }
 function render(){
   const sc=$('#screen'); sc.className='screen';
-  if(quickExit){ bar('<div class="brand" style="font-family:Georgia,serif">Notes</div>',''); $('#bar').innerHTML='<div class="brand" style="font-family:Georgia,serif;font-weight:400">Notes</div>'; tabs(false); sc.className='screen flush';
-    sc.innerHTML=`<div class="fake" onclick="App.unexit(event)"><h1>Shopping list</h1><ul><li>Milk</li><li>Bread</li><li>Dog food</li><li>Batteries (AA)</li><li>Call about boiler</li></ul><p style="color:#999;font-size:12px;margin-top:40px">Tap this note three times to return.</p></div>`; return; }
   if(S.arbMode) return renderDashboard();
   if(!S.loggedIn){ return ob ? renderOnboard() : renderWelcome(); }
   if(S.me.setupDone===false) return renderSetup();
@@ -779,7 +775,7 @@ function renderHome(){
    ${unread.length?`<div class="section"><span class="label">New messages</span>${unread.map(id=>{const p=person(id),l=last(id);
      return `<button class="person" onclick="App.openChat('${id}')"><div class="body"><span class="name">${esc(p.handle)}</span><div class="small" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(l.t)}</div></div><span class="pill amber">New</span></button>`}).join('')}</div>`:''}
    ${aboutUser('h')}
-   <div class="card calm help-card"><h3>Help is always here</h3><p class="small">Tap <b>Help now</b> at the top of any screen, or open the <b>Support</b> page for help services in your country, overdose information and peer supporters.</p></div>
+   <div class="card calm help-card"><h3>Help is always here</h3><p class="small">Tap <b>Help</b> at the top of any screen, or open the <b>Support</b> page for help services in your country, overdose information and peer supporters.</p></div>
    ${DISCLAIMER}`;
 }
 function personRow(p,m){
@@ -958,7 +954,7 @@ function peerCard(){
   return `<div class="card peer-card"><h2>Peer support</h2>
     <p class="small muted">Peer supporters are members with lived experience who offer to listen. People who ask for peer support are matched with them first.</p>
     <label class="toggle" for="pe-want"><span>I would like peer support<span class="th">You'll see peer supporters at the top of your matches.</span></span><input type="checkbox" id="pe-want" ${me.wantsPeer?'checked':''} onchange="App.setPeer('wantsPeer',this.checked)"></label>
-    <label class="toggle" for="pe-be"><span>Nominate myself as a peer supporter<span class="th">You agree to listen without judgement, never give medical or dosing advice, and point people to Help now if they're at risk.</span></span><input type="checkbox" id="pe-be" ${me.peer?'checked':''} onchange="App.setPeer('peer',this.checked)"></label>
+    <label class="toggle" for="pe-be"><span>Nominate myself as a peer supporter<span class="th">You agree to listen without judgement, never give medical or dosing advice, and point people to Help if they're at risk.</span></span><input type="checkbox" id="pe-be" ${me.peer?'checked':''} onchange="App.setPeer('peer',this.checked)"></label>
     ${me.peer?'<p class="peer-on" role="status"><span class="pill peer">Peer supporter</span> People who want peer support can now be matched with you.</p>':''}</div>`;
 }
 
@@ -1028,7 +1024,7 @@ function aboutUser(k){ return `<section class="card" aria-labelledby="ben-h-${k}
        <li><b>Find people who get it.</b> We match you on shared interests, drug use and mental health, so conversations start from common ground.</li>
        <li><b>Stay anonymous.</b> No real name, email or phone number. You decide who sees what.</li>
        <li><b>Feel less alone, day or night.</b> One-to-one chats, small group rooms, and peer supporters who have been there too.</li>
-       <li><b>Safe by design.</b> Every message is checked for safety, drug dealing is blocked, and Help now is one tap away.</li>
+       <li><b>Safe by design.</b> Every message is checked for safety, drug dealing is blocked, and Help is one tap away.</li>
      </ul></section>
    <section class="card" aria-labelledby="how-h-${k}"><h2 id="how-h-${k}">How to use it</h2>
      <ol class="howto">
@@ -1080,7 +1076,7 @@ function renderOnboard(){
       <p>• Be kind. Everyone here is at a different stage, and all of them are welcome.</p>
       <p>• No buying, selling, sharing or sourcing drugs. No dosing advice.</p>
       <p>• Stay anonymous. Don't share real names, addresses or socials, and think carefully before sharing a phone number.</p>
-      <p>• We're peer support, not a crisis service. Help now is always at the top.</p></div>
+      <p>• We're peer support, not a crisis service. Help is always at the top.</p></div>
     <details class="salt"><summary>What is a salted hash?</summary>
       <p class="small">User never keeps your actual password. When you create one, we add a random string of characters called a <b>salt</b>, then run the two together through a one-way formula called a <b>hash</b>. That turns them into a long scrambled code, which is all we store.</p>
       <p class="small">When you sign in, the same steps run again and the two codes are compared. A hash can't be turned back into your password, and because everyone's salt is different, two people with the same password get different codes. So even if someone stole the stored codes, they couldn't read anyone's password.</p></details>
@@ -1105,7 +1101,7 @@ const phint=p=>!p?'At least 8 characters. Never reuse a password from another ap
 // Help services by country. Check every number before launch: services change. findahelpline.com lists more.
 const SERVICES = [
  {c:'United Kingdom',em:'999 or 112',lines:[['Samaritans, 24/7','116 123'],['Shout, text support','Text SHOUT to 85258'],['FRANK, drugs information','0300 123 6600'],['NHS urgent mental health (England)','111, option 2']]},
- {c:'Ireland',em:'112 or 999',lines:[['Samaritans, 24/7','116 123'],['Text About It','Text HELLO to 50808'],['HSE Drugs and Alcohol Helpline','1800 459 459']]},
+ {c:'Ireland',em:'112 or 999',lines:[['Samaritans, 24/7','116 123'],['Text About It','Text HELLO to 50808'],['HSE Drugs and Alcohol Helpline (weekdays 9:30am to 5:30pm)','1800 459 459']]},
  {c:'United States',em:'911',lines:[['988 Suicide & Crisis Lifeline','Call or text 988'],['SAMHSA National Helpline (substance use)','1-800-662-4357'],['Never Use Alone','1-800-484-3731']]},
  {c:'Canada',em:'911',lines:[['9-8-8 Suicide Crisis Helpline','Call or text 988'],['National Overdose Response Service','1-888-688-6677']]},
  {c:'Australia',em:'000',lines:[['Lifeline','13 11 14'],['Beyond Blue','1300 22 4636'],['National Alcohol and Other Drug Hotline','1800 250 015']]},
@@ -1113,21 +1109,21 @@ const SERVICES = [
  {c:'South Africa',em:'10111, or 112 from a mobile',lines:[['SADAG Suicide Crisis Line','0800 567 567'],['SADAG Substance Abuse Line','0800 12 13 14']]},
  {c:'India',em:'112',lines:[['Tele-MANAS mental health helpline','14416 or 1-800-891-4416']]},
  {c:'Germany',em:'112',lines:[['TelefonSeelsorge','0800 111 0 111 or 0800 111 0 222'],['Sucht & Drogen Hotline','01806 313031']]},
- {c:'France',em:'15 (SAMU) or 112',lines:[['Suicide prevention line','3114'],['Drogues Info Service','0 800 23 13 13']]},
+ {c:'France',em:'15 (SAMU) or 112',lines:[['Suicide prevention line','3114'],['Drogues Info Service (8am to 2am)','0 800 23 13 13']]},
  {c:'Spain',em:'112',lines:[['Suicide prevention line','024']]},
- {c:'Italy',em:'112',lines:[['Telefono Amico','02 2327 2327']]},
+ {c:'Italy',em:'112',lines:[['Telefono Amico (9am to midnight)','02 2327 2327']]},
  {c:'Netherlands',em:'112',lines:[['113 Zelfmoordpreventie','113 or 0800 0113']]},
  {c:'Belgium',em:'112',lines:[['Zelfmoordlijn (Dutch)','1813'],['Centre de Prévention du Suicide (French)','0800 32 123']]},
  {c:'Switzerland',em:'144 (ambulance) or 112',lines:[['Die Dargebotene Hand / La Main Tendue','143']]},
  {c:'Austria',em:'144 (ambulance) or 112',lines:[['TelefonSeelsorge','142']]},
  {c:'Sweden',em:'112',lines:[['Självmordslinjen (Mind)','90101']]},
  {c:'Norway',em:'113 (ambulance) or 112',lines:[['Mental Helse helpline','116 123']]},
- {c:'Denmark',em:'112',lines:[['Livslinien','70 201 201']]},
+ {c:'Denmark',em:'112',lines:[['Livslinien (not open all night)','70 201 201']]},
  {c:'Finland',em:'112',lines:[['MIELI Crisis Helpline','09 2525 0111']]},
- {c:'Poland',em:'112',lines:[['Crisis line for adults','116 123']]},
- {c:'Portugal',em:'112',lines:[['SOS Voz Amiga','213 544 545']]},
+ {c:'Poland',em:'112',lines:[['Crisis line for adults (2pm to 10pm)','116 123'],['Itaka, 24 hours','800 70 22 22']]},
+ {c:'Portugal',em:'112',lines:[['SOS Voz Amiga (4pm to midnight)','213 544 545']]},
  {c:'Israel',em:'101 (ambulance)',lines:[['ERAN emotional first aid','1201']]},
- {c:'Japan',em:'119 (ambulance)',lines:[['TELL Lifeline (English)','03-5774-0992'],['Inochi no Denwa','0570-783-556']]},
+ {c:'Japan',em:'119 (ambulance)',lines:[['TELL Lifeline, English (not 24 hours)','03-5774-0992'],['Inochi no Denwa (limited hours, calls are charged)','0570-783-556']]},
  {c:'South Korea',em:'119',lines:[['Suicide prevention line','109']]},
  {c:'Singapore',em:'995',lines:[['Samaritans of Singapore','1767']]},
  {c:'Hong Kong',em:'999',lines:[['Samaritan Befrienders Hong Kong','2389 2222']]},
@@ -1135,8 +1131,8 @@ const SERVICES = [
  {c:'Philippines',em:'911',lines:[['NCMH Crisis Hotline','1553']]},
  {c:'Brazil',em:'192 (ambulance)',lines:[['CVV emotional support','188']]},
  {c:'Mexico',em:'911',lines:[['Línea de la Vida','800 911 2000']]},
- {c:'Argentina',em:'107 (ambulance) or 911',lines:[['Centro de Asistencia al Suicida','135 (Buenos Aires) or (011) 5275-1135']]},
- {c:'Kenya',em:'999 or 112',lines:[['Befrienders Kenya','+254 722 178 177']]},
+ {c:'Argentina',em:'107 (ambulance) or 911',lines:[['Centro de Asistencia al Suicida (closed 2am to 8am)','135 (Buenos Aires) or (011) 5275-1135']]},
+ {c:'Kenya',em:'999 or 112',lines:[['Befrienders Kenya (9am to 5pm)','+254 722 178 177'],['Kenya Red Cross, 24 hours','1199']]},
 ];
 const UPLIFT = [
  'Reaching out is a strength, not a weakness. You opened this page, and that counts.',
@@ -1225,7 +1221,8 @@ const AI_THRESHOLD = 0.85;
 function aiReview(c){
   const t=(c.topic+' '+(c.text||'')).toLowerCase();
   let r;
-  if(/danger/.test(t)) r={decision:'Action changed',confidence:.9,reason:'Possible risk to life. Help now and local crisis lines were shown to the member at once, a supportive check-in message was sent, and their recent messages were reviewed for further risk.',note:'Reviewed automatically and urgently: support and crisis lines have been offered. Thank you for reporting.'};
+  if(/\b(my data|privacy|what do you (store|keep)|who can see|delete my account|where is my)\b/.test(t)) r={decision:'Answered',confidence:.9,reason:'A question about data and privacy, answered from the privacy policy.',note:'Answered automatically: User never asks for your real name, email or phone number, and members\' data is stored in Australia. You choose who sees your drug use and mental health choices on the Me page, and Delete account there erases everything. The privacy policy is on the User website.'};
+  else if(/danger/.test(t)) r={decision:'Action changed',confidence:.9,reason:'Possible risk to life. Help and local crisis lines were shown to the member at once, a supportive check-in message was sent, and their recent messages were reviewed for further risk.',note:'Reviewed automatically and urgently: support and crisis lines have been offered. Thank you for reporting.'};
   else if(/under 18|under-18/.test(t)) r={decision:'Action changed',confidence:.88,reason:'Signs the member may be under 18. Their account is paused and they have been asked to confirm their age. It is removed if they don\'t confirm within 7 days.',note:'Reviewed automatically: the account has been paused while age is checked. Thank you for reporting.'};
   else if(/removal/.test(t)) r={decision:'Action changed',confidence:.9,reason:'3 or more blocked dealing messages in 7 days. Under the strike ladder this means removal. The account has been removed and the member told which rule they broke.',note:'Reviewed automatically: the account has been removed for repeated dealing.'};
   else if(/naloxone|recovery|stay clean|help others|harm reduction|used to sell|used to deal|support group|test strips/.test(t)&&!HARD.test(c.text||'')) r={decision:'Overturned',confidence:.93,reason:'Recovery or harm-reduction context, with no buying, selling, prices or contact details.',note:'Reviewed automatically: your message was about recovery or harm reduction, which is allowed. The block has been removed.'};
@@ -1278,7 +1275,7 @@ function renderDashboard(){
 function helpSheet(intro){
   const L=[['United States & Canada','Call or text 988'],['UK & Ireland · Samaritans','116 123'],['Australia · Lifeline','13 11 14'],['New Zealand · Need to talk?','Call or text 1737'],
            ['Overdose or danger','Call your emergency number: 911 · 999 · 112 · 000'],['US · Never Use Alone','1-800-484-3731'],['UK · FRANK drugs helpline','0300 123 6600']];
-  sheet(`<h2>${intro?'You don\'t have to hold this alone':'Help now'}</h2>
+  sheet(`<h2>${intro?'You don\'t have to hold this alone':'Help'}</h2>
    <p>${intro||'If you are in danger or someone may have overdosed, call emergency services now. If you have naloxone, use it and stay with them.'}</p>
    <div class="lines">${L.map(([a,b])=>`<div class="line"><span class="small">${a}</span><span class="num">${b}</span></div>`).join('')}</div>
    <p class="hint">Numbers are shown as text so you can copy or dial them. In the full app these are localised to your region and tap-to-call.</p>
@@ -1293,8 +1290,10 @@ const App = {
   tab(t){ view={name:null}; S.ui.tab=t; save(); render(); $('#screen').scrollTop=0; },
   back(){ view={name:null}; render(); },
   help(){ helpSheet(); },
-  exit(){ closeSheet(); quickExit=true; App._taps=0; render(); },
-  unexit(){ App._taps=(App._taps||0)+1; if(App._taps>=3){ quickExit=false; render(); } },
+  // Exit goes back to Home, or to the Welcome page when signed out (Rusty, 4 Nov 2026).
+  // Hide: a quick exit to Google's home page; Back can't bring User back (Rusty, 4 Nov 2026).
+  hide(){ location.replace('https://www.google.com/'); },
+  exit(){ closeSheet(); view={name:null}; ob=null; if(S.loggedIn) S.ui.tab='home'; save(); render(); $('#screen').scrollTop=0; },
   q(v){ S.ui.q=v; save(); renderResults(); },
   path(k){ const on=S.ui.cats.includes(k);
     if(S.ui.tab==='find'&&!view.name){ if(on){ S.ui.cats=S.ui.cats.filter(x=>x!==k); const cs=pathOf(k).cats; S.ui.f=S.ui.f.filter(t=>!cs.includes(catOf(t))); } else S.ui.cats.push(k); }

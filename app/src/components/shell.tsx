@@ -1,6 +1,6 @@
-// The header (brand or Back, Exit, Help now), the tab bar, the bottom sheet and the toast.
+// The header (brand or Back, Exit, Hide, Help), the tab bar, the bottom sheet and the toast.
 import React, { ReactNode } from 'react';
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Platform, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useApp, Tab } from '../state/app';
 import { C, F, R } from '../theme';
@@ -8,16 +8,22 @@ import { TabIcon } from './icons';
 import { gradient } from './ui';
 import { HelpSheet } from '../screens/HelpSheet';
 
+// Quick exit (Rusty, 4 Nov 2026): User is replaced by Google's home page, and Back can't bring it back.
+// Leaving the page also signs you out, because User never keeps a sign-in after the page closes.
+export const HIDE_TO = 'https://www.google.com/';
+const hide = () => { if (typeof window !== 'undefined') window.location.replace(HIDE_TO); };
+
 export function Bar({ back, title }: { back?: () => void; title?: string }) {
   const { exit, openSheet } = useApp();
   const top = useSafeAreaInsets().top;
   return (
     <View style={[s.bar, { paddingTop: 14 + top }]} id="bar">
       {back ? <Pressable role="button" aria-label="Back" onPress={back} style={s.iconbtn}><Text style={s.iconText}>Back</Text></Pressable>
-        : title === undefined ? <View><Text style={s.brand}>User</Text><Text style={s.brandSmall}>CONNECTION AND RECOVERY</Text></View> : null}
+        : title === undefined ? <View style={{ flexShrink: 1, minWidth: 0 }}><Text style={s.brand}>User</Text><Text numberOfLines={1} style={s.brandSmall}>CONNECTION AND RECOVERY</Text></View> : null}
       <View style={{ flex: 1, minWidth: 0 }}>{title ? <Text numberOfLines={1} style={s.title}>{title}</Text> : null}</View>
-      <Pressable role="button" aria-label="Quick exit: hide the app" onPress={exit} style={s.iconbtn}><Text style={s.iconText}>Exit</Text></Pressable>
-      <Pressable role="button" aria-label="Help now" onPress={() => openSheet(<HelpSheet />)} style={[s.iconbtn, { backgroundColor: C.danger }]}><Text style={[s.iconText, { color: '#fff' }]}>Help now</Text></Pressable>
+      <Pressable role="button" aria-label="Exit to Home" onPress={exit} style={s.iconbtn}><Text style={s.iconText}>Exit</Text></Pressable>
+      {Platform.OS === 'web' ? <Pressable role="button" aria-label="Quick exit: leave User" onPress={hide} style={s.iconbtn}><Text style={s.iconText}>Hide</Text></Pressable> : null}
+      <Pressable role="button" aria-label="Help" onPress={() => openSheet(<HelpSheet />)} style={[s.iconbtn, { backgroundColor: C.danger }]}><Text style={[s.iconText, { color: '#fff' }]}>Help</Text></Pressable>
     </View>
   );
 }
@@ -73,11 +79,11 @@ export function ToastHost() {
 export const SheetBody = ({ children }: { children: ReactNode }) => <View style={{ gap: 14 }}>{children}</View>;
 
 const s = StyleSheet.create({
-  bar: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingHorizontal: 16, paddingBottom: 10, zIndex: 25, ...gradient('linear-gradient(90deg,#0A2A5E,#4E9FE0)'), backgroundColor: C.gradA },
+  bar: { flexDirection: 'row', alignItems: 'center', gap: 8, paddingHorizontal: 16, paddingBottom: 10, zIndex: 25, ...gradient('linear-gradient(90deg,#0A2A5E,#4E9FE0)'), backgroundColor: C.gradA },
   brand: { fontFamily: F.display, fontSize: 22, lineHeight: 22, color: '#fff', letterSpacing: -0.4 },
   brandSmall: { fontFamily: F.body, fontSize: 11, letterSpacing: 0.7, color: '#fff', opacity: 0.85, marginTop: 3 },
   title: { fontFamily: F.displayBold, fontSize: 18, color: '#fff' },
-  iconbtn: { borderRadius: 999, backgroundColor: 'rgba(255,255,255,.92)', paddingVertical: 7, paddingHorizontal: 12 },
+  iconbtn: { borderRadius: 999, backgroundColor: 'rgba(255,255,255,.92)', paddingVertical: 7, paddingHorizontal: 11, flexShrink: 0 },
   iconText: { fontFamily: F.bold, fontSize: 13, color: C.ink },
   tabs: { flexDirection: 'row', backgroundColor: C.surface, borderTopWidth: 1, borderTopColor: C.lineSoft },
   tab: { flex: 1, alignItems: 'center', gap: 3, paddingTop: 9, paddingBottom: 10 },
