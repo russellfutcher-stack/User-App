@@ -58,6 +58,8 @@ Agreed changes from the prototype: the sign-in error now says "Check for typos, 
 - ~~Phoning each helpline; who runs User.~~ Done (Rusty, 4 Nov 2026): every helpline passed; User is run by Logical Rules (no email address is published; questions go through Ask for a review), so the privacy policy is now on the website.
 - Still to do before launch: the independent security review, and the three settings in `docs/SECURITY-REVIEW.md`.
 
+- ~~Review email alerts.~~ Done 7 Nov 2026: a question through Ask for a review is answered and closed automatically (SP-13), and Rusty gets an email with the case number only (`supabase/functions/_shared/alert.ts`, via Resend; see `docs/SUPABASE-SETUP.md`). Checked: the test email arrived.
+
 ## Phase 2
 
 iPhone and Android apps from the same Expo code, with a neutral icon option, Face ID app lock, push notifications and store listings rated 18+.

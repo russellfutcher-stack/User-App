@@ -63,6 +63,14 @@ To remove them: `delete from public.arbitrators where member = (select id from p
 
 To check the dashboard on the server: `ARB_USER=<username> ARB_PASS=<password> node scripts/live-arbitrator.js` from `app/`.
 
+## Review email alerts (done 7 Nov 2026)
+
+When a member asks for a review, the review function emails whoever runs User the case number and topic only (no username, nothing the member wrote). It's sent through a free Resend account, set up by Rusty. Two secrets in **Edge Functions → Secrets** make it work:
+- `RESEND_API_KEY`: the Resend key (starts with `re_`).
+- `ALERT_EMAIL`: where alerts go. On Resend's free plan this must be the address the Resend account was made with.
+
+To change where alerts go, add `ALERT_EMAIL` again with the new address (it replaces the old one), and if it's a different address from the Resend account, verify a domain in Resend first. If alerts stop, the reason is in the function logs as "alert failed".
+
 ## Deleting a test account
 
 If deleting a user under **Authentication → Users** fails, delete it in **SQL Editor** instead, using its exact email. For example:
