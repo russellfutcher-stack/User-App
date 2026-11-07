@@ -85,3 +85,15 @@ test('SP-09 Your reviews are listed with their decision', async ({ page }) => {
   await expect(page.getByTestId('my-review')).toContainText('HR-1001 · A message that was blocked');
   await expect(page.getByTestId('my-review')).toContainText('Decided: Overturned');
 });
+test('SP-13 A question about data is answered and closed', async ({ page }) => {
+  await H.btn(page, 'Ask for a review').click(); await page.locator('#hr-topic').selectOption('Something else');
+  await page.fill('#hr-text', 'What do you store about me, and where is my data kept?'); await H.btn(page, 'Request a review').click();
+  await expect(page.locator('#rv-status')).toContainText('Answered automatically:', { timeout: 6000 });
+  await expect(page.locator('#rv-status')).toContainText('stored in Australia');
+});
+test('SP-13 The answer shows on the Support page as Decided: Answered', async ({ page }) => {
+  await H.btn(page, 'Ask for a review').click(); await page.locator('#hr-topic').selectOption('Something else');
+  await page.fill('#hr-text', 'I have a question about my privacy settings.'); await H.btn(page, 'Request a review').click();
+  await expect(page.locator('#rv-status')).toContainText('Answered automatically:', { timeout: 6000 }); await H.btn(page, 'Done').click();
+  await expect(page.getByTestId('my-review')).toContainText('Decided: Answered');
+});

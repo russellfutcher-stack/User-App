@@ -52,9 +52,9 @@ export type ReportCheck = { outcome: 'no_action' | 'warn' | 'mute' | 'remove'; c
 
 export const REVIEW_SCHEMA = {
   type: 'object', additionalProperties: false, required: ['decision', 'confidence', 'reason', 'member_note'],
-  properties: { decision: { type: 'string', enum: ['Upheld', 'Overturned', 'Action changed'] }, confidence: { type: 'number' }, reason: { type: 'string' }, member_note: { type: 'string' } },
+  properties: { decision: { type: 'string', enum: ['Upheld', 'Overturned', 'Action changed', 'Answered'] }, confidence: { type: 'number' }, reason: { type: 'string' }, member_note: { type: 'string' } },
 };
-export type ReviewCheck = { decision: 'Upheld' | 'Overturned' | 'Action changed'; confidence: number; reason: string; member_note: string };
+export type ReviewCheck = { decision: 'Upheld' | 'Overturned' | 'Action changed' | 'Answered'; confidence: number; reason: string; member_note: string };
 
 export const ROOM_SCHEMA = {
   type: 'object', additionalProperties: false, required: ['decision', 'type', 'reason', 'welcome_message'],

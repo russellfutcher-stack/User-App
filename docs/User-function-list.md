@@ -9,7 +9,7 @@ Prototype version 24. Every function a person can use in the prototype, each wit
 - **Saved only**: the choice is saved but has no visible effect yet.
 - **Placeholder**: the button only shows a message.
 
-Totals: Working 148, Simulated 7, Saved only 2, Placeholder 2, 159 functions in all.
+Totals: Working 149, Simulated 7, Saved only 2, Placeholder 2, 160 functions in all.
 
 ## Global
 
@@ -197,6 +197,7 @@ Totals: Working 148, Simulated 7, Saved only 2, Placeholder 2, 159 functions in 
 | SP-09 | Review requested | Send a valid review | 'Review requested' with a case number; about 2 seconds later it shows the decision note. | Working | Real reviews are decided on the Supabase server. |
 | SP-11 | Automatic review decision | Send any review | Every review is decided automatically. A naloxone or recovery message is overturned; an unclear one keeps the safest outcome and says it will be checked again. | Working | Real decisions come from the review check on the Supabase server. |
 | SP-10 | Arbitrator changes a decision | After the arbitrator changes it | The case shows the new decision with 'Arbitrator:' and their note. | Working | Real on the Supabase server; checked with app/scripts/live-arbitrator.js. |
+| SP-13 | A question is answered | Ask for a review with a question, for example about your data | Answered and closed straight away ('Answered automatically: …') from the privacy policy's facts. Whoever runs User gets an email alert with the case number only (Rusty, 7 Nov 2026). | Working | Real answers come from the review check on the Supabase server. |
 
 ## Help & Safety
 
