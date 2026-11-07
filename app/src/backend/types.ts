@@ -14,6 +14,7 @@ export type Profile = {
   prefs: { searchable: boolean; disappearing: boolean; lock: boolean };
   setupDone: boolean;
   country: string; // chosen on the Support page for its help services; '' until then
+  city: string; homeCountry: string; // Location on the Me page (Rusty, 8 Nov 2026); separate from the Support page's country
 };
 
 // A chat message or room post. `who` names the poster in rooms.
@@ -114,6 +115,6 @@ export interface Backend {
 
 export const blankProfile = (username: string): Profile => ({
   username, byline: '', stage: 'na', looking: ['chat'], wantsPeer: null, isPeer: false, tags: [],
-  vis: { interests: 'everyone', mh: 'matches', subs: 'matches' },
-  prefs: { searchable: true, disappearing: false, lock: false }, setupDone: false, country: '',
+  vis: { interests: 'everyone', mh: 'matches', subs: 'matches', location: 'matches' },
+  prefs: { searchable: true, disappearing: false, lock: false }, setupDone: false, country: '', city: '', homeCountry: '',
 });

@@ -80,6 +80,7 @@ M-22,Me,Sign out,Tap Sign out,Back to Welcome.,Working,
 M-23,Me,Delete account,Tap Delete account,Confirm or keep.,Working,
 M-24,Me,Delete everything,Confirm,Erases data and restores the demo account.,Working,Deleting an account everywhere needs a server.
 M-25,Me,Notifications on this device,Turn on the switch under Privacy & visibility,"Off at first. A neutral alert for new messages and review decisions ('You have a new message.', 'A review has been decided.'), never names or message text. Per device; on iPhone only once User is on the home screen.",Working,Real on the Supabase server (Web Push); checked with app/scripts/live-notify.js.
+M-26,Me,Location,"Under My profile, fill in City and choose Country","City (up to 60 letters) and a country from the Support page's list, saved as you type. 'Who sees my city' starts as People I chat with. The country is shown to everyone on the person's card; the city only to the people chosen. Separate from the Support page's country.",Working,Real on the Supabase server (find_members hides the city unless allowed).
 DS-01,Search page,Your Matches,Open Search,"At the top with a count, sorted by match score.",Working,Real matches come from real members on a server.
 DS-02,Search page,Top 3 / show all,Tap Show all / Show top 3,Expands or shrinks the list.,Working,
 DS-03,Search page,Choice tiles On/Off,"Tap Interest, Drug use or Mental health","Labelled '1. Choose', with no Search heading above. All On by default. Off hides that choice's items and removes its picks.",Working,
@@ -90,12 +91,13 @@ DS-07,Search page,Clear all filters,Tap it,Resets everything and updates Your Ma
 DS-08,Search page,Looking for,"Tick options, then Search","Keeps people who can meet at least one pick and ranks those who meet more first. Matching pairs complements, such as A peer mentor with To mentor someone.",Working,
 DS-09,Search page,Peer supporters only,"Tick it, then Search",Shows only peer supporters.,Working,
 DS-10,Search page,No results,Filters nobody matches,'No one matches all of those yet…',Working,
-DS-11,Search page,Person card,View a match,"Name, Peer supporter badge if they are one, status, stage, region, up to 4 tags and match %.",Working,
+DS-11,Search page,Person card,View a match,"Name, Peer supporter badge if they are one, status, stage, place (city and country if they can be seen, otherwise region), up to 4 tags and match %.",Working,
 DS-12,Search page,Match score,Compare people,"Interests 35%, mental health 20%, drug use 20%, stage 10%, looking for 15%. Plus 12 points when you want peer support and they are a peer supporter, or 8 points the other way round. Maximum 99%.",Working,
 DS-13,Search page,Profile sheet,Tap a person,"Match %, peer supporter note, bio, 'Matched because…', stage, tags, looking for, Say hi, Block, Report.",Working,
 DS-14,Search page,Say hi,Tap Say hi,Opens a chat.,Working,Starting a chat with a real person needs a server.
 DS-15,Search page,Search button,"Change anything, tap Search","A notice shows until you tap Search. Search updates Your Matches, scrolls to the top and confirms the number found.",Working,
 DS-16,Search page,Drug use headings,Look under Drug use,"Medications, Other Substances, Alcohol, nicotine & gambling.",Working,
+DS-17,Search page,Search by location,"Fill in City or choose Country under Location, then tap Search",Country keeps only people in that country. City keeps people whose city starts with what was typed (any case). People are found by city only if they let you see it. Shown in the 'Finding people with' summary.,Working,Real on the Supabase server.
 C-01,Chats,Chat list,Open Chats,"Most recent first (6 chats for the demo account), with a New tag on unread chats.",Working,
 C-02,Chats,No chats,New account,Message and a Search for people button.,Working,
 C-03,Chats,Open a chat,Tap a conversation,Says you're anonymous and every message is checked for safety. Marks the chat as read.,Working,

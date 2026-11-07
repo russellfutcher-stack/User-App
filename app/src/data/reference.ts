@@ -2,7 +2,7 @@
 export type Tag = { id: string; label: string };
 export type CatKey = 'interests' | 'mh' | 'meds' | 'subs' | 'other';
 export type PathKey = 'interests' | 'drugs' | 'mh';
-export type VisKey = 'interests' | 'mh' | 'subs';
+export type VisKey = 'interests' | 'mh' | 'subs' | 'location'; // location: who sees your city (your country is shown to everyone)
 export type Vis = 'everyone' | 'matches' | 'me';
 
 export const REF: Record<CatKey, Tag[]> = {
@@ -70,7 +70,8 @@ export const VIS: { id: Vis; label: string }[] = [
   { id: 'everyone', label: 'Everyone' }, { id: 'matches', label: 'People I chat with' }, { id: 'me', label: 'Only me (still used for matching)' }];
 
 // Privacy defaults: drug use and mental health are only shown to people you chat with.
-export const DEFAULT_VIS: Record<VisKey, Vis> = { interests: 'everyone', mh: 'matches', subs: 'matches' };
+// Location (your city) starts at People I chat with too (Rusty, 8 Nov 2026).
+export const DEFAULT_VIS: Record<VisKey, Vis> = { interests: 'everyone', mh: 'matches', subs: 'matches', location: 'matches' };
 
 // Usernames of the 100 sample members. They can't be taken by new accounts.
 export const SAMPLE_HANDLES = ["MossyOtter","NightLark","PaperFern","SteadyBadger","QuietComet","WillowTide","EmberFinch","HarborMoth","CedarRook","PixelHare","JuniperWren","BrambleOwl","HollowFox","MistyMoth","CalmWren","SoftHeron","PaperCrane","MeadowCrane","SoftFox","PaperOwl","SteadySeal","LittleSeal","GentleKestrel","BraveOtter","MossyFinch","SteadyNewt","RustyKestrel","RustyMoth","AmberFinch","MeadowNewt","BraveWren","QuietWren","SoftFox16","CalmCrane","HollowPlover","SilverCrane","RiverSwift","GoldenBadger","MossyHeron","MossyNewt","GentleFox","CedarStoat","PaperHeron","CalmMoth","QuietRobin","WillowWren","HollowSeal","SteadyLark","MossyFox","WillowHeron","HollowHare","AmberHeron","SilverStoat","MistyLark","BraveNewt","WillowStoat","AmberFinch14","SoftWren","SoftMoth","MistyRobin","BraveBadger","BrightOtter","GentleHeron","QuietMoth","SteadyNewt57","WillowHeron68","MossyBadger","SoftOtter","CalmHeron","MistyOtter","GentleWren","CalmVole","SilverKestrel","CedarHare","CalmOtter","MossyKestrel","MossyStoat","GentleSwift","CedarMoth","HollowCrane","RustyOwl","AmberDove","CalmCrane43","CedarLark","SteadyKestrel","CalmHeron59","SoftPlover","SteadyHeron","BrightOtter37","GentleWren13","GoldenNewt","MossyOtter72","SoftVole","GentleCrane","SoftDove","WillowFox","LittlePlover","CalmOwl","RustyBadger","BrightFox"];

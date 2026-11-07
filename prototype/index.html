@@ -532,6 +532,14 @@ const GENERIC_REPLIES = ['Hi, thanks for messaging!','That sounds really familia
       bio: OPEN[stage]+' Into '+ints.map(t=>TAG[t].label.toLowerCase()).slice(0,2).join(' and ')+'.', replies:GENERIC_REPLIES});
   }
 })();
+/* ---------- Location: made-up cities for the sample members, picked from their region (same rule as the app) ---------- */
+const PLACES = {'North-west':['United Kingdom',['Manchester','Liverpool','Preston','Lancaster']],'North-east':['United Kingdom',['Newcastle','Sunderland','Durham','Middlesbrough']],
+  'Midlands':['United Kingdom',['Birmingham','Nottingham','Leicester','Derby']],'South-east':['United Kingdom',['Brighton','Oxford','Reading','Canterbury']],
+  'South-west':['United Kingdom',['Bristol','Exeter','Plymouth','Bath']],'London':['United Kingdom',['London']],'Scotland':['United Kingdom',['Glasgow','Edinburgh','Aberdeen','Dundee']],
+  'Wales':['United Kingdom',['Cardiff','Swansea','Newport']],'Northern Ireland':['United Kingdom',['Belfast','Derry']],'Ireland':['Ireland',['Dublin','Cork','Galway','Limerick']],
+  'Yorkshire':['United Kingdom',['Leeds','Sheffield','York','Bradford','Hull']],'East of England':['United Kingdom',['Norwich','Cambridge','Ipswich','Peterborough']],'Online only':['United Kingdom',[]]};
+PEOPLE.forEach(p=>{ const [country,towns]=PLACES[p.region]||['',[]], n=[...p.handle].reduce((a,c)=>a+c.charCodeAt(0),0); p.country=country; p.city=towns.length?towns[n%towns.length]:''; });
+const place = p => [p.city,p.country].filter(Boolean).join(', ') || p.region;
 const ROOMS = [
  // Interest
  {id:'r1',cat:'interests',name:'Dog Walkers\' Bench',members:128,desc:'Share walks and routes, and plan daytime walk-alongs in public places.',
@@ -593,7 +601,7 @@ function seedState(){
     account:{handle:'QuietHeron',passHash:'demo',passkey:true},
     me:{handle:'QuietHeron',av:{bg:6,face:0,shape:0,eyes:1,acc:2},bio:'New here. Anxious in person, easier in text. Like slow walks and long books.',
       tags:['I01','I02','I04','D02','D03','O01','M05'],stage:'early',looking:['chat','walk','pets'],region:'North-west',wantsPeer:true,peer:false},
-    vis:{interests:'everyone',mh:'matches',subs:'matches'},
+    vis:{interests:'everyone',mh:'matches',subs:'matches',location:'matches'},
     prefs:{searchable:true,disappearing:false,lock:false,theme:'system'},
     checkins:[{d:dayKey(6),v:2},{d:dayKey(5),v:2},{d:dayKey(4),v:3},{d:dayKey(3),v:2},{d:dayKey(2),v:3},{d:dayKey(1),v:4}],
     days:[dayKey(9),dayKey(6),dayKey(5),dayKey(4),dayKey(3),dayKey(2),dayKey(1),dayKey(0)],
@@ -782,7 +790,7 @@ function personRow(p,m){
   const tagHtml=p.tags.filter(t=>catOf(t)==='interests'||m.shared.includes(t)).slice(0,4).map(t=>`<span class="tag g-${grp(t)} ${m.shared.includes(t)?'shared':''}">${esc(TAG[t].label)}</span>`).join('');
   return `<button class="person" onclick="App.profile('${p.id}')">
     <div class="body"><div class="row"><span class="name">${esc(p.handle)}</span>${p.peer?'<span class="pill peer">Peer supporter</span>':''}${p.active==='Online'?'<span class="online" aria-label="online"></span>':`<span class="small muted">${esc(p.active)}</span>`}</div>
-    <div class="small muted">${esc(stageLabel(p.stage))} · ${esc(p.region)}</div><div class="chips">${tagHtml}</div></div>
+    <div class="small muted">${esc(stageLabel(p.stage))} · ${esc(place(p))}</div><div class="chips">${tagHtml}</div></div>
     <div class="match">${m.pct}%<small>match</small></div></button>`;
 }
 function allRooms(){ return ROOMS.concat((S.rooms&&S.rooms.custom)||[]); }
@@ -807,7 +815,7 @@ function renderMatches(){
 function renderFind(){
   bar();
   const on = PATHS.filter(p=>S.ui.cats.includes(p.key));
-  const picked = S.ui.f.map(t=>`<span class="tag g-${grp(t)}">${esc(TAG[t].label)}</span>`).concat(S.ui.look.map(l=>`<span class="tag">${esc(LOOKING.find(x=>x.id===l).label)}</span>`)).concat(S.ui.peerOnly?['<span class="tag">Peer supporters only</span>']:[]).join('');
+  const picked = S.ui.f.map(t=>`<span class="tag g-${grp(t)}">${esc(TAG[t].label)}</span>`).concat(S.ui.look.map(l=>`<span class="tag">${esc(LOOKING.find(x=>x.id===l).label)}</span>`)).concat(S.ui.peerOnly?['<span class="tag">Peer supporters only</span>']:[]).concat(S.ui.city&&S.ui.city.trim()?[`<span class="tag">In ${esc(S.ui.city.trim())}</span>`]:[]).concat(S.ui.country?[`<span class="tag">In ${esc(S.ui.country)}</span>`]:[]).join('');
   const changed = JSON.stringify(draft())!==JSON.stringify(S.ui.applied);
   $('#screen').innerHTML = `
    <div class="section"><h2 style="font-size:24px">Search/Find a Companion</h2></div>
@@ -817,10 +825,14 @@ function renderFind(){
      ${threeTiles('filter')}
      <p class="hint">${on.length===3?"All three are on. ":""}Tap a choice to turn it off or on, then pick items in each to combine them.</p>
      ${on.map((path,i)=>`<div class="section"><span class="label ghead g-${path.g}">${i+2}. ${dName(path)}</span>${path.cats.map(c=>`${path.cats.length>1?`<span class="label sub">${CATS.find(x=>x.key===c).name}</span>`:''}<div class="chips" role="group" aria-label="${dName(path)}: ${CATS.find(x=>x.key===c).name}">${REF[c].map(t=>`<button class="chip" aria-pressed="${S.ui.f.includes(t.id)}" onclick="App.f('${t.id}')">${esc(t.label)}</button>`).join('')}</div>`).join('')}</div>`).join('')}
-     ${S.ui.f.length||S.ui.look.length||S.ui.peerOnly?`<div class="card calm"><span class="label">Finding people with</span><div class="chips">${picked}</div><p class="hint">Matches at least one pick in each choice you used.</p><button class="btn sm" style="align-self:flex-start" onclick="App.clearAll()">Clear all filters</button></div>`:''}
+     ${S.ui.f.length||S.ui.look.length||S.ui.peerOnly||(S.ui.city||'').trim()||S.ui.country?`<div class="card calm"><span class="label">Finding people with</span><div class="chips">${picked}</div><p class="hint">Matches at least one pick in each choice you used.</p><button class="btn sm" style="align-self:flex-start" onclick="App.clearAll()">Clear all filters</button></div>`:''}
      <div class="section"><span class="label ghead g-look">${on.length+2}. Looking for</span><p class="hint">Find people who can meet what you're looking for. These also count towards the match score.</p>
        <div class="chips" role="group" aria-label="Looking for">${LOOKING.map(l=>`<button class="chip" aria-pressed="${S.ui.look.includes(l.id)}" onclick="App.look('${l.id}')">${esc(l.label)}</button>`).join('')}
        <button class="chip" aria-pressed="${S.ui.peerOnly}" onclick="App.peerOnly()">Peer supporters only</button></div></div>
+     <div class="section" id="s-location"><span class="label ghead g-look">${on.length+3}. Location</span>
+       <div class="field"><label for="s-city">City</label><input class="input" id="s-city" maxlength="60" autocomplete="off" placeholder="Any city" value="${esc(S.ui.city||'')}" onchange="App.where('city',this.value)"></div>
+       <div class="field"><label for="s-country">Country</label><select class="input" id="s-country" onchange="App.where('country',this.value)"><option value="">Any country</option>${SERVICES.map(c=>`<option ${S.ui.country===c.c?'selected':''}>${esc(c.c)}</option>`).join('')}</select></div>
+       <p class="hint">You can only find people by city if they let you see it.</p></div>
      ${changed?'<p class="hint pending" role="status">You have changed your search. Tap Search to update Your Matches.</p>':''}
      <button class="btn primary block search-btn" onclick="App.search()">Search</button>
    </div>`;
@@ -833,7 +845,7 @@ function aliasHit(q,t){ // light synonym support for natural search
     weed:'S01',cannabis:'S01',coke:'S02',crack:'S03',meth:'S04',heroin:'S05',fentanyl:'S06',mdma:'S07',ket:'S08',acid:'S09',shroom:'S09',ghb:'S10',drink:'O01',alcohol:'O01',booze:'O01',vape:'O02',gambl:'O04'};
   return Object.entries(AL).some(([k,v])=>q.includes(k)&&[].concat(v).includes(t));
 }
-const draft = () => ({cats:[...S.ui.cats].sort(), f:[...S.ui.f].sort(), look:[...S.ui.look].sort(), peerOnly:!!S.ui.peerOnly});
+const draft = () => ({cats:[...S.ui.cats].sort(), f:[...S.ui.f].sort(), look:[...S.ui.look].sort(), peerOnly:!!S.ui.peerOnly, city:(S.ui.city||'').trim().toLowerCase(), country:S.ui.country||''});
 function renderResults(){
   const q=S.ui.q.trim().toLowerCase();
   let list=PEOPLE.filter(visible).map(p=>({p,m:match(p)}));
@@ -845,6 +857,8 @@ function renderResults(){
   // Looking for: keep people who can meet at least one pick, and rank those who meet more of them higher
   if(A.look.length) list=list.filter(({p})=>A.look.some(l=>meets(l,p.looking))).map(x=>({...x,fit:A.look.filter(l=>meets(l,x.p.looking)).length}));
   if(A.peerOnly) list=list.filter(({p})=>p.peer);
+  if(A.country) list=list.filter(({p})=>p.country===A.country);
+  if(A.city) list=list.filter(({p})=>!!p.city&&p.city.toLowerCase().startsWith(A.city));
   if(q) list=list.filter(({p})=>p.handle.toLowerCase().includes(q)||p.bio.toLowerCase().includes(q)||p.tags.some(t=>scope.includes(catOf(t))&&(TAG[t].label.toLowerCase().includes(q)||aliasHit(q,t))));
   list.sort((a,b)=>((b.fit||0)-(a.fit||0))||(b.m.pct-a.m.pct));
   const shown = S.ui.all ? list : list.slice(0,3);
@@ -859,7 +873,7 @@ function closeSheet(){ $('#scrim')?.remove(); }
 function profileSheet(id){
   const p=person(id), m=match(p);
   const groups=PATHS.map(g=>{ const t=p.tags.filter(x=>g.cats.includes(catOf(x))); return `<div class="section"><span class="label ghead g-${g.g}">${g.name}</span><div class="chips">${t.length?t.map(x=>`<span class="tag g-${g.g} ${m.shared.includes(x)?'shared':''}">${esc(TAG[x].label)}</span>`).join(''):'<span class="small muted">Not shared</span>'}</div></div>`; }).join('');
-  sheet(`<div class="row"><div class="grow" style="flex:1;min-width:0"><h2>${esc(p.handle)}</h2><div class="small muted">${esc(p.active)} · ${esc(p.region)}</div></div><div class="match">${m.pct}%<small>match</small></div></div>
+  sheet(`<div class="row"><div class="grow" style="flex:1;min-width:0"><h2>${esc(p.handle)}</h2><div class="small muted">${esc(p.active)} · ${esc(place(p))}</div></div><div class="match">${m.pct}%<small>match</small></div></div>
     ${p.peer?'<p class="peer-on"><span class="pill peer">Peer supporter</span> Offers to listen to people who want peer support.</p>':''}
     <p>${esc(p.bio)}</p>
     <div class="card calm"><p class="small">${esc(whyMatched(p,m))}</p></div>
@@ -985,12 +999,17 @@ function renderSetup(){
 /* ---------- Me ---------- */
 function renderMe(){
   bar();
-  const me=S.me, sel=(k)=>`<select class="input" id="vis-${k}" onchange="App.vis('${k}',this.value)">${VIS.map(v=>`<option value="${v.id}" ${S.vis[k]===v.id?'selected':''}>${v.label}</option>`).join('')}</select>`;
+  const me=S.me, sel=(k)=>`<select class="input" id="vis-${k}" onchange="App.vis('${k}',this.value)">${VIS.map(v=>`<option value="${v.id}" ${(S.vis[k]||'matches')===v.id?'selected':''}>${v.label}</option>`).join('')}</select>`;
   $('#screen').innerHTML=`
    <div class="me-head" id="me-head"><h1 class="me-name">${esc(me.handle)}</h1>
      <div class="row byline-row"><p class="me-byline" id="me-byline">${me.bio?esc(me.bio):'<span class="muted">No byline yet.</span>'}</p><button class="btn sm" onclick="App.editByline()">${me.bio?'Change byline':'Add byline'}</button></div></div>
    ${peerCard()}
    ${profileCard('Who can see these is set under Privacy &amp; visibility below.')}
+   <div class="card" id="location"><h2>Location</h2>
+     <div class="field"><label for="loc-city">City</label><input class="input" id="loc-city" maxlength="60" autocomplete="off" value="${esc(me.city||'')}" oninput="App.loc('city',this.value)"></div>
+     <div class="field"><label for="loc-country">Country</label><select class="input" id="loc-country" onchange="App.loc('country',this.value)"><option value="">Not set</option>${SERVICES.map(c=>`<option ${me.country===c.c?'selected':''}>${esc(c.c)}</option>`).join('')}</select></div>
+     <div class="field"><label for="vis-location">Who sees my city</label>${sel('location')}</div>
+     <p class="hint">Your country is shown to everyone. Your city is shown only to the people you choose here, and only they can find you by city in Search. Changes save as you type.</p></div>
    <div class="card"><h2>Edit profile</h2>
      ${aboutFields(false)}
      <p class="hint">Changes save as you type.</p></div>
@@ -1375,10 +1394,11 @@ const App = {
     if(mine){ mine.status=st; mine.note=note; mine.by='Arbitrator'; } else S.arb.decided[id]={status:st,note};
     save(); closeSheet(); renderDashboard(); toast(id+' decided: '+st.replace('Decided: ','')+'.'); },
   showAll(){ S.ui.all=!S.ui.all; save(); renderResults(); },
-  clearAll(){ S.ui.cats=['interests','drugs','mh']; S.ui.f=[]; S.ui.q=''; S.ui.look=[]; S.ui.peerOnly=false; S.ui.applied=draft(); save(); renderFind(); },
+  clearAll(){ S.ui.cats=['interests','drugs','mh']; S.ui.f=[]; S.ui.q=''; S.ui.look=[]; S.ui.peerOnly=false; S.ui.city=''; S.ui.country=''; S.ui.applied=draft(); save(); renderFind(); },
   search(){ S.ui.applied=draft(); save(); renderFind(); $('#screen').scrollTop=0; const n=$('#match-count'); toast('Search updated: '+(n?n.textContent:'')+'.'); },
   f(id){ const i=S.ui.f.indexOf(id); i<0?S.ui.f.push(id):S.ui.f.splice(i,1); save(); renderFind(); },
   look(id){ const t=S.ui.look, i=t.indexOf(id); i<0?t.push(id):t.splice(i,1); save(); const sc=$('#screen').scrollTop; renderFind(); $('#screen').scrollTop=sc; },
+  where(k,v){ S.ui[k]=v; save(); const sc=$('#screen').scrollTop; renderFind(); $('#screen').scrollTop=sc; },
   peerOnly(){ S.ui.peerOnly=!S.ui.peerOnly; save(); const sc=$('#screen').scrollTop; renderFind(); $('#screen').scrollTop=sc; },
   profile(id){ profileSheet(id); },
   openChat(id){ closeSheet(); if(!S.convos[id]){ S.convos[id]=[]; S.stats.started++; } view={name:'chat',id}; S.ui.tab='chat'; save(); render(); setTimeout(()=>$('#msg')?.focus(),50); },
@@ -1408,6 +1428,7 @@ const App = {
   post(e,id){ e.preventDefault(); const inp=$('#msg'), t=inp.value.trim(); if(!t||!guard(t)) return; (S.rooms.posts[id]=S.rooms.posts[id]||[]).push({f:'me',t}); S.stats.roomPosts++; markDay(); save(); inp.value='';
     $('#msgs').insertAdjacentHTML('beforeend',bubble({f:'me',t})); scrollMsgs(); if(CRISIS.test(t)) setTimeout(()=>helpSheet('It sounds like things might be really hard right now. These lines are open now.'),400); },
   vis(k,v){ S.vis[k]=v; save(); toast('Visibility updated.'); },
+  loc(k,v){ S.me[k]=k==='city'?v.slice(0,60):v; save(); },
   pref(k,v){ S.prefs[k]=v; save(); toast(v?'Turned on.':'Turned off.'); },
   stub(m){ toast(m); },
   confirmDelete(){ sheet(`<h2>Delete your account?</h2><p>This permanently erases your profile, messages and check-ins. It can't be undone.</p><div class="row"><button class="btn danger" onclick="App.doDelete()">Delete everything</button><button class="btn" onclick="App.closeSheet()">Keep my account</button></div>`); },
@@ -1431,7 +1452,7 @@ const App = {
     <p>If you set up a passkey, sign in with it, then change your password on the Me page.</p>
     <button class="btn primary" onclick="App.closeSheet();App.passkeySignIn()">Sign in with a passkey</button>
     <p class="small muted">User keeps no email or phone number, so without a passkey we can't reset your password. You can create a new anonymous account instead.</p>`); },
-  startOnboard(){ ob={i:0,d:{age:false,agree:false,handle:'',pass:'',pass2:'',passkey:false,tags:[],vis:{interests:'everyone',mh:'matches',subs:'matches'},stage:'na',looking:['chat'],bio:''}}; render(); },
+  startOnboard(){ ob={i:0,d:{age:false,agree:false,handle:'',pass:'',pass2:'',passkey:false,tags:[],vis:{interests:'everyone',mh:'matches',subs:'matches',location:'matches'},stage:'na',looking:['chat'],bio:''}}; render(); },
   obBack(){ if(ob.i===0){ ob=null; render(); return; } ob.i--; render(); },
   obPass(v){ ob.d.pass=v; $('#pm').style.width=pstr(v)+'%'; $('#ph').textContent=phint(v); },
   meField(k,v){ S.me[k]=v; save(); const b=$('#me-byline'); if(k==='bio'&&b) b.innerHTML=v?esc(v):'<span class="muted">Add your byline under Edit profile.</span>'; },

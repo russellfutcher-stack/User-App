@@ -15,11 +15,13 @@ type Row = {
   username: string; byline: string; stage: string; looking: string[]; wants_peer: boolean | null; is_peer: boolean;
   tags: string[]; vis_interests: Profile['vis']['interests']; vis_mh: Profile['vis']['mh']; vis_subs: Profile['vis']['subs'];
   searchable: boolean; disappearing: boolean; app_lock: boolean; setup_done: boolean; country: string | null;
+  city: string | null; home_country: string | null; vis_location: Profile['vis']['location'] | null;
 };
 const fromRow = (r: Row): Profile => ({
   username: r.username, byline: r.byline, stage: r.stage, looking: r.looking, wantsPeer: r.wants_peer, isPeer: r.is_peer,
-  tags: r.tags, vis: { interests: r.vis_interests, mh: r.vis_mh, subs: r.vis_subs },
+  tags: r.tags, vis: { interests: r.vis_interests, mh: r.vis_mh, subs: r.vis_subs, location: r.vis_location || 'matches' },
   prefs: { searchable: r.searchable, disappearing: r.disappearing, lock: r.app_lock }, setupDone: r.setup_done, country: r.country || '',
+  city: r.city || '', homeCountry: r.home_country || '',
 });
 const toRow = (p: Partial<Profile>): Partial<Row> => {
   const r: Partial<Row> = {};
@@ -29,10 +31,12 @@ const toRow = (p: Partial<Profile>): Partial<Row> => {
   if (p.wantsPeer !== undefined) r.wants_peer = p.wantsPeer;
   if (p.isPeer !== undefined) r.is_peer = p.isPeer;
   if (p.tags !== undefined) r.tags = p.tags;
-  if (p.vis) { r.vis_interests = p.vis.interests; r.vis_mh = p.vis.mh; r.vis_subs = p.vis.subs; }
+  if (p.vis) { r.vis_interests = p.vis.interests; r.vis_mh = p.vis.mh; r.vis_subs = p.vis.subs; r.vis_location = p.vis.location; }
   if (p.prefs) { r.searchable = p.prefs.searchable; r.disappearing = p.prefs.disappearing; r.app_lock = p.prefs.lock; }
   if (p.setupDone !== undefined) r.setup_done = p.setupDone;
   if (p.country !== undefined) r.country = p.country;
+  if (p.city !== undefined) r.city = p.city;
+  if (p.homeCountry !== undefined) r.home_country = p.homeCountry;
   return r;
 };
 
@@ -156,8 +160,8 @@ export function supabaseBackend(url: string, anonKey: string): Backend {
     async members() {
       await settled(); // so the score uses the profile just saved
       const { data, error } = await db.rpc('find_members'); must(error);
-      return (data || []).map((r: { username: string; is_peer: boolean; wants_peer: boolean; region: string; active: string; stage: string; looking: string[]; byline: string; tags: string[]; pct: number }): Member => ({
-        username: r.username, isPeer: r.is_peer, wantsPeer: r.wants_peer, region: r.region, active: r.active, stage: r.stage,
+      return (data || []).map((r: { username: string; is_peer: boolean; wants_peer: boolean; region: string; active: string; stage: string; looking: string[]; byline: string; tags: string[]; pct: number; city: string | null; home_country: string | null }): Member => ({
+        username: r.username, isPeer: r.is_peer, wantsPeer: r.wants_peer, region: r.region, active: r.active, stage: r.stage, city: r.city || '', country: r.home_country || '',
         looking: r.looking, byline: r.byline, tags: r.tags, pct: r.pct,
       }));
     },

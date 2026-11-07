@@ -92,9 +92,9 @@ test('DS-10 No Show all button with no results', async ({ page }) => {
   await pick(page, 'GHB / GBL'); await pick(page, 'Eating disorders'); await go(page);
   await expect(page.getByRole('button', { name: /^Show all/ })).toHaveCount(0);
 });
-test('DS-11 Card shows name, badge, status, stage, region and match', async ({ page }) => {
+test('DS-11 Card shows name, badge, status, stage, place and match', async ({ page }) => {
   const first = people(page).first();
-  for (const t of ['JuniperWren', 'Peer supporter', '3h ago', 'Supporting someone I love · Ireland', '72%']) await expect(first).toContainText(t);
+  for (const t of ['JuniperWren', 'Peer supporter', '3h ago', 'Supporting someone I love · Cork, Ireland', '72%']) await expect(first).toContainText(t);
 });
 test('DS-11 At most 4 tags, shared ones highlighted', async ({ page }) => {
   await showAll(page);
@@ -152,4 +152,22 @@ test('DS-16 Headings are in order', async ({ page }) => {
   const text = await page.locator('#choice-drugs').innerText();
   const i = ['MEDICATIONS', 'OTHER SUBSTANCES', 'ALCOHOL, NICOTINE & GAMBLING'].map(t => text.toUpperCase().indexOf(t));
   expect(i.every(x => x >= 0)).toBe(true); expect([...i].sort((a, b) => a - b)).toEqual(i);
+});
+
+test('DS-17 Search by country and city', async ({ page }) => {
+  await expect(page.locator('#location')).toContainText('Location');
+  await page.locator('#s-country').selectOption('Ireland'); await go(page);
+  await showAll(page).catch(() => {});
+  for (const t of await people(page).allInnerTexts()) expect(t).toContain('Ireland');
+  const all = await count(page).innerText();
+  await page.locator('#s-city').fill('Cork'); await go(page);
+  await expect(count(page)).not.toHaveText(all);
+  for (const t of await people(page).allInnerTexts()) expect(t).toContain('Cork, Ireland');
+  expect(await names(page)).toContain('JuniperWren');
+});
+test('DS-17 City matches the start of the name, any case, and shows in the summary', async ({ page }) => {
+  await page.locator('#s-city').fill('manch'); await go(page);
+  for (const t of await people(page).allInnerTexts()) expect(t).toContain('Manchester');
+  await expect(H.screen(page).getByText('In manch')).toBeVisible();
+  await page.locator('#s-city').fill('Nowhereville'); await go(page); await expect(count(page)).toHaveText('0 people');
 });

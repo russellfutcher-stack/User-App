@@ -9,6 +9,8 @@ import { useApp } from '../state/app';
 import { Btn, Card, H2, Label, P, Pill, Row, s as ui } from '../components/ui';
 import { C, F } from '../theme';
 import { ReportSheet } from './Safety';
+import { placeLabel } from '../data/places';
+
 
 export const stageLabel = (id: string) => STAGES.find(x => x.id === id)?.label || '';
 export const choiceName = (key: PathKey) => (key === 'interests' ? 'Interest' : PATHS.find(p => p.key === key)!.name); // singular on Home and Search
@@ -69,7 +71,9 @@ const Pct = ({ pct }: { pct: number }) => (
     <Text style={{ fontFamily: F.bold, fontSize: 10, letterSpacing: 0.6, textTransform: 'uppercase', color: C.muted }}>match</Text>
   </View>
 );
-const Where = (m: Member) => [stageLabel(m.stage), m.region].filter(Boolean).join(' · ');
+// Where they are: city and country (the city only if they let you see it), or their region for older sample data.
+const place = (m: Member) => placeLabel(m.city, m.country) || m.region;
+const Where = (m: Member) => [stageLabel(m.stage), place(m)].filter(Boolean).join(' · ');
 
 // Name, Peer supporter badge, status, stage, region, up to 4 tags (interests and shared ones) and the match score.
 export function PersonRow({ m }: { m: Member }) {
@@ -106,7 +110,7 @@ export function ProfileSheet({ m }: { m: Member }) {
   return (
     <>
       <Row>
-        <View style={{ flex: 1, minWidth: 0 }}><H2>{m.username}</H2><Text style={[ui.hint, { fontSize: 13 }]}>{[m.active, m.region].filter(Boolean).join(' · ')}</Text></View>
+        <View style={{ flex: 1, minWidth: 0 }}><H2>{m.username}</H2><Text style={[ui.hint, { fontSize: 13 }]}>{[m.active, place(m)].filter(Boolean).join(' · ')}</Text></View>
         <Pct pct={m.pct} />
       </Row>
       {m.isPeer ? <Row style={{ gap: 8, flexWrap: 'wrap' }}><Pill peer text="Peer supporter" /><P small>Offers to listen to people who want peer support.</P></Row> : null}

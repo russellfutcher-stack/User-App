@@ -6,6 +6,7 @@ import type { Profile } from '../backend/types';
 // Another member as you see them. `tags` holds only the tags they let you see; `pct` is the match score.
 export type Member = {
   username: string; isPeer: boolean; wantsPeer: boolean; region: string; active: string;
+  city?: string; country?: string; // city only when they let you see it
   stage: string; tags: string[]; looking: string[]; byline: string; pct: number;
 };
 type Them = Pick<Member, 'isPeer' | 'wantsPeer' | 'stage' | 'tags' | 'looking'>;
@@ -63,10 +64,11 @@ export const tagLabel = (id: string) => LABELS[id] || id;
 export const groupOf = (id: string): 'int' | 'drug' | 'mh' => (TAG_CAT[id] === 'interests' ? 'int' : TAG_CAT[id] === 'mh' ? 'mh' : 'drug');
 
 // What the Search page asks for. `applied` is the last search run with the Search button.
-export type Query = { cats: PathKey[]; f: string[]; look: string[]; peerOnly: boolean };
-export const blankQuery = (): Query => ({ cats: ['interests', 'drugs', 'mh'], f: [], look: [], peerOnly: false });
+// city and country: Location (Rusty, 8 Nov 2026). A city only finds people who let you see it.
+export type Query = { cats: PathKey[]; f: string[]; look: string[]; peerOnly: boolean; city: string; country: string };
+export const blankQuery = (): Query => ({ cats: ['interests', 'drugs', 'mh'], f: [], look: [], peerOnly: false, city: '', country: '' });
 export const sameQuery = (a: Query, b: Query) => {
-  const k = (q: Query) => JSON.stringify([[...q.cats].sort(), [...q.f].sort(), [...q.look].sort(), q.peerOnly]);
+  const k = (q: Query) => JSON.stringify([[...q.cats].sort(), [...q.f].sort(), [...q.look].sort(), q.peerOnly, (q.city || '').trim().toLowerCase(), q.country || '']);
   return k(a) === k(b);
 };
 
@@ -80,5 +82,8 @@ export function search(list: Member[], q: Query) {
   });
   if (q.look.length) out = out.filter(({ m }) => q.look.some(l => meets(l, m.looking))).map(x => ({ ...x, fit: q.look.filter(l => meets(l, x.m.looking)).length }));
   if (q.peerOnly) out = out.filter(({ m }) => m.isPeer);
+  if (q.country) out = out.filter(({ m }) => m.country === q.country);
+  const city = (q.city || '').trim().toLowerCase();
+  if (city) out = out.filter(({ m }) => !!m.city && m.city.toLowerCase().startsWith(city));
   return out.sort((a, b) => (b.fit - a.fit) || (b.m.pct - a.m.pct)).map(x => x.m);
 }

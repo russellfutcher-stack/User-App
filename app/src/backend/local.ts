@@ -3,6 +3,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Crypto from 'expo-crypto';
 import { SAMPLE_HANDLES } from '../data/reference';
 import { SAMPLES } from '../data/people';
+import { sampleLocation } from '../data/places';
 import { DEMO_CHATS, DEMO_JOINED, ROOMS, repliesFor } from '../data/community';
 import { score } from '../lib/match';
 import { roomRequestError } from '../lib/rooms';
@@ -47,8 +48,8 @@ const demoAccount = (): Account => ({
     username: 'QuietHeron', byline: 'New here. Anxious in person, easier in text. Like slow walks and long books.',
     stage: 'early', looking: ['chat', 'walk', 'pets'], wantsPeer: true, isPeer: false,
     tags: ['I01', 'I02', 'I04', 'D02', 'D03', 'O01', 'M05'],
-    vis: { interests: 'everyone', mh: 'matches', subs: 'matches' },
-    prefs: { searchable: true, disappearing: false, lock: false }, setupDone: true, country: '',
+    vis: { interests: 'everyone', mh: 'matches', subs: 'matches', location: 'matches' },
+    prefs: { searchable: true, disappearing: false, lock: false }, setupDone: true, country: '', city: '', homeCountry: '',
   },
 });
 
@@ -148,7 +149,7 @@ export function localBackend(): Backend {
     async saveProfile(patch) { await withMe(a => { a.profile = { ...a.profile, ...patch }; }); },
     async members() {
       await queue.catch(() => undefined); const s = await load(); const a = current && s.accounts[current]; if (!a) return [];
-      return SAMPLES.filter(m => !a.blocked.includes(m.username)).map(m => ({ ...m, pct: score(a.profile, m) }));
+      return SAMPLES.filter(m => !a.blocked.includes(m.username)).map(m => ({ ...m, ...sampleLocation(m.username, m.region), pct: score(a.profile, m) }));
     },
     async block(username) { await withMe(a => { if (!a.blocked.includes(username)) a.blocked.push(username); }); },
     async blocked() { const s = await load(); return (current && s.accounts[current]?.blocked) || []; },

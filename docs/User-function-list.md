@@ -9,7 +9,7 @@ Prototype version 24. Every function a person can use in the prototype, each wit
 - **Saved only**: the choice is saved but has no visible effect yet.
 - **Placeholder**: the button only shows a message.
 
-Totals: Working 150, Simulated 7, Saved only 2, Placeholder 2, 161 functions in all.
+Totals: Working 152, Simulated 7, Saved only 2, Placeholder 2, 163 functions in all.
 
 ## Global
 
@@ -121,6 +121,7 @@ Totals: Working 150, Simulated 7, Saved only 2, Placeholder 2, 161 functions in 
 | M-23 | Delete account | Tap Delete account | Confirm or keep. | Working | - |
 | M-24 | Delete everything | Confirm | Erases data and restores the demo account. | Working | Deleting an account everywhere needs a server. |
 | M-25 | Notifications on this device | Turn on the switch under Privacy & visibility | Off at first. A neutral alert for new messages and review decisions ('You have a new message.', 'A review has been decided.'), never names or message text. Per device; on iPhone only once User is on the home screen. | Working | Real on the Supabase server (Web Push); checked with app/scripts/live-notify.js. |
+| M-26 | Location | Under My profile, fill in City and choose Country | City (up to 60 letters) and a country from the Support page's list, saved as you type. 'Who sees my city' starts as People I chat with. The country is shown to everyone on the person's card; the city only to the people chosen. Separate from the Support page's country. | Working | Real on the Supabase server (find_members hides the city unless allowed). |
 
 ## Search page
 
@@ -136,12 +137,13 @@ Totals: Working 150, Simulated 7, Saved only 2, Placeholder 2, 161 functions in 
 | DS-08 | Looking for | Tick options, then Search | Keeps people who can meet at least one pick and ranks those who meet more first. Matching pairs complements, such as A peer mentor with To mentor someone. | Working | - |
 | DS-09 | Peer supporters only | Tick it, then Search | Shows only peer supporters. | Working | - |
 | DS-10 | No results | Filters nobody matches | 'No one matches all of those yet…' | Working | - |
-| DS-11 | Person card | View a match | Name, Peer supporter badge if they are one, status, stage, region, up to 4 tags and match %. | Working | - |
+| DS-11 | Person card | View a match | Name, Peer supporter badge if they are one, status, stage, place (city and country if they can be seen, otherwise region), up to 4 tags and match %. | Working | - |
 | DS-12 | Match score | Compare people | Interests 35%, mental health 20%, drug use 20%, stage 10%, looking for 15%. Plus 12 points when you want peer support and they are a peer supporter, or 8 points the other way round. Maximum 99%. | Working | - |
 | DS-13 | Profile sheet | Tap a person | Match %, peer supporter note, bio, 'Matched because…', stage, tags, looking for, Say hi, Block, Report. | Working | - |
 | DS-14 | Say hi | Tap Say hi | Opens a chat. | Working | Starting a chat with a real person needs a server. |
 | DS-15 | Search button | Change anything, tap Search | A notice shows until you tap Search. Search updates Your Matches, scrolls to the top and confirms the number found. | Working | - |
 | DS-16 | Drug use headings | Look under Drug use | Medications, Other Substances, Alcohol, nicotine & gambling. | Working | - |
+| DS-17 | Search by location | Fill in City or choose Country under Location, then tap Search | Country keeps only people in that country. City keeps people whose city starts with what was typed (any case). People are found by city only if they let you see it. Shown in the 'Finding people with' summary. | Working | Real on the Supabase server. |
 
 ## Chats
 

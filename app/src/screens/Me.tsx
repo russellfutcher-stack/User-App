@@ -4,7 +4,8 @@ import React, { useEffect, useState } from 'react';
 import { Text, View } from 'react-native';
 import { backend } from '../backend';
 import { useApp } from '../state/app';
-import { Btn, Card, Disclaimer, ErrorText, Field, H1, H2, H3, Label, Meter, P, Row, Toggle, s as ui } from '../components/ui';
+import { Btn, Card, Disclaimer, ErrorText, Field, H1, H2, H3, Label, Meter, P, Row, Select, Toggle, s as ui } from '../components/ui';
+import { COUNTRIES } from '../data/places';
 import { passHint, passStrength } from '../lib/account';
 import { AboutFields, PeerCard, ThreeChoices, VisSelect } from './profileParts';
 import { C, F } from '../theme';
@@ -76,6 +77,24 @@ function Notifications() {
     hint="A quiet alert for new messages and review decisions. It never shows names or what was said." />;
 }
 
+// Location (Rusty, 8 Nov 2026): city and country. Your country is shown to everyone; your city only to the people you choose,
+// and only they can find you by city in Search.
+function Location() {
+  const { profile, update } = useApp();
+  if (!profile) return null;
+  return (
+    <Card>
+      <H2>Location</H2>
+      <Field label="City" id="loc-city" maxLength={60} value={profile.city || ''} placeholder="For example Leeds" autoComplete="off"
+        onChangeText={t => update({ city: t.replace(/\s+/g, ' ').trimStart() })} />
+      <Select label="Country" id="loc-country" value={profile.homeCountry || ''}
+        options={[{ id: '', label: 'Not set' }, ...COUNTRIES.map(c => ({ id: c, label: c }))]} onChange={c => update({ homeCountry: c })} />
+      <VisSelect k="location" label="Who sees my city" />
+      <P hint>Your country is shown to everyone. Your city is shown only to the people you choose here, and only they can find you by city in Search. Changes save as you type.</P>
+    </Card>
+  );
+}
+
 function Security() {
   const { toast, openSheet } = useApp();
   const [passkey, setPasskey] = useState(false); const [blocked, setBlocked] = useState<string[]>([]);
@@ -133,6 +152,7 @@ export function Me() {
       <PeerCard />
       <ThreeChoices heading={<Text role="heading" aria-level={2} style={{ fontFamily: F.displayBold, fontSize: 28, color: C.ink, letterSpacing: -0.5 }}>My profile</Text>}
         foot="Who can see these is set under Privacy & visibility below." />
+      <Location />
       <Card><H2>Edit profile</H2><AboutFields withByline={false} /><P hint>Changes save as you type.</P></Card>
       <Card>
         <H3>Privacy & visibility</H3>
