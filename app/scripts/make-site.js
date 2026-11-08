@@ -28,10 +28,11 @@ const privacy = ready ? `
 <h3>What we keep</h3>
 <ul><li>Your username and password. Your password is stored only as a salted hash, so nobody can read it.</li>
 <li>Your profile: byline, stage, what you're looking for, your interest, drug use and mental health choices, and who can see each.</li>
+<li>An email for password resets, if you add one.</li>
 <li>Your city and country, if you add them. Your country is shown to other members; your city only to the people you choose.</li>
 <li>Your chats, room posts, blocks, reports and reviews.</li>
 <li>The country you choose on the Support page, if you choose one.</li></ul>
-<p>We never ask for your real name, email address or phone number.</p>
+<p>We never ask for your real name, email address or phone number. You can choose to add an email on the Me page, used only to send you a code if you forget your password. It's never shown to anyone. Codes are sent by Resend, an email service in the United States.</p>
 <h3>Where it's kept</h3>
 <p>Members' data is stored in Australia (Sydney).</p>
 <h3>Safety checks</h3>

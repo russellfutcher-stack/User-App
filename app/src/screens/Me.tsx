@@ -34,6 +34,29 @@ function Byline() {
 }
 
 // Change password: check the current one, then set a new one (same rules as sign-up).
+function RecoveryEmail({ now, done }: { now: string; done: (e: string) => void }) {
+  const { closeSheet, toast } = useApp();
+  const [email, setEmail] = useState(now); const [err, setErr] = useState(''); const [busy, setBusy] = useState(false);
+  const save = async (e: string) => {
+    setBusy(true); const r = await backend.setRecoveryEmail(e); setBusy(false);
+    if (!r.ok) return setErr(r.error);
+    done(e.trim().toLowerCase()); closeSheet(); toast(e ? 'Email saved for password resets.' : 'Email removed.');
+  };
+  return (
+    <>
+      <H2>Email for password resets</H2>
+      <P>If you forget your password, we can email you a code to set a new one. This is optional.</P>
+      <P small muted>It's only used for password reset codes. It's never shown to anyone, and nobody can find you by it.</P>
+      <Field label="Email" id="rec-email" keyboardType="email-address" autoComplete="email" autoCapitalize="none" maxLength={254} value={email} onChangeText={setEmail} />
+      <ErrorText id="rec-err" text={err} />
+      <Row>
+        <Btn variant="primary" label="Save email" disabled={busy || !email.trim()} onPress={() => save(email)} />
+        {now ? <Btn label="Remove" disabled={busy} onPress={() => save('')} /> : <Btn label="Cancel" onPress={closeSheet} />}
+      </Row>
+    </>
+  );
+}
+
 function ChangePassword() {
   const { closeSheet, toast } = useApp();
   const [cur, setCur] = useState(''); const [next, setNext] = useState(''); const [next2, setNext2] = useState('');
@@ -97,8 +120,8 @@ function Location() {
 
 function Security() {
   const { toast, openSheet } = useApp();
-  const [passkey, setPasskey] = useState(false); const [blocked, setBlocked] = useState<string[]>([]);
-  useEffect(() => { backend.hasPasskey().then(setPasskey); backend.blocked().then(setBlocked).catch(() => setBlocked([])); }, []);
+  const [passkey, setPasskey] = useState(false); const [blocked, setBlocked] = useState<string[]>([]); const [email, setEmail] = useState('');
+  useEffect(() => { backend.hasPasskey().then(setPasskey); backend.blocked().then(setBlocked).catch(() => setBlocked([])); backend.recoveryEmail().then(setEmail).catch(() => null); }, []);
   const setPk = async (on: boolean) => {
     if (on && !backend.passkeysReady) { toast("Passkeys aren't ready yet. They're coming soon."); return; }
     const r = await backend.setPasskey(on); if (!r.ok) { toast(r.error); return; }
@@ -114,6 +137,9 @@ function Security() {
       <H3>Security</H3>
       <View style={{ gap: 8 }}>
         <Line label="Password"><Btn sm label="Change" onPress={() => openSheet(<ChangePassword />)} /></Line>
+        <Line label="Email for password resets" sub={email ? `${email}. Only used for reset codes, never shown.` : 'Optional. Add one so you can reset a forgotten password.'}>
+          <Btn sm label={email ? 'Change' : 'Add email'} onPress={() => openSheet(<RecoveryEmail now={email} done={setEmail} />)} />
+        </Line>
         <Line label="Two-step verification"><Btn sm label="Set up" onPress={() => toast('Authenticator-app setup (TOTP) opens here.')} /></Line>
         <Line label="Passkey" sub={passkey ? 'Saved on this device. Sign in with your face, fingerprint or PIN.' : 'Not set up. Add one so you can sign in without your password.'}>
           {passkey ? <Btn sm label="Remove" onPress={() => setPk(false)} /> : <Btn sm label="Add a passkey" onPress={() => setPk(true)} />}
@@ -125,7 +151,7 @@ function Security() {
           ? <View style={{ gap: 8 }}>{blocked.map(u => <Line key={u} label={u}><Btn sm label="Unblock" onPress={() => unblock(u)} /></Line>)}</View>
           : <P hint>No one is blocked. You can block someone from their profile or from a chat.</P>}
       </View>
-      <P hint>No email, phone number or real name is ever required.</P>
+      <P hint>No email, phone number or real name is ever required. An email for password resets is optional.</P>
     </Card>
   );
 }

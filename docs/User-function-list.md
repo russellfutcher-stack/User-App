@@ -9,7 +9,7 @@ Prototype version 24. Every function a person can use in the prototype, each wit
 - **Saved only**: the choice is saved but has no visible effect yet.
 - **Placeholder**: the button only shows a message.
 
-Totals: Working 152, Simulated 7, Saved only 2, Placeholder 2, 163 functions in all.
+Totals: Working 155, Simulated 7, Saved only 2, Placeholder 2, 166 functions in all.
 
 ## Global
 
@@ -42,7 +42,7 @@ Totals: Working 152, Simulated 7, Saved only 2, Placeholder 2, 163 functions in 
 | WS-04 | Sign-in form | Open the app | Username and Password boxes. The password is hidden. | Working | - |
 | WS-05 | Sign in | Enter details, tap Sign in | Correct: opens Home (username not case-sensitive). Wrong: 'That username and password don't match…'. | Working | Real accounts, password checks and sign-in limits run on a server. |
 | WS-06 | Demo account | QuietHeron / quiet heron walks | Signs in to the sample account. | Working | - |
-| WS-07 | Forgot password | Tap 'Forgot password?' | Explains: sign in with a passkey, then change the password. Without a passkey the password can't be reset, because User keeps no email or phone number. | Working | Password reset needs a server. |
+| WS-07 | Forgot password | Tap 'Forgot password?' | Enter the username and the email saved on the Me page, then 'Email me a code'. A 6-digit code is emailed (it lasts 15 minutes, 5 tries); enter it with a new password to set it and sign in. The reply never says whether the username and email matched. Without a saved email: sign in with a passkey, then change the password. | Working | Real on the Supabase server (reset-password function); checked with app/scripts/live-reset-rooms.js. The demo shows the code instead of emailing it. |
 | WS-08 | Create an anonymous account | Tap it under 'New here?' | Starts sign-up at step 1. | Working | - |
 | WS-09 | Sign in with a passkey | Tap 'Sign in with a passkey' | If a passkey is saved on this device, confirm with face, fingerprint or PIN and you're signed in (simulated in the demo). If not, says to use your username and password. | Working | Real on the Supabase server (WebAuthn); checked with app/scripts/live-passkey.js. |
 
@@ -122,6 +122,7 @@ Totals: Working 152, Simulated 7, Saved only 2, Placeholder 2, 163 functions in 
 | M-24 | Delete everything | Confirm | Erases data and restores the demo account. | Working | Deleting an account everywhere needs a server. |
 | M-25 | Notifications on this device | Turn on the switch under Privacy & visibility | Off at first. A neutral alert for new messages and review decisions ('You have a new message.', 'A review has been decided.'), never names or message text. Per device; on iPhone only once User is on the home screen. | Working | Real on the Supabase server (Web Push); checked with app/scripts/live-notify.js. |
 | M-26 | Location | Under My profile, fill in City and choose Country | City (up to 60 letters) and a country from the Support page's list, saved as you type. 'Who sees my city' starts as People I chat with. The country is shown to everyone on the person's card; the city only to the people chosen. Separate from the Support page's country. | Working | Real on the Supabase server (find_members hides the city unless allowed). |
+| M-27 | Email for password resets | Security: tap 'Add email' | Optional. Saved only for reset codes, never shown to anyone, and nobody can find you by it. Change or remove it at any time. A bad address is refused. | Working | Real on the Supabase server; checked with app/scripts/live-reset-rooms.js. |
 
 ## Search page
 
@@ -165,16 +166,17 @@ Totals: Working 152, Simulated 7, Saved only 2, Placeholder 2, 163 functions in 
 | C-14 | Review from a blocked message | Tap 'Think this is wrong? Ask for a review' | Opens the review form with 'A message that was blocked' chosen. | Working | - |
 | C-15 | Swipe to delete a chat | Swipe a chat to the left in the Chats list, then tap Delete | A red Delete button appears behind the chat. Tapping it removes the chat and shows 'Chat with … deleted.' with Undo. A short swipe snaps back, and a swipe never opens the chat. Works with a finger or a mouse. | Working | - |
 | C-16 | Undo a deleted chat | Tap Undo on the toast within 5 seconds | The chat comes back with its messages and unread state. | Working | - |
+| C-17 | Delete a chat from its options | In a chat, tap 'Safety & options', then 'Delete chat' | Asks to confirm ('Delete your chat with …? … keeps their copy.'). Yes removes it from your Chats with an Undo toast; Cancel keeps it. | Working | - |
 
 ## Rooms
 
 | ID | Function | How to trigger | Expected result / rules | Status | Needs a backend |
 |---|---|---|---|---|---|
 | R-01 | Room type tiles | Tap Interest, Drug use or Mental health | One type at a time, remembered. | Working | - |
-| R-02 | Room list | Open Rooms | Type tag, name, Joined tag, description, members. No Moderated tag. | Working | - |
+| R-02 | Room list | Open Rooms | Type tag, name, Joined tag, description, members and how many are active now. No Moderated tag. | Working | - |
 | R-03 | Room catalogue | Check each type | Interest 5, Drug use 5, Mental health 4 (14 built-in rooms), plus rooms created for you. | Working | - |
 | R-04 | Your rooms | Join rooms | All joined rooms. | Working | - |
-| R-05 | Open a room | Tap a room | Description, 'Every message is checked for safety', members and messages. | Simulated | - |
+| R-05 | Open a room | Tap a room | Description, 'Every message is checked for safety', members, how many were active in the last 5 minutes, a Room details button, and messages. | Simulated | - |
 | R-06 | Join a room | Tap 'Join room to post' | Joins and shows the message box. | Working | Room membership needs a server. |
 | R-07 | Post in a room | Type and Post | Same filter and crisis detection as chats. | Working | Posts reaching other members need a server. |
 | R-08 | Request a new room | Tap 'Request a new room' | Name (40), type, purpose (160). | Working | - |
@@ -182,6 +184,7 @@ Totals: Working 152, Simulated 7, Saved only 2, Placeholder 2, 163 functions in 
 | R-10 | Request sent | Send a valid request | 'Request sent successfully' and the request is listed. | Working | Real requests go to the AI Room Agent on a server. |
 | R-11 | Room created | Wait about 2 seconds | Approved; room created under its type; you are joined. | Simulated | Real rooms are created by the AI Room Agent on a server. |
 | R-12 | Swipe to leave or delete a room | Swipe a room to the left in Your rooms, then tap Leave or Delete | Built-in rooms show Leave: you leave the room. Rooms you created show Delete: the room is removed. A toast offers Undo. Only rooms in Your rooms can be swiped. | Working | - |
+| R-13 | Room details and activity | In a room, tap 'Room details' | Shows the name, description, members and how many people were active (opened or posted in the room) in the last 5 minutes; room rows show '… active now'. Leave room (or Delete room, for a room you made) asks to confirm first. | Working | Real on the Supabase server; checked with app/scripts/live-reset-rooms.js. In the demo only you are counted. |
 
 ## Support
 

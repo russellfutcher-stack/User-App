@@ -10,17 +10,18 @@ import { roomRequestError } from '../lib/rooms';
 import { demoDecision, Decision, URGENT_REASON } from '../lib/review';
 import { CRISIS, notAllowed } from '../lib/safety';
 import { SAMPLE_CASES, SAMPLE_FIGURES } from '../data/arbitrator';
-import { AgeCheck, ARB_ACTS, ArbAct, ArbCase, ArbOutcome, Backend, Msg, Profile, Review, Room, RoomRequest, Sent, blankProfile } from './types';
+import { AgeCheck, ARB_ACTS, ArbAct, ArbCase, ArbOutcome, Backend, Msg, Profile, Review, Room, RoomRequest, Sent, blankProfile, EMAIL_RE, RESET_FAILED } from './types';
 
 const KEY = 'user-app-v1';
 type Stored = { f: 'me' | 'them'; t: string; ts: number };
 type Chat = { msgs: Stored[]; unread: boolean };
 type MyRoom = { id: string; cat: Room['cat']; name: string; desc: string };
-type Rooms = { joined: string[]; posts: Record<string, Stored[]>; custom: MyRoom[]; requests: RoomRequest[] };
+type Rooms = { joined: string[]; posts: Record<string, Stored[]>; custom: MyRoom[]; requests: RoomRequest[]; seen?: Record<string, number> };
 type ArbDecision = { outcome: ArbOutcome; note: string; act?: ArbAct };
 type Case = Omit<Review, 'status' | 'note' | 'by'> & { at: number; decision: Decision; arb?: ArbDecision };
 type Account = { salt: string; hash: string; passkey: boolean; profile: Profile; blocked: string[]; chats?: Record<string, Chat>; rooms?: Rooms; cases?: Case[];
-  checkin?: boolean; ageCheck?: AgeCheck; ageConfirmed?: boolean; notify?: boolean; muted?: Record<string, number> };
+  checkin?: boolean; ageCheck?: AgeCheck; ageConfirmed?: boolean; notify?: boolean; muted?: Record<string, number>;
+  email?: string; reset?: { code: string; until: number; tries: number } };
 
 // In the demo, a review is decided about 1.5 seconds after it's sent, as in the prototype.
 const DECIDE_AFTER = 1500;
@@ -146,6 +147,27 @@ export function localBackend(): Backend {
       a.salt = newSalt(); a.hash = await hash(next, a.salt); await save(s); // a fresh salt with every new password
       return { ok: true, value: null };
     },
+    async recoveryEmail() { const a = await me(); return a?.email || ''; },
+    async setRecoveryEmail(email) {
+      const e = email.trim().toLowerCase();
+      if (e && !EMAIL_RE.test(e)) return { ok: false, error: "That doesn't look like an email address." };
+      await withMe(a => { if (e) a.email = e; else delete a.email; });
+      return { ok: true, value: null };
+    },
+    async requestReset(username, email) {
+      const s = await load(); const a = s.accounts[username.trim().toLowerCase()];
+      if (!a || !a.email || a.email !== email.trim().toLowerCase()) return { ok: true, value: {} };
+      const code = String(100000 + Math.floor(Math.random() * 900000));
+      a.reset = { code, until: Date.now() + 15 * 60e3, tries: 0 }; await save(s);
+      return { ok: true, value: { demo: code } };
+    },
+    async resetPassword(username, code, password) {
+      const s = await load(); const a = s.accounts[username.trim().toLowerCase()]; const r = a?.reset;
+      if (!a || !r || r.until < Date.now() || r.tries >= 5) return { ok: false, error: RESET_FAILED };
+      if (r.code !== code.trim()) { r.tries++; await save(s); return { ok: false, error: RESET_FAILED }; }
+      a.salt = newSalt(); a.hash = await hash(password, a.salt); delete a.reset; await save(s);
+      return { ok: true, value: null };
+    },
     async saveProfile(patch) { await withMe(a => { a.profile = { ...a.profile, ...patch }; }); },
     async members() {
       await queue.catch(() => undefined); const s = await load(); const a = current && s.accounts[current]; if (!a) return [];
@@ -189,7 +211,10 @@ export function localBackend(): Backend {
     onChange(fn) { listeners.add(fn); return () => { listeners.delete(fn); }; },
     async rooms() {
       const a = await me(); if (!a) return [];
-      const j = roomsOf(a).joined; return allRooms(a).map(r => ({ ...r, joined: j.includes(r.id) }));
+      // Only you are real in the demo: you count as active for 5 minutes after opening or posting in a room.
+      const j = roomsOf(a).joined, seen = roomsOf(a).seen || {}, since = Date.now() - 5 * 60e3;
+      return allRooms(a).map(r => ({ ...r, joined: j.includes(r.id),
+        active: (seen[r.id] || 0) > since || (roomsOf(a).posts[r.id] || []).some(m => m.ts > since) ? 1 : 0 }));
     },
     async roomPosts(id) {
       const a = await me(); if (!a) return [];
@@ -201,6 +226,7 @@ export function localBackend(): Backend {
         .map((m, i) => msg(m, i, m.who));
     },
     async joinRoom(id) { await withMe(a => { const r = roomsOf(a); if (!r.joined.includes(id)) r.joined.push(id); }); },
+    async roomSeen(id) { await withMe(a => { const r = roomsOf(a); r.seen = { ...(r.seen || {}), [id]: Date.now() }; }); },
     async post(id, text): Promise<Sent> {
       const c = check(text), no = await refused(c); if (no) return no;
       let out: Msg | null = null;
@@ -223,7 +249,7 @@ export function localBackend(): Backend {
       if (err) return { ok: false, error: err };
       const room: MyRoom = { id: 'c' + Date.now().toString(36), cat, name, desc };
       await withMe(x => { const r = roomsOf(x); r.custom.push(room); r.requests.push({ id: room.id, name, cat, status: 'Approved' }); if (!r.joined.includes(room.id)) r.joined.push(room.id); });
-      return { ok: true, value: { ...room, members: 1, joined: true, mine: true } };
+      return { ok: true, value: { ...room, members: 1, active: 1, joined: true, mine: true } };
     },
     async report(username, reason) {
       const urgent = URGENT_REASON.test(reason);

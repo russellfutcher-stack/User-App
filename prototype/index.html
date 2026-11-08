@@ -793,11 +793,14 @@ function personRow(p,m){
     <div class="small muted">${esc(stageLabel(p.stage))} · ${esc(place(p))}</div><div class="chips">${tagHtml}</div></div>
     <div class="match">${m.pct}%<small>match</small></div></button>`;
 }
+// People who opened or posted in a room in the last 5 minutes. In the prototype only you are real.
+function roomActive(id){ const since=Date.now()-5*60e3; return ((S.rooms.seen||{})[id]||0)>since||(S.rooms.posts[id]||[]).some(m=>(m.ts||0)>since)?1:0; }
+const activeText=n=>n?n+' active in the last 5 minutes':'No one active in the last 5 minutes';
 function allRooms(){ return ROOMS.concat((S.rooms&&S.rooms.custom)||[]); }
 function roomRow(r){
   const j=S.rooms.joined.includes(r.id), g=pathOf(r.cat);
   return `<button class="person" onclick="App.room('${r.id}')"><div class="body"><div class="row wrap"><span class="tag g-${g.g}">${dName(g)}</span><span class="name">${esc(r.name)}</span>${j?'<span class="pill amber">Joined</span>':''}</div>
-    <div class="small muted">${esc(r.desc)}</div><div class="small muted">${r.members} members</div></div></button>`;
+    <div class="small muted">${esc(r.desc)}</div><div class="small muted">${r.members} members · ${roomActive(r.id)} active now</div></div></button>`;
 }
 
 /* ---------- Matches (shown straight after profile setup) ---------- */
@@ -934,10 +937,11 @@ function renderRooms(){
 }
 function renderRoom(id){
   const r=allRooms().find(x=>x.id===id), j=S.rooms.joined.includes(id); tabs(false);
+  S.rooms.seen={...(S.rooms.seen||{}),[id]:Date.now()}; save();
   bar(`<button class="iconbtn" onclick="App.back()" >Back</button>`, esc(r.name));
   const sc=$('#screen'); sc.className='screen flush';
   const msgs=[...r.seed.map(([who,t])=>({f:'them',who,t})), ...(S.rooms.posts[id]||[])];
-  sc.innerHTML=`<div class="msgs" id="msgs"><div class="bubble sys">${esc(r.desc)} Every message is checked for safety. ${r.members} members.</div>${msgs.map(bubble).join('')}</div>
+  sc.innerHTML=`<div class="msgs" id="msgs"><div class="bubble sys">${esc(r.desc)} Every message is checked for safety. ${r.members} members. ${activeText(roomActive(id))}. <button class="btn sm quiet" onclick="App.roomDetails('${id}')">Room details</button></div>${msgs.map(bubble).join('')}</div>
     <div id="warn"></div>
     ${j?`<form class="composer" onsubmit="App.post(event,'${id}')"><label for="msg" hidden>Message</label><input class="input" id="msg" placeholder="Say something to the room" autocomplete="off" maxlength="1000"><button class="btn primary" type="submit">Post</button></form>`
        :`<div class="composer"><button class="btn primary block" onclick="App.join('${id}')">Join room to post</button></div>`}`;
@@ -1025,12 +1029,13 @@ function renderMe(){
    <div class="card"><h3>Security</h3>
      <div class="lines">
       <div class="line"><span>Password</span><button class="btn sm" onclick="App.stub('Password change opens here in the full app.')">Change</button></div>
+      <div class="line"><span>Email for password resets<span class="th">${S.account&&S.account.email?esc(S.account.email)+'. Only used for reset codes, never shown.':'Optional. Add one so you can reset a forgotten password.'}</span></span><button class="btn sm" onclick="App.resetEmail()">${S.account&&S.account.email?'Change':'Add email'}</button></div>
       <div class="line"><span>Two-step verification</span><button class="btn sm" onclick="App.stub('Authenticator-app setup (TOTP) opens here.')">Set up</button></div>
       <div class="line"><span>Passkey<span class="th">${S.account&&S.account.passkey?'Saved on this device. Sign in with your face, fingerprint or PIN.':'Not set up. Add one so you can sign in without your password.'}</span></span>${S.account&&S.account.passkey?'<button class="btn sm" onclick="App.removePasskey()">Remove</button>':'<button class="btn sm" onclick="App.addPasskey()">Add a passkey</button>'}</div>
      </div>
      <div class="section"><span class="label">Blocked people (${S.blocked.length})</span>
       ${S.blocked.length?`<div class="lines">${S.blocked.map(id=>{const p=person(id); return `<div class="line"><span class="row"><b>${esc(p.handle)}</b></span><button class="btn sm" onclick="App.unblock('${id}')">Unblock</button></div>`;}).join('')}</div>`
-        :'<p class="hint">No one is blocked. You can block someone from their profile or from a chat.</p>'}</div><p class="hint">No email, phone number or real name is ever required.</p></div>
+        :'<p class="hint">No one is blocked. You can block someone from their profile or from a chat.</p>'}</div><p class="hint">No email, phone number or real name is ever required. An email for password resets is optional.</p></div>
    <button class="btn block" onclick="App.signOut()">Sign out</button>
    <button class="btn danger block" onclick="App.confirmDelete()">Delete account</button>
    ${DISCLAIMER}`;
@@ -1414,7 +1419,15 @@ const App = {
     <div class="card calm"><h3>Meeting up safely</h3><p class="small">Meet in a busy public place in daylight, like a park entrance or café. Tell a friend where you'll be. Don't share your home address. Never use substances with someone you've just met. You can leave at any time.</p></div>
     <div class="lines"><div class="line"><span>Mute notifications</span><button class="btn sm" onclick="App.stub('Muted for 8 hours.')">Mute</button></div>
     <div class="line"><span>Report a message or behaviour</span><button class="btn sm" onclick="App.report('${id}')">Report</button></div>
-    <div class="line"><span>Block ${esc(p.handle)}</span><button class="btn sm danger" onclick="App.block('${id}')">Block</button></div></div>`); },
+    <div class="line"><span>Block ${esc(p.handle)}</span><button class="btn sm danger" onclick="App.block('${id}')">Block</button></div>
+    <div class="line"><span>Delete this chat</span><button class="btn sm danger" onclick="App.sure('chat','${id}')">Delete chat</button></div></div><div id="sure"></div>`); },
+  roomDetails(id){ const r=allRooms().find(x=>x.id===id), own=id[0]==='c', j=S.rooms.joined.includes(id);
+    sheet(`<h2>${esc(r.name)}</h2><p>${esc(r.desc)}</p><div class="lines" id="room-details"><div class="line"><span>Members</span><b>${r.members}</b></div><div class="line"><span>Active in the last 5 minutes</span><b id="room-active">${roomActive(id)}</b></div></div>
+      ${j||own?`<button class="btn danger" onclick="App.sure('room','${id}')">${own?'Delete room':'Leave room'}</button>`:''}<div id="sure"></div>`); },
+  sure(kind,id){ const own=id[0]==='c', r=kind==='room'&&allRooms().find(x=>x.id===id), name=kind==='chat'?person(id).handle:r.name;
+    $('#sure').innerHTML=`<div class="card calm"><p>${kind==='chat'?`Delete your chat with ${esc(name)}? It's removed from your Chats. ${esc(name)} keeps their copy.`:own?`Delete ${esc(name)} for everyone? Its posts are removed too.`:`Leave ${esc(name)}? You can join again at any time.`}</p>
+      <button class="btn danger" onclick="App.closeSheet();view={name:null};App.swipeDelete('${kind}','${id}')">${kind==='chat'?'Yes, delete the chat':own?'Yes, delete the room':'Yes, leave the room'}</button>
+      <button class="btn" onclick="$('#sure').innerHTML=''">Cancel</button></div>`; },
   block(id){ if(!S.blocked.includes(id)) S.blocked.push(id); closeSheet(); view={name:null}; save(); render(); toast(person(id).handle+' is blocked. They can\'t see or message you.'); },
   unblock(id){ S.blocked=S.blocked.filter(x=>x!==id); save(); render(); toast(person(id).handle+' is unblocked.'); },
   report(id){ sheet(`<h2>Report ${esc(person(id).handle)}</h2><p class="muted small">Reports are anonymous and are reviewed straight away. An independent arbitrator checks decisions and can change them.</p>
@@ -1425,7 +1438,7 @@ const App = {
     save(); closeSheet(); toast('Report sent. We\'re reviewing it now.'); },
   room(id){ view={name:'room',id}; render(); },
   join(id){ if(!S.rooms.joined.includes(id)) S.rooms.joined.push(id); save(); render(); toast('Joined. Say hello when you\'re ready.'); },
-  post(e,id){ e.preventDefault(); const inp=$('#msg'), t=inp.value.trim(); if(!t||!guard(t)) return; (S.rooms.posts[id]=S.rooms.posts[id]||[]).push({f:'me',t}); S.stats.roomPosts++; markDay(); save(); inp.value='';
+  post(e,id){ e.preventDefault(); const inp=$('#msg'), t=inp.value.trim(); if(!t||!guard(t)) return; (S.rooms.posts[id]=S.rooms.posts[id]||[]).push({f:'me',t,ts:Date.now()}); S.stats.roomPosts++; markDay(); save(); inp.value='';
     $('#msgs').insertAdjacentHTML('beforeend',bubble({f:'me',t})); scrollMsgs(); if(CRISIS.test(t)) setTimeout(()=>helpSheet('It sounds like things might be really hard right now. These lines are open now.'),400); },
   vis(k,v){ S.vis[k]=v; save(); toast('Visibility updated.'); },
   loc(k,v){ S.me[k]=k==='city'?v.slice(0,60):v; save(); },
@@ -1448,10 +1461,38 @@ const App = {
     sheet(`<h2>Sign in with a passkey</h2><p>Your device will ask for your face, fingerprint or PIN.</p><p class="hint">In this prototype the device check is simulated.</p>
       <button class="btn primary" onclick="App.closeSheet();App.passkeyOk()">Continue as ${esc(S.account.handle)}</button>`); },
   passkeyOk(){ S.loggedIn=true; markDay(); S.ui.tab='home'; view={name:null}; save(); render(); $('#screen').scrollTop=0; toast('Signed in with your passkey.'); },
-  forgot(){ sheet(`<h2>Forgot your password?</h2>
-    <p>If you set up a passkey, sign in with it, then change your password on the Me page.</p>
-    <button class="btn primary" onclick="App.closeSheet();App.passkeySignIn()">Sign in with a passkey</button>
-    <p class="small muted">User keeps no email or phone number, so without a passkey we can't reset your password. You can create a new anonymous account instead.</p>`); },
+  resetEmail(){ const e=(S.account&&S.account.email)||''; sheet(`<h2>Email for password resets</h2><p>If you forget your password, we can email you a code to set a new one. This is optional.</p>
+    <p class="small muted">It's only used for password reset codes. It's never shown to anyone, and nobody can find you by it.</p>
+    <div class="field"><label for="rec-email">Email</label><input class="input" id="rec-email" type="email" autocomplete="email" maxlength="254" value="${esc(e)}"></div><div id="rec-err" class="hint" role="alert"></div>
+    <div class="row"><button class="btn primary" onclick="App.saveEmail()">Save email</button>${e?'<button class="btn" onclick="App.saveEmail(true)">Remove</button>':'<button class="btn" onclick="App.closeSheet()">Cancel</button>'}</div>`); },
+  saveEmail(remove){ const e=remove?'':$('#rec-email').value.trim().toLowerCase();
+    if(!remove&&!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(e)){ $('#rec-err').textContent="That doesn't look like an email address."; return; }
+    if(e) S.account.email=e; else delete S.account.email; save(); closeSheet(); render(); toast(e?'Email saved for password resets.':'Email removed.'); },
+  // Forgot password: a 6-digit code goes to the email saved on the Me page. The prototype can't send email, so it shows the code.
+  forgot(){ sheet(`<h2>Forgot your password?</h2><p>If you saved an email for password resets on the Me page, we'll email you a code.</p>
+    <div class="field"><label for="fp-name">Username</label><input class="input" id="fp-name" autocomplete="username"></div>
+    <div class="field"><label for="fp-email">Email</label><input class="input" id="fp-email" type="email" autocomplete="email"></div><div id="fp-err" class="hint" role="alert"></div>
+    <button class="btn primary" onclick="App.sendCode()">Email me a code</button>
+    <p class="small muted">No email saved? Sign in with a passkey if you set one up, then change your password on the Me page.</p>
+    <button class="btn" onclick="App.closeSheet();App.passkeySignIn()">Sign in with a passkey</button>`); },
+  sendCode(){ const h=$('#fp-name').value.trim(), e=$('#fp-email').value.trim().toLowerCase();
+    if(!h){ $('#fp-err').textContent='Enter your username.'; return; }
+    if(!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(e)){ $('#fp-err').textContent='Enter the email address you saved on the Me page.'; return; }
+    const match=S.account&&S.account.email&&S.account.handle.toLowerCase()===h.toLowerCase()&&S.account.email===e;
+    S.resetCode=match?{code:String(100000+Math.floor(Math.random()*900000)),until:Date.now()+15*60e3,tries:0}:null; save();
+    sheet(`<h2>Check your email</h2><p>If that username and email match, a 6-digit code is on its way. It lasts 15 minutes. Check your junk folder too.</p>
+      ${match?`<p class="hint">Demo only: no email is sent. The code is ${S.resetCode.code}.</p>`:''}
+      <div class="field"><label for="fp-code">Code</label><input class="input" id="fp-code" inputmode="numeric" autocomplete="one-time-code" maxlength="6"></div>
+      <div class="field"><label for="fp-pass">New password</label><input class="input" id="fp-pass" type="password" autocomplete="new-password" placeholder="At least 8 characters"></div>
+      <div class="field"><label for="fp-pass2">Confirm new password</label><input class="input" id="fp-pass2" type="password" autocomplete="new-password"></div><div id="fp-err" class="hint" role="alert"></div>
+      <div class="row"><button class="btn primary" onclick="App.setNewPass()">Set new password</button><button class="btn" onclick="App.forgot()">Send a new code</button></div>`); },
+  async setNewPass(){ const c=$('#fp-code').value.trim(), p=$('#fp-pass').value, err=$('#fp-err'), r=S.resetCode;
+    if(!/^\d{6}$/.test(c)){ err.textContent='Enter the 6-digit code from the email.'; return; }
+    if(p.length<8){ err.textContent='Your new password needs at least 8 characters.'; return; }
+    if(p!==$('#fp-pass2').value){ err.textContent="The two passwords don't match."; return; }
+    if(!r||r.until<Date.now()||r.tries>=5||r.code!==c){ if(r){ r.tries++; save(); } err.textContent="That code didn't work. Check it, or ask for a new one. Codes last 15 minutes."; return; }
+    const salt=genSalt(); S.account.salt=salt; S.account.passHash=await hash(p,salt); S.resetCode=null;
+    S.loggedIn=true; markDay(); S.ui.tab='home'; view={name:null}; save(); closeSheet(); render(); toast('Password changed. You are signed in.'); },
   startOnboard(){ ob={i:0,d:{age:false,agree:false,handle:'',pass:'',pass2:'',passkey:false,tags:[],vis:{interests:'everyone',mh:'matches',subs:'matches',location:'matches'},stage:'na',looking:['chat'],bio:''}}; render(); },
   obBack(){ if(ob.i===0){ ob=null; render(); return; } ob.i--; render(); },
   obPass(v){ ob.d.pass=v; $('#pm').style.width=pstr(v)+'%'; $('#ph').textContent=phint(v); },

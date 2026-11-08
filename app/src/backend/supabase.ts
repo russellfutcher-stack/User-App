@@ -4,7 +4,7 @@ import { createClient } from '@supabase/supabase-js';
 import { SAMPLE_HANDLES } from '../data/reference';
 import { TAKEN_ROOM } from '../lib/rooms';
 import { currentDevice, subscribe } from '../lib/push';
-import { AgeCheck, ArbCase, Backend, Member, Msg, Profile, Review, Room, Sent } from './types';
+import { AgeCheck, ArbCase, Backend, Member, Msg, Profile, Review, Room, Sent, EMAIL_RE } from './types';
 
 // Supabase Auth needs an email address, but members never give one. The app makes a
 // placeholder from the username. No email is sent ("Confirm email" is off in Supabase).
@@ -150,6 +150,26 @@ export function supabaseBackend(url: string, anonKey: string): Backend {
       const { error } = await db.auth.updateUser({ password: next });
       return error ? { ok: false, error: TROUBLE } : { ok: true, value: null };
     },
+    async recoveryEmail() {
+      const id = await myId(); if (!id) return '';
+      const { data } = await db.from('recovery_emails').select('email').eq('member', id).maybeSingle();
+      return (data as { email: string } | null)?.email || '';
+    },
+    async setRecoveryEmail(email) {
+      const id = await myId(); if (!id) return { ok: false, error: 'Please sign in again.' };
+      const e = email.trim().toLowerCase();
+      if (e && !EMAIL_RE.test(e)) return { ok: false, error: "That doesn't look like an email address." };
+      const { error } = e ? await db.from('recovery_emails').upsert({ member: id, email: e }) : await db.from('recovery_emails').delete().eq('member', id);
+      return error ? { ok: false, error: TROUBLE } : { ok: true, value: null };
+    },
+    async requestReset(username, email) {
+      const r = await call<{ ok: boolean; error?: string }>('reset-password', { step: 'send', username: username.trim(), email: email.trim().toLowerCase() });
+      return r?.ok ? { ok: true, value: {} } : { ok: false, error: r?.error && r.error.length > 20 ? r.error : TROUBLE };
+    },
+    async resetPassword(username, code, password) {
+      const r = await call<{ ok: boolean; error?: string }>('reset-password', { step: 'reset', username: username.trim(), code: code.trim(), password });
+      return r?.ok ? { ok: true, value: null } : { ok: false, error: r?.error && r.error.length > 20 ? r.error : TROUBLE };
+    },
     async saveProfile(patch) {
       const run = settled().then(async () => {
         const id = await myId(); if (!id) return;
@@ -195,8 +215,8 @@ export function supabaseBackend(url: string, anonKey: string): Backend {
     },
     async rooms() {
       const { data, error } = await db.rpc('my_rooms'); must(error);
-      return (data || []).map((r: { id: string; cat: Room['cat']; name: string; descr: string; members: number; joined: boolean; mine: boolean }): Room => ({
-        id: r.id, cat: r.cat, name: r.name, desc: r.descr, members: r.members, joined: r.joined, mine: r.mine,
+      return (data || []).map((r: { id: string; cat: Room['cat']; name: string; descr: string; members: number; active: number; joined: boolean; mine: boolean }): Room => ({
+        id: r.id, cat: r.cat, name: r.name, desc: r.descr, members: r.members, active: r.active || 0, joined: r.joined, mine: r.mine,
       }));
     },
     async roomPosts(id) {
@@ -206,6 +226,7 @@ export function supabaseBackend(url: string, anonKey: string): Backend {
       }));
     },
     async joinRoom(id) { const { error } = await db.rpc('join_room', { room: id }); must(error); },
+    async roomSeen(id) { await db.rpc('room_seen', { room: id }); },
     async post(id, text) { return checked('room', id, text); },
     async leaveRoom(id) {
       const { error } = await db.rpc('leave_room', { room: id }); must(error);

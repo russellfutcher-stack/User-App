@@ -30,6 +30,13 @@ Done by Max on 29 Oct to 1 Nov 2026. **This is not the independent review the bu
 - Members' data is in Supabase, Sydney. Deleting an account deletes everything linked to it.
 - The offline file on the device (`app/public/sw.js`) keeps only the app's own files, never anything from the server.
 
+## Added after the review (8 Nov 2026)
+
+- **Optional email for password resets.** Kept in its own table that only its owner can read or change; signed-out visitors and other members can't see it. The `reset-password` function is the only one that signed-out visitors can call besides "is this username taken?". It always gives the same reply whether or not the username and email match (even when it sends nothing because a code was sent in the last 2 minutes or 5 were sent today), emails in the background so a match isn't slower, keeps only a hash of the 6-digit code, and allows 5 tries in 15 minutes. Checked with `app/scripts/live-reset-rooms.js`, and a full reset checked by hand.
+- **Reset emails need a sending domain before launch.** They go through Resend from its test address, which only delivers to the Resend account's own email (Rusty's). To reach members, verify a domain in Resend and set the `RESET_FROM` secret (for example `User <reset@yourdomain>`).
+- **Room activity** (people active in the last 5 minutes) is a count only; nobody can see who.
+- **City** follows its own visibility setting in `find_members`; country is shown to all members.
+
 ## Needs Rusty (settings Max can't change)
 
 1. **Turn on leaked-password protection** in Supabase: Authentication, then Sign In / Providers or Attack Protection, then "Prevent use of leaked passwords". It stops people using passwords already stolen in other breaches. (It may need a paid Supabase plan.)
