@@ -167,10 +167,33 @@ test('M-20 Unblocking is kept', async ({ page }) => {
   await expect(H.toast(page)).toBeVisible();
   expect((await H.stored(page)).accounts.quietheron.blocked).toEqual(['NightLark']);
 });
+test('M-26 Location: city and country save and are kept', async ({ page }) => {
+  await expect(H.screen(page).getByRole('heading', { name: 'Location' })).toBeVisible();
+  await page.locator('#loc-city').fill('Leeds'); await page.locator('#loc-country').selectOption('United Kingdom');
+  await page.reload(); await H.signInDemo(page); await me(page);
+  await expect(page.locator('#loc-city')).toHaveValue('Leeds'); await expect(page.locator('#loc-country')).toHaveValue('United Kingdom');
+});
+test('M-26 Who sees my city starts as People I chat with, and can change', async ({ page }) => {
+  await expect(page.locator('#vis-location')).toHaveValue('matches');
+  await expect(H.screen(page).getByText('Your country is shown to everyone.', { exact: false })).toBeVisible();
+  await page.locator('#vis-location').selectOption('everyone'); await expect(H.toast(page)).toHaveText('Visibility updated.');
+});
+test('M-27 Add, change and remove an email for password resets', async ({ page }) => {
+  await expect(H.screen(page)).toContainText('Optional. Add one so you can reset a forgotten password.');
+  await H.btn(page, 'Add email').click(); await page.fill('#rec-email', 'Quiet@Example.com'); await H.btn(page, 'Save email').click();
+  await expect(H.toast(page)).toHaveText('Email saved for password resets.');
+  await expect(H.screen(page)).toContainText('quiet@example.com. Only used for reset codes, never shown.');
+  await H.screen(page).getByRole('button', { name: 'Change', exact: true }).nth(1).click(); await H.sheet(page).getByRole('button', { name: 'Remove' }).click();
+  await expect(H.toast(page)).toHaveText('Email removed.');
+});
+test('M-27 A bad email is refused', async ({ page }) => {
+  await H.btn(page, 'Add email').click(); await page.fill('#rec-email', 'not an email'); await H.btn(page, 'Save email').click();
+  await expect(page.locator('#rec-err')).toHaveText("That doesn't look like an email address.");
+});
 test('M-21 Sections in order', async ({ page }) => {
   const heads = await H.screen(page).getByRole('heading').allInnerTexts();
-  expect(heads.filter(h => ['QuietHeron', 'Peer support', 'My profile', 'Edit profile', 'Privacy & visibility', 'Security'].includes(h)))
-    .toEqual(['QuietHeron', 'Peer support', 'My profile', 'Edit profile', 'Privacy & visibility', 'Security']);
+  expect(heads.filter(h => ['QuietHeron', 'Peer support', 'My profile', 'Location', 'Edit profile', 'Privacy & visibility', 'Security'].includes(h)))
+    .toEqual(['QuietHeron', 'Peer support', 'My profile', 'Location', 'Edit profile', 'Privacy & visibility', 'Security']);
   const text = await H.screen(page).innerText();
   const at = [text.lastIndexOf('Security'), text.indexOf('Sign out'), text.indexOf('Delete account'), text.indexOf('User is peer support, not a medical or emergency service.')];
   expect([...at].sort((a, b) => a - b)).toEqual(at);

@@ -18,7 +18,7 @@ type Ctx = {
   update: (patch: Partial<Profile>) => void;
   toast: (text: string, undo?: () => void) => void; // with undo, the toast offers Undo for 5 seconds
   openSheet: (n: ReactNode) => void; closeSheet: () => void;
-  exit: () => void; // the Exit button: back to Home, or to the Welcome page when signed out (Rusty, 4 Nov 2026)
+  exit: () => void; // the Exit button: back to Home; on Home (or the dashboard or age check) it signs out (Rusty, 4 and 8 Nov 2026)
   // Search: the choices being made (`query`), the last search run (`applied`), and whether all matches show.
   query: Query; setQuery: (q: Query) => void; applied: Query; setApplied: (q: Query) => void;
   showAll: boolean; setShowAll: (v: boolean) => void;
@@ -87,7 +87,10 @@ export function AppProvider({ children }: { children: ReactNode }) {
       setProfile(p => (p ? { ...p, ...patch } : p));
       backend.saveProfile(patch).catch(() => toast("Couldn't save. Check your connection and try again."));
     },
-    exit: () => { setSheet(null); setView(null); setMatches(false); if (profile) setTabState('home'); else setPage('welcome'); },
+    exit: () => {
+      if (profile && (arbitrator || paused || (tab === 'home' && !view && !matches))) { value.signOut(); return; }
+      setSheet(null); setView(null); setMatches(false); if (profile) setTabState('home'); else setPage('welcome');
+    },
     query, setQuery, applied, setApplied, showAll, setShowAll, matches, setMatches,
     membersVer, membersChanged: () => { setVer(v => v + 1); chatsChanged(); },
     view, setView: v => { setSheet(null); setView(v); }, roomCat, setRoomCat, chatsVer, unread, chatsChanged, refreshUnread,

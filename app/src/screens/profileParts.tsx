@@ -70,7 +70,7 @@ export function AboutFields({ withByline }: { withByline: boolean }) {
 export function VisSelect({ k, label }: { k: VisKey; label: string }) {
   const { profile, update, toast } = useApp();
   if (!profile) return null;
-  return <Select label={label} id={`vis-${k}`} value={profile.vis[k]} options={VIS}
+  return <Select label={label} id={`vis-${k}`} value={profile.vis[k] || 'matches'} options={VIS}
     onChange={v => { update({ vis: { ...profile.vis, [k]: v } }); if (profile.setupDone) toast('Visibility updated.'); }} />;
 }
 

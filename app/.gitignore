@@ -51,3 +51,5 @@ e2e-results/
 .env
 .env.*
 !.env.example
+dist-netlify/
+user-app-netlify.zip

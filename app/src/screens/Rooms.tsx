@@ -24,10 +24,12 @@ function RoomRow({ r }: { r: Room }) {
         {r.joined ? <Text style={{ fontFamily: F.bold, fontSize: 11.5, borderRadius: 999, paddingVertical: 2, paddingHorizontal: 8, backgroundColor: C.accentSoft, color: C.accentStrong, overflow: 'hidden' }}>Joined</Text> : null}
       </Row>
       <Text style={[ui.hint, { fontSize: 13 }]}>{r.desc}</Text>
-      <Text style={[ui.hint, { fontSize: 13 }]}>{r.members} members</Text>
+      <Text style={[ui.hint, { fontSize: 13 }]}>{r.members} members · {r.active} active now</Text>
     </View>
   );
 }
+// People who opened or posted in the room in the last 5 minutes.
+export const activeText = (n: number) => n ? `${n} active in the last 5 minutes` : 'No one active in the last 5 minutes';
 
 export function Rooms() {
   const { roomCat, setRoomCat, setView, toast, openSheet, chatsVer, chatsChanged } = useApp();
@@ -136,9 +138,16 @@ export function RoomScreen({ id }: { id: string }) {
   const scroller = useRef<React.ComponentRef<typeof ScrollView>>(null);
   useEffect(() => {
     let live = true;
-    Promise.all([backend.rooms(), backend.roomPosts(id)]).then(([r, p]) => { if (live) { setRoom(r.find(x => x.id === id) || null); setPosts(p); } }).catch(() => { if (live) toast(oops); });
+    backend.roomSeen(id).catch(() => null)
+      .then(() => Promise.all([backend.rooms(), backend.roomPosts(id)]))
+      .then(([r, p]) => { if (live) { setRoom(r.find(x => x.id === id) || null); setPosts(p); } }).catch(() => { if (live) toast(oops); });
     return () => { live = false; };
   }, [id, chatsVer]); // eslint-disable-line react-hooks/exhaustive-deps
+  // While the room is open you stay counted as active.
+  useEffect(() => {
+    const t = setInterval(() => { backend.roomSeen(id).then(() => backend.rooms()).then(r => { const x = r.find(y => y.id === id); if (x) setRoom(x); }).catch(() => null); }, 120e3);
+    return () => clearInterval(t);
+  }, [id]);
   useEffect(() => { setTimeout(() => scroller.current?.scrollToEnd({ animated: false }), 30); }, [posts?.length]);
   if (!room || !posts) return <View style={{ padding: 16 }}><P muted>Loading…</P></View>;
   const join = async () => {
@@ -152,12 +161,43 @@ export function RoomScreen({ id }: { id: string }) {
   return (
     <View style={{ flex: 1 }}>
       <ScrollView ref={scroller} id="msgs" style={{ flex: 1 }} contentContainerStyle={{ padding: 16, gap: 8 }}>
-        <Sys id="room-intro">{room.desc} Every message is checked for safety. {room.members} members.</Sys>
+        <Sys id="room-intro">{room.desc} Every message is checked for safety. {room.members} members. {activeText(room.active)}.</Sys>
+        <Btn variant="quiet" sm label="Room details" onPress={() => openSheet(<RoomDetails room={room} />)} />
         {posts.map(m => <Bubble key={m.id} m={m} />)}
       </ScrollView>
       {why ? <NotSent why={why} /> : null}
       {room.joined ? <Composer placeholder="Say something to the room" button="Post" onSend={post} text={draft} setText={setDraft} />
         : <View style={{ paddingVertical: 10, paddingHorizontal: 12, backgroundColor: C.surface, borderTopWidth: 1, borderTopColor: C.lineSoft }}><Btn variant="primary" block label="Join room to post" onPress={join} /></View>}
     </View>
+  );
+}
+
+function RoomDetails({ room }: { room: Room }) {
+  const { toast, closeSheet, setView, chatsChanged } = useApp();
+  const [sure, setSure] = useState(false);
+  const verb = room.mine ? 'Delete' : 'Leave';
+  const go = async () => {
+    let undo: () => Promise<void>;
+    try { undo = await backend.leaveRoom(room.id); } catch { toast(oops); return; }
+    closeSheet(); setView(null); chatsChanged();
+    toast(room.mine ? `Room ${room.name} deleted.` : `You left ${room.name}.`, async () => { await undo(); chatsChanged(); });
+  };
+  return (
+    <>
+      <H2>{room.name}</H2>
+      <P small muted>{choiceName(room.cat)} room</P>
+      <P>{room.desc}</P>
+      <View style={{ gap: 8 }} id="room-details">
+        <View style={ui.line}><Text style={ui.p}>Members</Text><Text style={[ui.p, ui.b]}>{room.members}</Text></View>
+        <View style={ui.line}><Text style={ui.p}>Active in the last 5 minutes</Text><Text style={[ui.p, ui.b]} id="room-active">{room.active}</Text></View>
+      </View>
+      {room.joined || room.mine ? (sure ? (
+        <Card tone="calm">
+          <P>{room.mine ? `Delete ${room.name} for everyone? Its posts are removed too.` : `Leave ${room.name}? You can join again at any time.`}</P>
+          <Btn variant="danger" label={room.mine ? 'Yes, delete the room' : 'Yes, leave the room'} onPress={go} />
+          <Btn label="Cancel" onPress={() => setSure(false)} />
+        </Card>
+      ) : <Btn variant="danger" label={`${verb} room`} onPress={() => setSure(true)} />) : null}
+    </>
   );
 }

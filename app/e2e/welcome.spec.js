@@ -45,10 +45,33 @@ test('WS-06 Demo account has its sample profile', async ({ page }) => {
   await expect(page.locator('#me-byline')).toContainText('Anxious in person');
   await expect(H.chip(page, 'Books & reading')).toHaveAttribute('aria-checked', 'true');
 });
-test('WS-07 Forgot password explains passkeys', async ({ page }) => {
+async function addEmail(page) {
+  await H.signInDemo(page); await H.tab(page, 'Me').click(); await H.btn(page, 'Add email').click();
+  await page.fill('#rec-email', 'quiet@example.com'); await H.btn(page, 'Save email').click();
+  await H.btn(page, 'Sign out').click();
+}
+test('WS-07 Forgot password emails a code and sets a new password', async ({ page }) => {
+  await addEmail(page);
   await H.btn(page, 'Forgot password?').click();
-  await expect(H.sheet(page)).toContainText('If you set up a passkey, sign in with it');
-  await expect(H.sheet(page)).toContainText('User keeps no email or phone number');
+  await page.fill('#fp-name', 'QuietHeron'); await page.fill('#fp-email', 'Quiet@Example.com'); await H.btn(page, 'Email me a code').click();
+  await expect(H.sheet(page).getByRole('heading', { name: 'Check your email' })).toBeVisible();
+  const code = (await H.sheet(page).getByText('Demo only').innerText()).match(/\d{6}/)[0];
+  await page.fill('#fp-code', code); await page.fill('#fp-pass', 'a brand new pass'); await page.fill('#fp-pass2', 'a brand new pass');
+  await H.btn(page, 'Set new password').click();
+  await expect(H.toast(page)).toHaveText('Password changed. You are signed in.');
+  await H.tab(page, 'Me').click(); await H.btn(page, 'Sign out').click();
+  await page.fill('#li-h', 'QuietHeron'); await page.fill('#li-p', 'a brand new pass'); await H.btn(page, 'Sign in').click();
+  await expect(H.tab(page, 'Me')).toBeVisible();
+});
+test('WS-07 A wrong code or an unknown email gives nothing away', async ({ page }) => {
+  await addEmail(page);
+  await H.btn(page, 'Forgot password?').click();
+  await page.fill('#fp-name', 'QuietHeron'); await page.fill('#fp-email', 'someone@else.com'); await H.btn(page, 'Email me a code').click();
+  await expect(H.sheet(page)).toContainText('If that username and email match');
+  await expect(H.sheet(page).getByText('Demo only')).toHaveCount(0);
+  await page.fill('#fp-code', '000000'); await page.fill('#fp-pass', 'a brand new pass'); await page.fill('#fp-pass2', 'a brand new pass');
+  await H.btn(page, 'Set new password').click();
+  await expect(page.locator('#fp-err')).toContainText("That code didn't work.");
 });
 test('WS-07 Forgot password offers passkey sign-in', async ({ page }) => {
   await H.btn(page, 'Forgot password?').click(); await H.sheet(page).getByRole('button', { name: 'Sign in with a passkey' }).click();

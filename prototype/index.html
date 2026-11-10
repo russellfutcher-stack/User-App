@@ -532,6 +532,14 @@ const GENERIC_REPLIES = ['Hi, thanks for messaging!','That sounds really familia
       bio: OPEN[stage]+' Into '+ints.map(t=>TAG[t].label.toLowerCase()).slice(0,2).join(' and ')+'.', replies:GENERIC_REPLIES});
   }
 })();
+/* ---------- Location: made-up cities for the sample members, picked from their region (same rule as the app) ---------- */
+const PLACES = {'North-west':['United Kingdom',['Manchester','Liverpool','Preston','Lancaster']],'North-east':['United Kingdom',['Newcastle','Sunderland','Durham','Middlesbrough']],
+  'Midlands':['United Kingdom',['Birmingham','Nottingham','Leicester','Derby']],'South-east':['United Kingdom',['Brighton','Oxford','Reading','Canterbury']],
+  'South-west':['United Kingdom',['Bristol','Exeter','Plymouth','Bath']],'London':['United Kingdom',['London']],'Scotland':['United Kingdom',['Glasgow','Edinburgh','Aberdeen','Dundee']],
+  'Wales':['United Kingdom',['Cardiff','Swansea','Newport']],'Northern Ireland':['United Kingdom',['Belfast','Derry']],'Ireland':['Ireland',['Dublin','Cork','Galway','Limerick']],
+  'Yorkshire':['United Kingdom',['Leeds','Sheffield','York','Bradford','Hull']],'East of England':['United Kingdom',['Norwich','Cambridge','Ipswich','Peterborough']],'Online only':['United Kingdom',[]]};
+PEOPLE.forEach(p=>{ const [country,towns]=PLACES[p.region]||['',[]], n=[...p.handle].reduce((a,c)=>a+c.charCodeAt(0),0); p.country=country; p.city=towns.length?towns[n%towns.length]:''; });
+const place = p => [p.city,p.country].filter(Boolean).join(', ') || p.region;
 const ROOMS = [
  // Interest
  {id:'r1',cat:'interests',name:'Dog Walkers\' Bench',members:128,desc:'Share walks and routes, and plan daytime walk-alongs in public places.',
@@ -593,7 +601,7 @@ function seedState(){
     account:{handle:'QuietHeron',passHash:'demo',passkey:true},
     me:{handle:'QuietHeron',av:{bg:6,face:0,shape:0,eyes:1,acc:2},bio:'New here. Anxious in person, easier in text. Like slow walks and long books.',
       tags:['I01','I02','I04','D02','D03','O01','M05'],stage:'early',looking:['chat','walk','pets'],region:'North-west',wantsPeer:true,peer:false},
-    vis:{interests:'everyone',mh:'matches',subs:'matches'},
+    vis:{interests:'everyone',mh:'matches',subs:'matches',location:'matches'},
     prefs:{searchable:true,disappearing:false,lock:false,theme:'system'},
     checkins:[{d:dayKey(6),v:2},{d:dayKey(5),v:2},{d:dayKey(4),v:3},{d:dayKey(3),v:2},{d:dayKey(2),v:3},{d:dayKey(1),v:4}],
     days:[dayKey(9),dayKey(6),dayKey(5),dayKey(4),dayKey(3),dayKey(2),dayKey(1),dayKey(0)],
@@ -782,14 +790,17 @@ function personRow(p,m){
   const tagHtml=p.tags.filter(t=>catOf(t)==='interests'||m.shared.includes(t)).slice(0,4).map(t=>`<span class="tag g-${grp(t)} ${m.shared.includes(t)?'shared':''}">${esc(TAG[t].label)}</span>`).join('');
   return `<button class="person" onclick="App.profile('${p.id}')">
     <div class="body"><div class="row"><span class="name">${esc(p.handle)}</span>${p.peer?'<span class="pill peer">Peer supporter</span>':''}${p.active==='Online'?'<span class="online" aria-label="online"></span>':`<span class="small muted">${esc(p.active)}</span>`}</div>
-    <div class="small muted">${esc(stageLabel(p.stage))} · ${esc(p.region)}</div><div class="chips">${tagHtml}</div></div>
+    <div class="small muted">${esc(stageLabel(p.stage))} · ${esc(place(p))}</div><div class="chips">${tagHtml}</div></div>
     <div class="match">${m.pct}%<small>match</small></div></button>`;
 }
+// People who opened or posted in a room in the last 5 minutes. In the prototype only you are real.
+function roomActive(id){ const since=Date.now()-5*60e3; return ((S.rooms.seen||{})[id]||0)>since||(S.rooms.posts[id]||[]).some(m=>(m.ts||0)>since)?1:0; }
+const activeText=n=>n?n+' active in the last 5 minutes':'No one active in the last 5 minutes';
 function allRooms(){ return ROOMS.concat((S.rooms&&S.rooms.custom)||[]); }
 function roomRow(r){
   const j=S.rooms.joined.includes(r.id), g=pathOf(r.cat);
   return `<button class="person" onclick="App.room('${r.id}')"><div class="body"><div class="row wrap"><span class="tag g-${g.g}">${dName(g)}</span><span class="name">${esc(r.name)}</span>${j?'<span class="pill amber">Joined</span>':''}</div>
-    <div class="small muted">${esc(r.desc)}</div><div class="small muted">${r.members} members</div></div></button>`;
+    <div class="small muted">${esc(r.desc)}</div><div class="small muted">${r.members} members · ${roomActive(r.id)} active now</div></div></button>`;
 }
 
 /* ---------- Matches (shown straight after profile setup) ---------- */
@@ -807,7 +818,7 @@ function renderMatches(){
 function renderFind(){
   bar();
   const on = PATHS.filter(p=>S.ui.cats.includes(p.key));
-  const picked = S.ui.f.map(t=>`<span class="tag g-${grp(t)}">${esc(TAG[t].label)}</span>`).concat(S.ui.look.map(l=>`<span class="tag">${esc(LOOKING.find(x=>x.id===l).label)}</span>`)).concat(S.ui.peerOnly?['<span class="tag">Peer supporters only</span>']:[]).join('');
+  const picked = S.ui.f.map(t=>`<span class="tag g-${grp(t)}">${esc(TAG[t].label)}</span>`).concat(S.ui.look.map(l=>`<span class="tag">${esc(LOOKING.find(x=>x.id===l).label)}</span>`)).concat(S.ui.peerOnly?['<span class="tag">Peer supporters only</span>']:[]).concat(S.ui.city&&S.ui.city.trim()?[`<span class="tag">In ${esc(S.ui.city.trim())}</span>`]:[]).concat(S.ui.country?[`<span class="tag">In ${esc(S.ui.country)}</span>`]:[]).join('');
   const changed = JSON.stringify(draft())!==JSON.stringify(S.ui.applied);
   $('#screen').innerHTML = `
    <div class="section"><h2 style="font-size:24px">Search/Find a Companion</h2></div>
@@ -817,10 +828,14 @@ function renderFind(){
      ${threeTiles('filter')}
      <p class="hint">${on.length===3?"All three are on. ":""}Tap a choice to turn it off or on, then pick items in each to combine them.</p>
      ${on.map((path,i)=>`<div class="section"><span class="label ghead g-${path.g}">${i+2}. ${dName(path)}</span>${path.cats.map(c=>`${path.cats.length>1?`<span class="label sub">${CATS.find(x=>x.key===c).name}</span>`:''}<div class="chips" role="group" aria-label="${dName(path)}: ${CATS.find(x=>x.key===c).name}">${REF[c].map(t=>`<button class="chip" aria-pressed="${S.ui.f.includes(t.id)}" onclick="App.f('${t.id}')">${esc(t.label)}</button>`).join('')}</div>`).join('')}</div>`).join('')}
-     ${S.ui.f.length||S.ui.look.length||S.ui.peerOnly?`<div class="card calm"><span class="label">Finding people with</span><div class="chips">${picked}</div><p class="hint">Matches at least one pick in each choice you used.</p><button class="btn sm" style="align-self:flex-start" onclick="App.clearAll()">Clear all filters</button></div>`:''}
+     ${S.ui.f.length||S.ui.look.length||S.ui.peerOnly||(S.ui.city||'').trim()||S.ui.country?`<div class="card calm"><span class="label">Finding people with</span><div class="chips">${picked}</div><p class="hint">Matches at least one pick in each choice you used.</p><button class="btn sm" style="align-self:flex-start" onclick="App.clearAll()">Clear all filters</button></div>`:''}
      <div class="section"><span class="label ghead g-look">${on.length+2}. Looking for</span><p class="hint">Find people who can meet what you're looking for. These also count towards the match score.</p>
        <div class="chips" role="group" aria-label="Looking for">${LOOKING.map(l=>`<button class="chip" aria-pressed="${S.ui.look.includes(l.id)}" onclick="App.look('${l.id}')">${esc(l.label)}</button>`).join('')}
        <button class="chip" aria-pressed="${S.ui.peerOnly}" onclick="App.peerOnly()">Peer supporters only</button></div></div>
+     <div class="section" id="s-location"><span class="label ghead g-look">${on.length+3}. Location</span>
+       <div class="field"><label for="s-city">City</label><input class="input" id="s-city" maxlength="60" autocomplete="off" placeholder="Any city" value="${esc(S.ui.city||'')}" onchange="App.where('city',this.value)"></div>
+       <div class="field"><label for="s-country">Country</label><select class="input" id="s-country" onchange="App.where('country',this.value)"><option value="">Any country</option>${SERVICES.map(c=>`<option ${S.ui.country===c.c?'selected':''}>${esc(c.c)}</option>`).join('')}</select></div>
+       <p class="hint">You can only find people by city if they let you see it.</p></div>
      ${changed?'<p class="hint pending" role="status">You have changed your search. Tap Search to update Your Matches.</p>':''}
      <button class="btn primary block search-btn" onclick="App.search()">Search</button>
    </div>`;
@@ -833,7 +848,7 @@ function aliasHit(q,t){ // light synonym support for natural search
     weed:'S01',cannabis:'S01',coke:'S02',crack:'S03',meth:'S04',heroin:'S05',fentanyl:'S06',mdma:'S07',ket:'S08',acid:'S09',shroom:'S09',ghb:'S10',drink:'O01',alcohol:'O01',booze:'O01',vape:'O02',gambl:'O04'};
   return Object.entries(AL).some(([k,v])=>q.includes(k)&&[].concat(v).includes(t));
 }
-const draft = () => ({cats:[...S.ui.cats].sort(), f:[...S.ui.f].sort(), look:[...S.ui.look].sort(), peerOnly:!!S.ui.peerOnly});
+const draft = () => ({cats:[...S.ui.cats].sort(), f:[...S.ui.f].sort(), look:[...S.ui.look].sort(), peerOnly:!!S.ui.peerOnly, city:(S.ui.city||'').trim().toLowerCase(), country:S.ui.country||''});
 function renderResults(){
   const q=S.ui.q.trim().toLowerCase();
   let list=PEOPLE.filter(visible).map(p=>({p,m:match(p)}));
@@ -845,6 +860,8 @@ function renderResults(){
   // Looking for: keep people who can meet at least one pick, and rank those who meet more of them higher
   if(A.look.length) list=list.filter(({p})=>A.look.some(l=>meets(l,p.looking))).map(x=>({...x,fit:A.look.filter(l=>meets(l,x.p.looking)).length}));
   if(A.peerOnly) list=list.filter(({p})=>p.peer);
+  if(A.country) list=list.filter(({p})=>p.country===A.country);
+  if(A.city) list=list.filter(({p})=>!!p.city&&p.city.toLowerCase().startsWith(A.city));
   if(q) list=list.filter(({p})=>p.handle.toLowerCase().includes(q)||p.bio.toLowerCase().includes(q)||p.tags.some(t=>scope.includes(catOf(t))&&(TAG[t].label.toLowerCase().includes(q)||aliasHit(q,t))));
   list.sort((a,b)=>((b.fit||0)-(a.fit||0))||(b.m.pct-a.m.pct));
   const shown = S.ui.all ? list : list.slice(0,3);
@@ -859,7 +876,7 @@ function closeSheet(){ $('#scrim')?.remove(); }
 function profileSheet(id){
   const p=person(id), m=match(p);
   const groups=PATHS.map(g=>{ const t=p.tags.filter(x=>g.cats.includes(catOf(x))); return `<div class="section"><span class="label ghead g-${g.g}">${g.name}</span><div class="chips">${t.length?t.map(x=>`<span class="tag g-${g.g} ${m.shared.includes(x)?'shared':''}">${esc(TAG[x].label)}</span>`).join(''):'<span class="small muted">Not shared</span>'}</div></div>`; }).join('');
-  sheet(`<div class="row"><div class="grow" style="flex:1;min-width:0"><h2>${esc(p.handle)}</h2><div class="small muted">${esc(p.active)} · ${esc(p.region)}</div></div><div class="match">${m.pct}%<small>match</small></div></div>
+  sheet(`<div class="row"><div class="grow" style="flex:1;min-width:0"><h2>${esc(p.handle)}</h2><div class="small muted">${esc(p.active)} · ${esc(place(p))}</div></div><div class="match">${m.pct}%<small>match</small></div></div>
     ${p.peer?'<p class="peer-on"><span class="pill peer">Peer supporter</span> Offers to listen to people who want peer support.</p>':''}
     <p>${esc(p.bio)}</p>
     <div class="card calm"><p class="small">${esc(whyMatched(p,m))}</p></div>
@@ -920,10 +937,11 @@ function renderRooms(){
 }
 function renderRoom(id){
   const r=allRooms().find(x=>x.id===id), j=S.rooms.joined.includes(id); tabs(false);
+  S.rooms.seen={...(S.rooms.seen||{}),[id]:Date.now()}; save();
   bar(`<button class="iconbtn" onclick="App.back()" >Back</button>`, esc(r.name));
   const sc=$('#screen'); sc.className='screen flush';
   const msgs=[...r.seed.map(([who,t])=>({f:'them',who,t})), ...(S.rooms.posts[id]||[])];
-  sc.innerHTML=`<div class="msgs" id="msgs"><div class="bubble sys">${esc(r.desc)} Every message is checked for safety. ${r.members} members.</div>${msgs.map(bubble).join('')}</div>
+  sc.innerHTML=`<div class="msgs" id="msgs"><div class="bubble sys">${esc(r.desc)} Every message is checked for safety. ${r.members} members. ${activeText(roomActive(id))}. <button class="btn sm quiet" onclick="App.roomDetails('${id}')">Room details</button></div>${msgs.map(bubble).join('')}</div>
     <div id="warn"></div>
     ${j?`<form class="composer" onsubmit="App.post(event,'${id}')"><label for="msg" hidden>Message</label><input class="input" id="msg" placeholder="Say something to the room" autocomplete="off" maxlength="1000"><button class="btn primary" type="submit">Post</button></form>`
        :`<div class="composer"><button class="btn primary block" onclick="App.join('${id}')">Join room to post</button></div>`}`;
@@ -985,12 +1003,17 @@ function renderSetup(){
 /* ---------- Me ---------- */
 function renderMe(){
   bar();
-  const me=S.me, sel=(k)=>`<select class="input" id="vis-${k}" onchange="App.vis('${k}',this.value)">${VIS.map(v=>`<option value="${v.id}" ${S.vis[k]===v.id?'selected':''}>${v.label}</option>`).join('')}</select>`;
+  const me=S.me, sel=(k)=>`<select class="input" id="vis-${k}" onchange="App.vis('${k}',this.value)">${VIS.map(v=>`<option value="${v.id}" ${(S.vis[k]||'matches')===v.id?'selected':''}>${v.label}</option>`).join('')}</select>`;
   $('#screen').innerHTML=`
    <div class="me-head" id="me-head"><h1 class="me-name">${esc(me.handle)}</h1>
      <div class="row byline-row"><p class="me-byline" id="me-byline">${me.bio?esc(me.bio):'<span class="muted">No byline yet.</span>'}</p><button class="btn sm" onclick="App.editByline()">${me.bio?'Change byline':'Add byline'}</button></div></div>
    ${peerCard()}
    ${profileCard('Who can see these is set under Privacy &amp; visibility below.')}
+   <div class="card" id="location"><h2>Location</h2>
+     <div class="field"><label for="loc-city">City</label><input class="input" id="loc-city" maxlength="60" autocomplete="off" value="${esc(me.city||'')}" oninput="App.loc('city',this.value)"></div>
+     <div class="field"><label for="loc-country">Country</label><select class="input" id="loc-country" onchange="App.loc('country',this.value)"><option value="">Not set</option>${SERVICES.map(c=>`<option ${me.country===c.c?'selected':''}>${esc(c.c)}</option>`).join('')}</select></div>
+     <div class="field"><label for="vis-location">Who sees my city</label>${sel('location')}</div>
+     <p class="hint">Your country is shown to everyone. Your city is shown only to the people you choose here, and only they can find you by city in Search. Changes save as you type.</p></div>
    <div class="card"><h2>Edit profile</h2>
      ${aboutFields(false)}
      <p class="hint">Changes save as you type.</p></div>
@@ -1006,12 +1029,13 @@ function renderMe(){
    <div class="card"><h3>Security</h3>
      <div class="lines">
       <div class="line"><span>Password</span><button class="btn sm" onclick="App.stub('Password change opens here in the full app.')">Change</button></div>
+      <div class="line"><span>Email for password resets<span class="th">${S.account&&S.account.email?esc(S.account.email)+'. Only used for reset codes, never shown.':'Optional. Add one so you can reset a forgotten password.'}</span></span><button class="btn sm" onclick="App.resetEmail()">${S.account&&S.account.email?'Change':'Add email'}</button></div>
       <div class="line"><span>Two-step verification</span><button class="btn sm" onclick="App.stub('Authenticator-app setup (TOTP) opens here.')">Set up</button></div>
       <div class="line"><span>Passkey<span class="th">${S.account&&S.account.passkey?'Saved on this device. Sign in with your face, fingerprint or PIN.':'Not set up. Add one so you can sign in without your password.'}</span></span>${S.account&&S.account.passkey?'<button class="btn sm" onclick="App.removePasskey()">Remove</button>':'<button class="btn sm" onclick="App.addPasskey()">Add a passkey</button>'}</div>
      </div>
      <div class="section"><span class="label">Blocked people (${S.blocked.length})</span>
       ${S.blocked.length?`<div class="lines">${S.blocked.map(id=>{const p=person(id); return `<div class="line"><span class="row"><b>${esc(p.handle)}</b></span><button class="btn sm" onclick="App.unblock('${id}')">Unblock</button></div>`;}).join('')}</div>`
-        :'<p class="hint">No one is blocked. You can block someone from their profile or from a chat.</p>'}</div><p class="hint">No email, phone number or real name is ever required.</p></div>
+        :'<p class="hint">No one is blocked. You can block someone from their profile or from a chat.</p>'}</div><p class="hint">No email, phone number or real name is ever required. An email for password resets is optional.</p></div>
    <button class="btn block" onclick="App.signOut()">Sign out</button>
    <button class="btn danger block" onclick="App.confirmDelete()">Delete account</button>
    ${DISCLAIMER}`;
@@ -1209,6 +1233,7 @@ const ARB = {
   rooms:[['15','rooms'],['9','room requests approved this week'],['4','room requests refused this week']],
   health:[['99.97%','uptime, last 30 days'],['3','messages waiting for a check now'],['0','reviews overdue']]
 };
+const ARB_ACTS = [['warning','Give a warning','warning'],['mute','Mute for 24 hours','24-hour mute'],['pause','Pause for 7 days','7-day pause'],['unpause','Lift any mute or pause','mute or pause lifted'],['remove','Remove the account','account removed']];
 const fmt = n => n.toLocaleString('en-GB');
 function hbars(rows, label){
   const max=Math.max(...rows.map(r=>r[1]));
@@ -1293,7 +1318,9 @@ const App = {
   // Exit goes back to Home, or to the Welcome page when signed out (Rusty, 4 Nov 2026).
   // Hide: a quick exit to Google's home page; Back can't bring User back (Rusty, 4 Nov 2026).
   hide(){ location.replace('https://www.google.com/'); },
-  exit(){ closeSheet(); view={name:null}; ob=null; if(S.loggedIn) S.ui.tab='home'; save(); render(); $('#screen').scrollTop=0; },
+  // On Home (or the dashboard), Exit signs out to the sign-in screen (Rusty, 8 Nov 2026).
+  exit(){ closeSheet(); if(S.arbMode) return App.arbSignOut(); if(S.loggedIn && S.ui.tab==='home' && !view.name) return App.signOut();
+    view={name:null}; ob=null; if(S.loggedIn) S.ui.tab='home'; save(); render(); $('#screen').scrollTop=0; },
   q(v){ S.ui.q=v; save(); renderResults(); },
   path(k){ const on=S.ui.cats.includes(k);
     if(S.ui.tab==='find'&&!view.name){ if(on){ S.ui.cats=S.ui.cats.filter(x=>x!==k); const cs=pathOf(k).cats; S.ui.f=S.ui.f.filter(t=>!cs.includes(catOf(t))); } else S.ui.cats.push(k); }
@@ -1360,16 +1387,23 @@ const App = {
     <div class="card ai-rec"><h3>AI Review Agent</h3><p class="small"><b>${esc(c.ai.decision)}</b> · ${Math.round(c.ai.confidence*100)}% confident${c.ai.flagged?' · flagged for a check':''}</p><p class="small">${esc(c.ai.reason)}</p></div>
     <div class="field"><label for="arb-note">Your decision note (shown to the member)</label><textarea class="input" id="arb-note" rows="3" maxlength="400" placeholder="Explain the decision in plain words."></textarea></div>
     <div id="arb-err" class="hint" role="alert"></div>
-    <div class="row wrap"><button class="btn primary sm" onclick="App.decide('${c.id}','Upheld')">Uphold the decision</button><button class="btn sm" onclick="App.decide('${c.id}','Overturned')">Overturn it</button><button class="btn sm" onclick="App.decide('${c.id}','Action changed')">Change the action</button></div>`); },
-  decide(id,outcome){ const note=$('#arb-note').value.trim(); if(note.length<5){ $('#arb-err').textContent='Add a short note explaining your decision.'; return; }
-    const st='Decided: '+outcome, mine=S.cases.find(c=>c.id===id);
+    <div id="arb-effects" class="small"><p><b>Uphold:</b> ${c.topic==='Account removal proposed'?'removes the member\'s account and everything in it.':'keeps things as they are.'}</p><p><b>Overturn:</b> lifts any mute, pause or age check on the member and takes back their latest warning.</p><p><b>Change the action:</b> choose what happens instead.</p></div>
+    <div class="row wrap"><button class="btn primary sm" onclick="App.decide('${c.id}','Upheld')">Uphold the decision</button><button class="btn sm" onclick="App.decide('${c.id}','Overturned')">Overturn it</button><button class="btn sm" onclick="document.getElementById('arb-change').hidden=false">Change the action</button></div>
+    <div id="arb-change" hidden><div class="field"><label for="arb-act">What to change</label><select class="input" id="arb-act"><option value="">Choose…</option>${ARB_ACTS.map(([k,l])=>`<option value="${k}">${l}</option>`).join('')}</select></div>
+    <button class="btn primary sm" onclick="App.decide('${c.id}','Action changed')">Confirm the change</button></div>`); },
+  // Decisions take effect on the member the case is about (Rusty, 8 Nov 2026); in the prototype they are recorded only.
+  decide(id,outcome){ const note=$('#arb-note').value.trim(); if(note.length<5){ $('#arb-err').textContent='Add a short note explaining your decision first. The member sees it.'; return; }
+    const act=outcome==='Action changed'?$('#arb-act').value:''; if(outcome==='Action changed'&&!act){ $('#arb-err').textContent='Choose what to change.'; return; }
+    const c0=arbCases().find(x=>x.id===id); if((act==='remove'||(outcome==='Upheld'&&c0&&c0.topic==='Account removal proposed'))&&!confirm('Remove this account? This deletes everything in it and can\'t be undone.')) return;
+    const st='Decided: '+outcome+(act?' ('+ARB_ACTS.find(x=>x[0]===act)[2]+')':''), mine=S.cases.find(c=>c.id===id);
     if(mine){ mine.status=st; mine.note=note; mine.by='Arbitrator'; } else S.arb.decided[id]={status:st,note};
-    save(); closeSheet(); renderDashboard(); toast(id+' decided: '+outcome+'.'); },
+    save(); closeSheet(); renderDashboard(); toast(id+' decided: '+st.replace('Decided: ','')+'.'); },
   showAll(){ S.ui.all=!S.ui.all; save(); renderResults(); },
-  clearAll(){ S.ui.cats=['interests','drugs','mh']; S.ui.f=[]; S.ui.q=''; S.ui.look=[]; S.ui.peerOnly=false; S.ui.applied=draft(); save(); renderFind(); },
+  clearAll(){ S.ui.cats=['interests','drugs','mh']; S.ui.f=[]; S.ui.q=''; S.ui.look=[]; S.ui.peerOnly=false; S.ui.city=''; S.ui.country=''; S.ui.applied=draft(); save(); renderFind(); },
   search(){ S.ui.applied=draft(); save(); renderFind(); $('#screen').scrollTop=0; const n=$('#match-count'); toast('Search updated: '+(n?n.textContent:'')+'.'); },
   f(id){ const i=S.ui.f.indexOf(id); i<0?S.ui.f.push(id):S.ui.f.splice(i,1); save(); renderFind(); },
   look(id){ const t=S.ui.look, i=t.indexOf(id); i<0?t.push(id):t.splice(i,1); save(); const sc=$('#screen').scrollTop; renderFind(); $('#screen').scrollTop=sc; },
+  where(k,v){ S.ui[k]=v; save(); const sc=$('#screen').scrollTop; renderFind(); $('#screen').scrollTop=sc; },
   peerOnly(){ S.ui.peerOnly=!S.ui.peerOnly; save(); const sc=$('#screen').scrollTop; renderFind(); $('#screen').scrollTop=sc; },
   profile(id){ profileSheet(id); },
   openChat(id){ closeSheet(); if(!S.convos[id]){ S.convos[id]=[]; S.stats.started++; } view={name:'chat',id}; S.ui.tab='chat'; save(); render(); setTimeout(()=>$('#msg')?.focus(),50); },
@@ -1385,7 +1419,15 @@ const App = {
     <div class="card calm"><h3>Meeting up safely</h3><p class="small">Meet in a busy public place in daylight, like a park entrance or café. Tell a friend where you'll be. Don't share your home address. Never use substances with someone you've just met. You can leave at any time.</p></div>
     <div class="lines"><div class="line"><span>Mute notifications</span><button class="btn sm" onclick="App.stub('Muted for 8 hours.')">Mute</button></div>
     <div class="line"><span>Report a message or behaviour</span><button class="btn sm" onclick="App.report('${id}')">Report</button></div>
-    <div class="line"><span>Block ${esc(p.handle)}</span><button class="btn sm danger" onclick="App.block('${id}')">Block</button></div></div>`); },
+    <div class="line"><span>Block ${esc(p.handle)}</span><button class="btn sm danger" onclick="App.block('${id}')">Block</button></div>
+    <div class="line"><span>Delete this chat</span><button class="btn sm danger" onclick="App.sure('chat','${id}')">Delete chat</button></div></div><div id="sure"></div>`); },
+  roomDetails(id){ const r=allRooms().find(x=>x.id===id), own=id[0]==='c', j=S.rooms.joined.includes(id);
+    sheet(`<h2>${esc(r.name)}</h2><p>${esc(r.desc)}</p><div class="lines" id="room-details"><div class="line"><span>Members</span><b>${r.members}</b></div><div class="line"><span>Active in the last 5 minutes</span><b id="room-active">${roomActive(id)}</b></div></div>
+      ${j||own?`<button class="btn danger" onclick="App.sure('room','${id}')">${own?'Delete room':'Leave room'}</button>`:''}<div id="sure"></div>`); },
+  sure(kind,id){ const own=id[0]==='c', r=kind==='room'&&allRooms().find(x=>x.id===id), name=kind==='chat'?person(id).handle:r.name;
+    $('#sure').innerHTML=`<div class="card calm"><p>${kind==='chat'?`Delete your chat with ${esc(name)}? It's removed from your Chats. ${esc(name)} keeps their copy.`:own?`Delete ${esc(name)} for everyone? Its posts are removed too.`:`Leave ${esc(name)}? You can join again at any time.`}</p>
+      <button class="btn danger" onclick="App.closeSheet();view={name:null};App.swipeDelete('${kind}','${id}')">${kind==='chat'?'Yes, delete the chat':own?'Yes, delete the room':'Yes, leave the room'}</button>
+      <button class="btn" onclick="$('#sure').innerHTML=''">Cancel</button></div>`; },
   block(id){ if(!S.blocked.includes(id)) S.blocked.push(id); closeSheet(); view={name:null}; save(); render(); toast(person(id).handle+' is blocked. They can\'t see or message you.'); },
   unblock(id){ S.blocked=S.blocked.filter(x=>x!==id); save(); render(); toast(person(id).handle+' is unblocked.'); },
   report(id){ sheet(`<h2>Report ${esc(person(id).handle)}</h2><p class="muted small">Reports are anonymous and are reviewed straight away. An independent arbitrator checks decisions and can change them.</p>
@@ -1396,9 +1438,10 @@ const App = {
     save(); closeSheet(); toast('Report sent. We\'re reviewing it now.'); },
   room(id){ view={name:'room',id}; render(); },
   join(id){ if(!S.rooms.joined.includes(id)) S.rooms.joined.push(id); save(); render(); toast('Joined. Say hello when you\'re ready.'); },
-  post(e,id){ e.preventDefault(); const inp=$('#msg'), t=inp.value.trim(); if(!t||!guard(t)) return; (S.rooms.posts[id]=S.rooms.posts[id]||[]).push({f:'me',t}); S.stats.roomPosts++; markDay(); save(); inp.value='';
+  post(e,id){ e.preventDefault(); const inp=$('#msg'), t=inp.value.trim(); if(!t||!guard(t)) return; (S.rooms.posts[id]=S.rooms.posts[id]||[]).push({f:'me',t,ts:Date.now()}); S.stats.roomPosts++; markDay(); save(); inp.value='';
     $('#msgs').insertAdjacentHTML('beforeend',bubble({f:'me',t})); scrollMsgs(); if(CRISIS.test(t)) setTimeout(()=>helpSheet('It sounds like things might be really hard right now. These lines are open now.'),400); },
   vis(k,v){ S.vis[k]=v; save(); toast('Visibility updated.'); },
+  loc(k,v){ S.me[k]=k==='city'?v.slice(0,60):v; save(); },
   pref(k,v){ S.prefs[k]=v; save(); toast(v?'Turned on.':'Turned off.'); },
   stub(m){ toast(m); },
   confirmDelete(){ sheet(`<h2>Delete your account?</h2><p>This permanently erases your profile, messages and check-ins. It can't be undone.</p><div class="row"><button class="btn danger" onclick="App.doDelete()">Delete everything</button><button class="btn" onclick="App.closeSheet()">Keep my account</button></div>`); },
@@ -1418,11 +1461,39 @@ const App = {
     sheet(`<h2>Sign in with a passkey</h2><p>Your device will ask for your face, fingerprint or PIN.</p><p class="hint">In this prototype the device check is simulated.</p>
       <button class="btn primary" onclick="App.closeSheet();App.passkeyOk()">Continue as ${esc(S.account.handle)}</button>`); },
   passkeyOk(){ S.loggedIn=true; markDay(); S.ui.tab='home'; view={name:null}; save(); render(); $('#screen').scrollTop=0; toast('Signed in with your passkey.'); },
-  forgot(){ sheet(`<h2>Forgot your password?</h2>
-    <p>If you set up a passkey, sign in with it, then change your password on the Me page.</p>
-    <button class="btn primary" onclick="App.closeSheet();App.passkeySignIn()">Sign in with a passkey</button>
-    <p class="small muted">User keeps no email or phone number, so without a passkey we can't reset your password. You can create a new anonymous account instead.</p>`); },
-  startOnboard(){ ob={i:0,d:{age:false,agree:false,handle:'',pass:'',pass2:'',passkey:false,tags:[],vis:{interests:'everyone',mh:'matches',subs:'matches'},stage:'na',looking:['chat'],bio:''}}; render(); },
+  resetEmail(){ const e=(S.account&&S.account.email)||''; sheet(`<h2>Email for password resets</h2><p>If you forget your password, we can email you a code to set a new one. This is optional.</p>
+    <p class="small muted">It's only used for password reset codes. It's never shown to anyone, and nobody can find you by it.</p>
+    <div class="field"><label for="rec-email">Email</label><input class="input" id="rec-email" type="email" autocomplete="email" maxlength="254" value="${esc(e)}"></div><div id="rec-err" class="hint" role="alert"></div>
+    <div class="row"><button class="btn primary" onclick="App.saveEmail()">Save email</button>${e?'<button class="btn" onclick="App.saveEmail(true)">Remove</button>':'<button class="btn" onclick="App.closeSheet()">Cancel</button>'}</div>`); },
+  saveEmail(remove){ const e=remove?'':$('#rec-email').value.trim().toLowerCase();
+    if(!remove&&!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(e)){ $('#rec-err').textContent="That doesn't look like an email address."; return; }
+    if(e) S.account.email=e; else delete S.account.email; save(); closeSheet(); render(); toast(e?'Email saved for password resets.':'Email removed.'); },
+  // Forgot password: a 6-digit code goes to the email saved on the Me page. The prototype can't send email, so it shows the code.
+  forgot(){ sheet(`<h2>Forgot your password?</h2><p>If you saved an email for password resets on the Me page, we'll email you a code.</p>
+    <div class="field"><label for="fp-name">Username</label><input class="input" id="fp-name" autocomplete="username"></div>
+    <div class="field"><label for="fp-email">Email</label><input class="input" id="fp-email" type="email" autocomplete="email"></div><div id="fp-err" class="hint" role="alert"></div>
+    <button class="btn primary" onclick="App.sendCode()">Email me a code</button>
+    <p class="small muted">No email saved? Sign in with a passkey if you set one up, then change your password on the Me page.</p>
+    <button class="btn" onclick="App.closeSheet();App.passkeySignIn()">Sign in with a passkey</button>`); },
+  sendCode(){ const h=$('#fp-name').value.trim(), e=$('#fp-email').value.trim().toLowerCase();
+    if(!h){ $('#fp-err').textContent='Enter your username.'; return; }
+    if(!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(e)){ $('#fp-err').textContent='Enter the email address you saved on the Me page.'; return; }
+    const match=S.account&&S.account.email&&S.account.handle.toLowerCase()===h.toLowerCase()&&S.account.email===e;
+    S.resetCode=match?{code:String(100000+Math.floor(Math.random()*900000)),until:Date.now()+15*60e3,tries:0}:null; save();
+    sheet(`<h2>Check your email</h2><p>If that username and email match, a 6-digit code is on its way. It lasts 15 minutes. Check your junk folder too.</p>
+      ${match?`<p class="hint">Demo only: no email is sent. The code is ${S.resetCode.code}.</p>`:''}
+      <div class="field"><label for="fp-code">Code</label><input class="input" id="fp-code" inputmode="numeric" autocomplete="one-time-code" maxlength="6"></div>
+      <div class="field"><label for="fp-pass">New password</label><input class="input" id="fp-pass" type="password" autocomplete="new-password" placeholder="At least 8 characters"></div>
+      <div class="field"><label for="fp-pass2">Confirm new password</label><input class="input" id="fp-pass2" type="password" autocomplete="new-password"></div><div id="fp-err" class="hint" role="alert"></div>
+      <div class="row"><button class="btn primary" onclick="App.setNewPass()">Set new password</button><button class="btn" onclick="App.forgot()">Send a new code</button></div>`); },
+  async setNewPass(){ const c=$('#fp-code').value.trim(), p=$('#fp-pass').value, err=$('#fp-err'), r=S.resetCode;
+    if(!/^\d{6}$/.test(c)){ err.textContent='Enter the 6-digit code from the email.'; return; }
+    if(p.length<8){ err.textContent='Your new password needs at least 8 characters.'; return; }
+    if(p!==$('#fp-pass2').value){ err.textContent="The two passwords don't match."; return; }
+    if(!r||r.until<Date.now()||r.tries>=5||r.code!==c){ if(r){ r.tries++; save(); } err.textContent="That code didn't work. Check it, or ask for a new one. Codes last 15 minutes."; return; }
+    const salt=genSalt(); S.account.salt=salt; S.account.passHash=await hash(p,salt); S.resetCode=null;
+    S.loggedIn=true; markDay(); S.ui.tab='home'; view={name:null}; save(); closeSheet(); render(); toast('Password changed. You are signed in.'); },
+  startOnboard(){ ob={i:0,d:{age:false,agree:false,handle:'',pass:'',pass2:'',passkey:false,tags:[],vis:{interests:'everyone',mh:'matches',subs:'matches',location:'matches'},stage:'na',looking:['chat'],bio:''}}; render(); },
   obBack(){ if(ob.i===0){ ob=null; render(); return; } ob.i--; render(); },
   obPass(v){ ob.d.pass=v; $('#pm').style.width=pstr(v)+'%'; $('#ph').textContent=phint(v); },
   meField(k,v){ S.me[k]=v; save(); const b=$('#me-byline'); if(k==='bio'&&b) b.innerHTML=v?esc(v):'<span class="muted">Add your byline under Edit profile.</span>'; },

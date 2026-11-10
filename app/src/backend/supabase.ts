@@ -4,7 +4,7 @@ import { createClient } from '@supabase/supabase-js';
 import { SAMPLE_HANDLES } from '../data/reference';
 import { TAKEN_ROOM } from '../lib/rooms';
 import { currentDevice, subscribe } from '../lib/push';
-import { AgeCheck, ArbCase, Backend, Member, Msg, Profile, Review, Room, Sent } from './types';
+import { AgeCheck, ArbCase, Backend, Member, Msg, Profile, Review, Room, Sent, EMAIL_RE } from './types';
 
 // Supabase Auth needs an email address, but members never give one. The app makes a
 // placeholder from the username. No email is sent ("Confirm email" is off in Supabase).
@@ -15,11 +15,13 @@ type Row = {
   username: string; byline: string; stage: string; looking: string[]; wants_peer: boolean | null; is_peer: boolean;
   tags: string[]; vis_interests: Profile['vis']['interests']; vis_mh: Profile['vis']['mh']; vis_subs: Profile['vis']['subs'];
   searchable: boolean; disappearing: boolean; app_lock: boolean; setup_done: boolean; country: string | null;
+  city: string | null; home_country: string | null; vis_location: Profile['vis']['location'] | null;
 };
 const fromRow = (r: Row): Profile => ({
   username: r.username, byline: r.byline, stage: r.stage, looking: r.looking, wantsPeer: r.wants_peer, isPeer: r.is_peer,
-  tags: r.tags, vis: { interests: r.vis_interests, mh: r.vis_mh, subs: r.vis_subs },
+  tags: r.tags, vis: { interests: r.vis_interests, mh: r.vis_mh, subs: r.vis_subs, location: r.vis_location || 'matches' },
   prefs: { searchable: r.searchable, disappearing: r.disappearing, lock: r.app_lock }, setupDone: r.setup_done, country: r.country || '',
+  city: r.city || '', homeCountry: r.home_country || '',
 });
 const toRow = (p: Partial<Profile>): Partial<Row> => {
   const r: Partial<Row> = {};
@@ -29,14 +31,16 @@ const toRow = (p: Partial<Profile>): Partial<Row> => {
   if (p.wantsPeer !== undefined) r.wants_peer = p.wantsPeer;
   if (p.isPeer !== undefined) r.is_peer = p.isPeer;
   if (p.tags !== undefined) r.tags = p.tags;
-  if (p.vis) { r.vis_interests = p.vis.interests; r.vis_mh = p.vis.mh; r.vis_subs = p.vis.subs; }
+  if (p.vis) { r.vis_interests = p.vis.interests; r.vis_mh = p.vis.mh; r.vis_subs = p.vis.subs; r.vis_location = p.vis.location; }
   if (p.prefs) { r.searchable = p.prefs.searchable; r.disappearing = p.prefs.disappearing; r.app_lock = p.prefs.lock; }
   if (p.setupDone !== undefined) r.setup_done = p.setupDone;
   if (p.country !== undefined) r.country = p.country;
+  if (p.city !== undefined) r.city = p.city;
+  if (p.homeCountry !== undefined) r.home_country = p.homeCountry;
   return r;
 };
 
-type CaseRow = { id: string; member: string; topic: string; body: string; auto: boolean; urgent: boolean; status: string; confidence: number | null;
+type CaseRow = { id: string; member: string; subject: string; topic: string; body: string; auto: boolean; urgent: boolean; status: string; confidence: number | null;
   reason: string | null; note: string | null; flagged: boolean; decided_by: 'automatic' | 'arbitrator' | null; due_at: string };
 const dayTime = (t: string) => new Date(t).toLocaleString('en-GB', { weekday: 'short', day: 'numeric', month: 'short', hour: 'numeric', minute: '2-digit' });
 type ReviewRow = { id: string; topic: string; body: string; auto: boolean; status: string; note?: string | null; decided_by?: string | null; due_at: string };
@@ -146,6 +150,26 @@ export function supabaseBackend(url: string, anonKey: string): Backend {
       const { error } = await db.auth.updateUser({ password: next });
       return error ? { ok: false, error: TROUBLE } : { ok: true, value: null };
     },
+    async recoveryEmail() {
+      const id = await myId(); if (!id) return '';
+      const { data } = await db.from('recovery_emails').select('email').eq('member', id).maybeSingle();
+      return (data as { email: string } | null)?.email || '';
+    },
+    async setRecoveryEmail(email) {
+      const id = await myId(); if (!id) return { ok: false, error: 'Please sign in again.' };
+      const e = email.trim().toLowerCase();
+      if (e && !EMAIL_RE.test(e)) return { ok: false, error: "That doesn't look like an email address." };
+      const { error } = e ? await db.from('recovery_emails').upsert({ member: id, email: e }) : await db.from('recovery_emails').delete().eq('member', id);
+      return error ? { ok: false, error: TROUBLE } : { ok: true, value: null };
+    },
+    async requestReset(username, email) {
+      const r = await call<{ ok: boolean; error?: string }>('reset-password', { step: 'send', username: username.trim(), email: email.trim().toLowerCase() });
+      return r?.ok ? { ok: true, value: {} } : { ok: false, error: r?.error && r.error.length > 20 ? r.error : TROUBLE };
+    },
+    async resetPassword(username, code, password) {
+      const r = await call<{ ok: boolean; error?: string }>('reset-password', { step: 'reset', username: username.trim(), code: code.trim(), password });
+      return r?.ok ? { ok: true, value: null } : { ok: false, error: r?.error && r.error.length > 20 ? r.error : TROUBLE };
+    },
     async saveProfile(patch) {
       const run = settled().then(async () => {
         const id = await myId(); if (!id) return;
@@ -156,8 +180,8 @@ export function supabaseBackend(url: string, anonKey: string): Backend {
     async members() {
       await settled(); // so the score uses the profile just saved
       const { data, error } = await db.rpc('find_members'); must(error);
-      return (data || []).map((r: { username: string; is_peer: boolean; wants_peer: boolean; region: string; active: string; stage: string; looking: string[]; byline: string; tags: string[]; pct: number }): Member => ({
-        username: r.username, isPeer: r.is_peer, wantsPeer: r.wants_peer, region: r.region, active: r.active, stage: r.stage,
+      return (data || []).map((r: { username: string; is_peer: boolean; wants_peer: boolean; region: string; active: string; stage: string; looking: string[]; byline: string; tags: string[]; pct: number; city: string | null; home_country: string | null }): Member => ({
+        username: r.username, isPeer: r.is_peer, wantsPeer: r.wants_peer, region: r.region, active: r.active, stage: r.stage, city: r.city || '', country: r.home_country || '',
         looking: r.looking, byline: r.byline, tags: r.tags, pct: r.pct,
       }));
     },
@@ -191,8 +215,8 @@ export function supabaseBackend(url: string, anonKey: string): Backend {
     },
     async rooms() {
       const { data, error } = await db.rpc('my_rooms'); must(error);
-      return (data || []).map((r: { id: string; cat: Room['cat']; name: string; descr: string; members: number; joined: boolean; mine: boolean }): Room => ({
-        id: r.id, cat: r.cat, name: r.name, desc: r.descr, members: r.members, joined: r.joined, mine: r.mine,
+      return (data || []).map((r: { id: string; cat: Room['cat']; name: string; descr: string; members: number; active: number; joined: boolean; mine: boolean }): Room => ({
+        id: r.id, cat: r.cat, name: r.name, desc: r.descr, members: r.members, active: r.active || 0, joined: r.joined, mine: r.mine,
       }));
     },
     async roomPosts(id) {
@@ -202,6 +226,7 @@ export function supabaseBackend(url: string, anonKey: string): Backend {
       }));
     },
     async joinRoom(id) { const { error } = await db.rpc('join_room', { room: id }); must(error); },
+    async roomSeen(id) { await db.rpc('room_seen', { room: id }); },
     async post(id, text) { return checked('room', id, text); },
     async leaveRoom(id) {
       const { error } = await db.rpc('leave_room', { room: id }); must(error);
@@ -260,15 +285,17 @@ export function supabaseBackend(url: string, anonKey: string): Backend {
     async arbCases() {
       const { data, error } = await db.rpc('arb_cases'); must(error);
       return ((data || []) as CaseRow[]).map((c): ArbCase => ({
-        id: c.id, member: c.member, topic: c.topic, text: c.body, raised: c.auto ? 'Automatic' : 'Member', urgent: c.urgent,
+        id: c.id, member: c.member, subject: c.subject, topic: c.topic, text: c.body, raised: c.auto ? 'Automatic' : 'Member', urgent: c.urgent,
         due: dayTime(c.due_at), status: c.status, confidence: c.confidence ?? 0, reason: c.reason || '', note: c.note || undefined,
         flagged: c.flagged, by: c.decided_by,
       }));
     },
-    async arbDecide(id, outcome, note) {
-      const { error } = await db.rpc('arb_decide', { case_id: id, outcome, why: note });
-      if (!error) call('push', { action: 'review', id }).catch(() => undefined); // tells the member, if they have notifications on
-      return error ? { ok: false, error: /note/.test(error.message) ? 'Add a short note explaining your decision.' : TROUBLE } : { ok: true, value: null };
+    async arbDecide(id, outcome, note, act) {
+      const { data, error } = await db.rpc('arb_decide', { case_id: id, outcome, why: note, act: act ?? null });
+      if (!error && data !== 'removed') call('push', { action: 'review', id }).catch(() => undefined); // tells the member, if they have notifications on
+      if (!error) return { ok: true, value: null };
+      return { ok: false, error: /note/.test(error.message) ? 'Add a short note explaining your decision.' : /arbitrator account/.test(error.message)
+        ? "This case is about an arbitrator account, so it can't be changed here." : /bad action/.test(error.message) ? 'Choose what to change.' : TROUBLE };
     },
     async seenCheckin() { const { error } = await db.rpc('seen_checkin'); must(error); },
     async confirmAge() {

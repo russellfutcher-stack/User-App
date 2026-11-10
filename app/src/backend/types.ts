@@ -14,12 +14,14 @@ export type Profile = {
   prefs: { searchable: boolean; disappearing: boolean; lock: boolean };
   setupDone: boolean;
   country: string; // chosen on the Support page for its help services; '' until then
+  city: string; homeCountry: string; // Location on the Me page (Rusty, 8 Nov 2026); separate from the Support page's country
 };
 
 // A chat message or room post. `who` names the poster in rooms.
 export type Msg = { id: string; mine: boolean; text: string; at: number; who?: string };
 export type ChatSummary = { with: string; last: Msg; unread: boolean };
-export type Room = { id: string; cat: PathKey; name: string; desc: string; members: number; joined: boolean; mine: boolean };
+// active: people who opened or posted in the room in the last 5 minutes.
+export type Room = { id: string; cat: PathKey; name: string; desc: string; members: number; active: number; joined: boolean; mine: boolean };
 export type RoomRequest = { id: string; name: string; cat: PathKey; status: 'Checking' | 'Approved' };
 export type Undo = () => Promise<void>;
 // Every message and post is checked for safety before anyone sees it.
@@ -37,11 +39,17 @@ export type Review = {
 
 // The arbitrator dashboard (AI-agents-spec.md, section 3.5). Figures are live on the server and samples in the demo.
 export type ArbCase = {
-  id: string; member?: string; topic: string; text: string; raised: 'Automatic' | 'Member'; urgent: boolean; due: string;
+  // subject: who the arbitrator's actions apply to (the reported member for an urgent report; otherwise the member).
+  id: string; member?: string; subject?: string; topic: string; text: string; raised: 'Automatic' | 'Member'; urgent: boolean; due: string;
   status: string; confidence: number; reason: string; note?: string; flagged: boolean; by: 'automatic' | 'arbitrator' | null;
   live?: boolean; // in the demo: raised in this browser
 };
 export type ArbOutcome = 'Upheld' | 'Overturned' | 'Action changed';
+// What 'Change the action' does to the member the case is about (Rusty, 8 Nov 2026).
+export type ArbAct = 'warning' | 'mute' | 'pause' | 'unpause' | 'remove';
+export const ARB_ACTS: [ArbAct, string, string][] = [
+  ['warning', 'Give a warning', 'warning'], ['mute', 'Mute for 24 hours', '24-hour mute'], ['pause', 'Pause for 7 days', '7-day pause'],
+  ['unpause', 'Lift any mute or pause', 'mute or pause lifted'], ['remove', 'Remove the account', 'account removed']];
 export type ArbFigures = {
   sample: boolean; activeToday: number; activeWeek: number; newMembers: number; peers: number; wantPeers: number;
   checked: number; blocked: number; help: number; held: number; blockedBy: [string, number][]; reports: [string, number][];
@@ -50,6 +58,8 @@ export type ArbFigures = {
   autoDecided: number; reviewsWeek: number; autoSeconds: number | null; changedByArbitrator: number; overdue: number; missed: number;
 };
 
+export const EMAIL_RE = /^[^@\s]+@[^@\s]+\.[^@\s]+$/;
+export const RESET_FAILED = "That code didn't work. Check it, or ask for a new one. Codes last 15 minutes.";
 export type Result<T> = { ok: true; value: T } | { ok: false; error: string };
 
 // Everything the app needs from a server. `local` keeps data in this browser
@@ -65,6 +75,13 @@ export interface Backend {
   hasPasskey(): Promise<boolean>;
   setPasskey(on: boolean): Promise<Result<null>>; // adds or removes the signed-in member's passkey
   changePassword(current: string, next: string): Promise<Result<null>>;
+  // Optional email, used only to send a reset code if the member forgets their password (Rusty, 8 Nov 2026). Never shown to anyone.
+  recoveryEmail(): Promise<string>; // '' when none
+  setRecoveryEmail(email: string): Promise<Result<null>>; // '' removes it
+  // Signed out: sends a 6-digit code if the username and email match (the reply never says whether they did).
+  // `demo` holds the code in the demo, which can't send email.
+  requestReset(username: string, email: string): Promise<Result<{ demo?: string }>>;
+  resetPassword(username: string, code: string, password: string): Promise<Result<null>>;
   saveProfile(patch: Partial<Profile>): Promise<void>;
   members(): Promise<Member[]>; // everyone you can match with, scored against your profile
   block(username: string): Promise<void>;
@@ -80,6 +97,7 @@ export interface Backend {
   rooms(): Promise<Room[]>;
   roomPosts(id: string): Promise<Msg[]>;
   joinRoom(id: string): Promise<void>;
+  roomSeen(id: string): Promise<void>; // counts you as active in the room for 5 minutes
   post(id: string, text: string): Promise<Sent>;
   leaveRoom(id: string): Promise<Undo>; // or deletes it, for a room you created
   roomRequests(): Promise<RoomRequest[]>;
@@ -99,7 +117,8 @@ export interface Backend {
   isArbitrator(): Promise<boolean>;
   arbFigures(): Promise<ArbFigures>;
   arbCases(): Promise<ArbCase[]>;
-  arbDecide(id: string, outcome: ArbOutcome, note: string): Promise<Result<null>>; // the note (5+ characters) is shown to the member
+  // The note (5+ characters) is shown to the member. Overturn lifts restrictions; Uphold on a removal removes the account; act is for 'Action changed'.
+  arbDecide(id: string, outcome: ArbOutcome, note: string, act?: ArbAct): Promise<Result<null>>;
   unblock(username: string): Promise<void>;
   signOut(): Promise<void>;
   deleteAccount(): Promise<void>;
@@ -107,6 +126,6 @@ export interface Backend {
 
 export const blankProfile = (username: string): Profile => ({
   username, byline: '', stage: 'na', looking: ['chat'], wantsPeer: null, isPeer: false, tags: [],
-  vis: { interests: 'everyone', mh: 'matches', subs: 'matches' },
-  prefs: { searchable: true, disappearing: false, lock: false }, setupDone: false, country: '',
+  vis: { interests: 'everyone', mh: 'matches', subs: 'matches', location: 'matches' },
+  prefs: { searchable: true, disappearing: false, lock: false }, setupDone: false, country: '', city: '', homeCountry: '',
 });

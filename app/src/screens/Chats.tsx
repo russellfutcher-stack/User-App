@@ -177,7 +177,13 @@ export function Chat({ withUser }: { withUser: string }) {
 }
 
 function ChatOptions({ withUser }: { withUser: string }) {
-  const { toast, openSheet, closeSheet, setView, membersChanged } = useApp();
+  const { toast, openSheet, closeSheet, setView, membersChanged, chatsChanged } = useApp();
+  const [sure, setSure] = useState(false);
+  const del = async () => {
+    let undo: () => Promise<void>;
+    try { undo = await backend.deleteChat(withUser); } catch { toast(oops); return; }
+    closeSheet(); setView(null); chatsChanged(); toast(`Chat with ${withUser} deleted.`, async () => { await undo(); chatsChanged(); });
+  };
   const mute = async () => { try { await backend.muteChat(withUser); } catch { toast(oops); return; } toast('Muted for 8 hours.'); };
   const block = async () => {
     try { await backend.block(withUser); } catch { toast(oops); return; }
@@ -191,7 +197,15 @@ function ChatOptions({ withUser }: { withUser: string }) {
         <View style={ui.line}><Text style={ui.p}>Mute notifications</Text><Btn sm label="Mute" onPress={mute} /></View>
         <View style={ui.line}><Text style={ui.p}>Report a message or behaviour</Text><Btn sm label="Report" onPress={() => openSheet(<ReportSheet username={withUser} />)} /></View>
         <View style={ui.line}><Text style={ui.p}>Block {withUser}</Text><Btn sm variant="danger" label="Block" onPress={block} /></View>
+        <View style={ui.line}><Text style={ui.p}>Delete this chat</Text><Btn sm variant="danger" label="Delete chat" onPress={() => setSure(true)} /></View>
       </View>
+      {sure ? (
+        <Card tone="calm">
+          <P>Delete your chat with {withUser}? It's removed from your Chats. {withUser} keeps their copy.</P>
+          <Btn variant="danger" label="Yes, delete the chat" onPress={del} />
+          <Btn label="Cancel" onPress={() => setSure(false)} />
+        </Card>
+      ) : null}
     </>
   );
 }

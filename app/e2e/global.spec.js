@@ -35,9 +35,13 @@ test('G-04 Signed out, Exit goes to the Welcome page', async ({ page }) => {
   await H.startSignup(page); await H.btn(page, 'Exit to Home').click();
   await expect(page.getByRole('heading', { name: H.WELCOME })).toBeVisible();
 });
-test('G-04 Exit keeps you signed in', async ({ page }) => {
+test('G-04 Exit from another page keeps you signed in', async ({ page }) => {
   await H.signInDemo(page); await H.tab(page, 'Search').click(); await H.btn(page, 'Exit to Home').click();
   await expect(H.tab(page, 'Me')).toBeVisible(); await expect(page.locator('#li-h')).toHaveCount(0); // no sign-in box
+});
+test('G-04 Exit on the Home page signs out to the sign-in screen', async ({ page }) => {
+  await H.signInDemo(page); await H.btn(page, 'Exit to Home').click();
+  await expect(page.locator('#li-h')).toBeVisible(); await expect(H.tab(page, 'Home')).toHaveCount(0);
 });
 test('G-05 Six tabs after sign-in, current one highlighted', async ({ page }) => {
   await H.signInDemo(page);

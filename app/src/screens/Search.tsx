@@ -5,7 +5,8 @@ import { CATS, LOOKING, PATHS, PathKey, REF, TAG_CAT } from '../data/reference';
 import { Member } from '../backend';
 import { blankQuery, sameQuery, search } from '../lib/match';
 import { useApp } from '../state/app';
-import { Btn, Card, Chip, Chips, H2, Label, P, Pill, Row, s as ui } from '../components/ui';
+import { Btn, Card, Chip, Chips, Field, H2, Label, P, Pill, Row, Select, s as ui } from '../components/ui';
+import { COUNTRIES } from '../data/places';
 import { C, F } from '../theme';
 import { choiceName, GROUP_COLOUR, PersonRow, PlainTag, Tag, ThreeTiles, useMembers } from './people';
 
@@ -46,7 +47,7 @@ export function Search({ toTop }: { toTop: () => void }) {
     toast(`Search updated: ${n} ${n === 1 ? 'person' : 'people'}.`);
   };
   const clear = () => { setQuery(blankQuery()); setApplied(blankQuery()); };
-  const any = query.f.length || query.look.length || query.peerOnly;
+  const any = query.f.length || query.look.length || query.peerOnly || query.city.trim() || query.country;
   return (
     <>
       <H2 style={{ fontSize: 24, lineHeight: 28 }}>Search/Find a Companion</H2>
@@ -80,6 +81,8 @@ export function Search({ toTop }: { toTop: () => void }) {
               {query.f.map(t => <Tag key={t} id={t} />)}
               {query.look.map(l => <PlainTag key={l} text={LOOKING.find(x => x.id === l)!.label} />)}
               {query.peerOnly ? <PlainTag text="Peer supporters only" /> : null}
+              {query.city.trim() ? <PlainTag text={`In ${query.city.trim()}`} /> : null}
+              {query.country ? <PlainTag text={`In ${query.country}`} /> : null}
             </View>
             <P hint>Matches at least one pick in each choice you used.</P>
             <Btn sm style={{ alignSelf: 'flex-start' }} label="Clear all filters" onPress={clear} />
@@ -93,6 +96,13 @@ export function Search({ toTop }: { toTop: () => void }) {
           {LOOKING.map(l => <Chip key={l.id} label={l.label} on={query.look.includes(l.id)} onPress={() => setQuery({ ...query, look: flip(query.look, l.id) })} />)}
           <Chip label="Peer supporters only" on={query.peerOnly} onPress={() => setQuery({ ...query, peerOnly: !query.peerOnly })} />
         </Chips>
+      </View>
+      <View style={{ gap: 10 }} id="location">
+        <GHead text={`${on.length + 3}. Location`} colour={C.sage} />
+        <Field label="City" id="s-city" maxLength={60} value={query.city} placeholder="Any city" autoComplete="off" onChangeText={t => setQuery({ ...query, city: t })} />
+        <Select label="Country" id="s-country" value={query.country} options={[{ id: '', label: 'Any country' }, ...COUNTRIES.map(c => ({ id: c, label: c }))]}
+          onChange={c => setQuery({ ...query, country: c })} />
+        <P hint>You can only find people by city if they let you see it.</P>
       </View>
       {!sameQuery(query, applied) ? <P hint id="pending">You have changed your search. Tap Search to update Your Matches.</P> : null}
       <Btn variant="primary" block label="Search" onPress={run} />

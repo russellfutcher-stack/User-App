@@ -19,7 +19,7 @@ const check = (label, ok, extra = '') => { console.log((ok ? 'ok    ' : 'FAILED'
   };
   try {
     const a = await member('zzlivea' + n, { tags: ['I02', 'D02', 'O01'], looking: ['chat', 'walk', 'pets'], stage: 'early', wants_peer: true });
-    const b = await member('zzliveb' + n, { tags: ['I02', 'D02', 'O01', 'M05'], vis_mh: 'matches', vis_subs: 'me' });
+    const b = await member('zzliveb' + n, { tags: ['I02', 'D02', 'O01', 'M05'], vis_mh: 'matches', vis_subs: 'me', city: 'Leeds', home_country: 'United Kingdom' });
     const { data: list, error } = await a.rpc('find_members'); if (error) throw new Error('find_members: ' + error.message);
     const samples = list.filter(m => m.username !== 'zzliveb' + n);
     check('100 sample members', samples.filter(m => m.region).length === 100, samples.length + ' others');
@@ -32,6 +32,16 @@ const check = (label, ok, extra = '') => { console.log((ok ? 'ok    ' : 'FAILED'
     check('but still count towards the score', other && other.pct > 60, other && other.pct + '%');
     const { count } = await a.from('profiles').select('*', { count: 'exact', head: true });
     check("members can't read other profiles", count === 1, count + ' readable');
+    const juniper = list.find(m => m.username === 'JuniperWren');
+    check('M-26 sample members have a city and country', juniper && juniper.city === 'Cork' && juniper.home_country === 'Ireland', juniper && juniper.city + ', ' + juniper.home_country);
+    check('M-26 country is shown to everyone', other && other.home_country === 'United Kingdom');
+    check('M-26 city is hidden from strangers by default', other && other.city === null, other && String(other.city));
+    const { data: bu } = await b.auth.getUser();
+    await b.from('profiles').update({ vis_location: 'everyone' }).eq('id', bu.user.id);
+    const seen = (await a.rpc('find_members')).data.find(m => m.username === 'zzliveb' + n);
+    check('M-26 city is shown once set to Everyone', seen && seen.city === 'Leeds');
+    const long = await b.from('profiles').update({ city: 'x'.repeat(61) }).eq('id', bu.user.id);
+    check('M-26 a city over 60 letters is refused', !!long.error);
     await a.rpc('block', { name: 'zzliveb' + n });
     const after = (await a.rpc('find_members')).data;
     check('blocked member disappears', !after.some(m => m.username === 'zzliveb' + n));

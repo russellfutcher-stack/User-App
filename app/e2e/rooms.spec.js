@@ -24,7 +24,7 @@ test('R-01 The chosen type is remembered', async ({ page }) => {
 });
 test('R-02 Room row: type, name, Joined, description, members', async ({ page }) => {
   const r = list(page).first();
-  for (const t of ['Interest', "Dog Walkers' Bench", 'Joined', 'Share walks and routes', '128 members']) await expect(r).toContainText(t);
+  for (const t of ['Interest', "Dog Walkers' Bench", 'Joined', 'Share walks and routes', '128 members · 0 active now']) await expect(r).toContainText(t);
 });
 test('R-02 No Moderated tag', async ({ page }) => {
   await expect(H.screen(page)).not.toContainText('Moderated');
@@ -48,7 +48,7 @@ test('R-04 Joining a room adds it to Your rooms', async ({ page }) => {
 });
 test('R-05 A room shows its description, safety note and members', async ({ page }) => {
   await open(page, "Dog Walkers' Bench");
-  await expect(page.locator('#room-intro')).toHaveText('Share walks and routes, and plan daytime walk-alongs in public places. Every message is checked for safety. 128 members.');
+  await expect(page.locator('#room-intro')).toHaveText('Share walks and routes, and plan daytime walk-alongs in public places. Every message is checked for safety. 128 members. 1 active in the last 5 minutes.');
 });
 test('R-05 A room shows its posts', async ({ page }) => {
   await open(page, "Dog Walkers' Bench");
@@ -124,4 +124,30 @@ test('R-12 Delete a room you created; only Your rooms can be swiped', async ({ p
   await H.swipe(page, yourRow(page, 'Cyclists in Recovery')); await H.btn(page, 'Delete Cyclists in Recovery').click();
   await expect(H.toast(page)).toContainText('Room Cyclists in Recovery deleted.'); await expect(type(page, 'interests')).toContainText('5 rooms');
   await expect(page.locator('#room-list').getByTestId('swipe')).toHaveCount(0);
+});
+
+test('R-13 Room details show members and who was active in the last 5 minutes', async ({ page }) => {
+  await open(page, "Dog Walkers' Bench"); await H.btn(page, 'Room details').click();
+  await expect(H.sheet(page).locator('#room-details')).toContainText('Members128');
+  await expect(page.locator('#room-active')).toHaveText('1');
+  await H.btn(page, 'Back').click();
+  await expect(list(page).first()).toContainText('128 members · 1 active now');
+});
+test('R-13 Leave a room from its details, after confirming', async ({ page }) => {
+  await open(page, "Dog Walkers' Bench"); await H.btn(page, 'Room details').click();
+  await H.sheet(page).getByRole('button', { name: 'Leave room' }).click();
+  await H.sheet(page).getByRole('button', { name: 'Cancel' }).click();
+  await H.sheet(page).getByRole('button', { name: 'Leave room' }).click();
+  await H.sheet(page).getByRole('button', { name: 'Yes, leave the room' }).click();
+  await expect(H.toast(page)).toContainText("You left Dog Walkers' Bench.");
+  await expect(yourRow(page, "Dog Walkers' Bench")).toHaveCount(0);
+});
+test('R-13 Delete a room you made from its details', async ({ page }) => {
+  await request(page, 'Puzzle Corner', 'Jigsaws, crosswords and quiet company.', 'interests');
+  await H.btn(page, 'Done').click();
+  await yourRow(page, 'Puzzle Corner').click(); await H.btn(page, 'Room details').click();
+  await H.sheet(page).getByRole('button', { name: 'Delete room' }).click();
+  await expect(H.sheet(page)).toContainText('Delete Puzzle Corner for everyone?');
+  await H.sheet(page).getByRole('button', { name: 'Yes, delete the room' }).click();
+  await expect(H.toast(page)).toContainText('Room Puzzle Corner deleted.');
 });

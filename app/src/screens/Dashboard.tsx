@@ -3,10 +3,10 @@
 // Members are shown by username only.
 import React, { useCallback, useEffect, useState } from 'react';
 import { StyleSheet, Text, TextInput, View } from 'react-native';
-import { backend, ArbCase, ArbFigures, ArbOutcome } from '../backend';
+import { backend, ARB_ACTS, ArbAct, ArbCase, ArbFigures, ArbOutcome } from '../backend';
 import { SURE } from '../lib/review';
 import { useApp } from '../state/app';
-import { B, Btn, Card, ErrorText, H2, H3, P, Row, s as ui } from '../components/ui';
+import { B, Btn, Card, H2, H3, P, Radio, Row, s as ui } from '../components/ui';
 import { C, F, R } from '../theme';
 
 const fmt = (n: number) => n.toLocaleString('en-GB');
@@ -39,21 +39,30 @@ function Bars({ rows, label, id }: { rows: [string, number][]; label: string; id
 }
 const SampleTag = ({ on }: { on: boolean }) => (on ? <Text style={[ui.pill, { alignSelf: 'flex-start' }]}>Sample</Text> : null);
 
+// One case. Decisions take effect on the member the case is about (Rusty, 8 Nov 2026): Overturn lifts restrictions,
+// Uphold keeps them (and removes the account on a proposed removal), Change the action applies one chosen action.
+// Removing an account asks to be confirmed first.
 function CaseSheet({ c, done }: { c: ArbCase; done: () => void }) {
   const { closeSheet, toast } = useApp();
   const [note, setNote] = useState(''); const [err, setErr] = useState(''); const [busy, setBusy] = useState(false);
-  const decide = async (outcome: ArbOutcome) => {
-    if (note.trim().length < 5) return setErr('Add a short note explaining your decision.');
-    setBusy(true); const r = await backend.arbDecide(c.id, outcome, note.trim()).catch(() => null); setBusy(false);
-    if (!r?.ok) return setErr(r?.error || 'Something went wrong reaching User. Check your connection and try again.');
-    closeSheet(); done(); toast(`${c.id} decided: ${outcome}.`);
+  const [changing, setChanging] = useState(false); const [act, setAct] = useState<ArbAct | null>(null);
+  const [confirm, setConfirm] = useState<{ outcome: ArbOutcome; act?: ArbAct } | null>(null);
+  const who = c.subject || 'the member in this case';
+  const removal = c.topic === 'Account removal proposed';
+  const decide = async (outcome: ArbOutcome, a?: ArbAct, sure = false) => {
+    if (note.trim().length < 5) { setErr('Add a short note explaining your decision first. The member sees it.'); toast('Add a short note first.'); return; }
+    if (outcome === 'Action changed' && !a) { setErr('Choose what to change.'); return; }
+    if (!sure && (a === 'remove' || (outcome === 'Upheld' && removal))) { setConfirm({ outcome, act: a }); return; }
+    setBusy(true); const r = await backend.arbDecide(c.id, outcome, note.trim(), a).catch(() => null); setBusy(false);
+    if (!r?.ok) { setErr(r?.error || 'Something went wrong reaching User. Check your connection and try again.'); return; }
+    closeSheet(); done(); toast(`${c.id} decided: ${outcome}${a ? ` (${ARB_ACTS.find(x => x[0] === a)![2]})` : ''}.`);
   };
   return (
     <>
       <H2>{c.id}: {c.topic}</H2>
       <View style={{ gap: 6 }}>
-        {[['Member', c.member || '-'], ['Raised by', c.raised], ['Reply due', c.due], ['Status', c.status]].map(([k, v]) => (
-          <View key={k} style={ui.line}><Text style={[ui.p, ui.small]}>{k}</Text><Text style={[ui.p, { fontFamily: F.bold }]}>{v}</Text></View>))}
+        {[['Raised by', c.member ? `${c.member} (${c.raised})` : c.raised], ['Actions apply to', who], ['Reply due', c.due], ['Status', c.status]].map(([k, v]) => (
+          <View key={k} style={ui.line}><Text style={[ui.p, ui.small]}>{k}</Text><Text style={[ui.p, { fontFamily: F.bold, flexShrink: 1, textAlign: 'right' }]}>{v}</Text></View>))}
       </View>
       <Card tone="calm"><H3>What happened</H3><P small>{c.text}</P></Card>
       <Card tone="warm" style={{ gap: 6 }}>
@@ -63,16 +72,40 @@ function CaseSheet({ c, done }: { c: ArbCase; done: () => void }) {
         {c.note ? <P small muted>{c.by === 'arbitrator' ? 'Arbitrator' : 'Note to the member'}: {c.note}</P> : null}
       </Card>
       <View style={ui.field}>
-        <Text style={ui.fieldLabel}>Your decision note (shown to the member)</Text>
+        <Text style={ui.fieldLabel}>1. Your decision note (shown to the member)</Text>
         <TextInput id="arb-note" aria-label="Your decision note (shown to the member)" multiline numberOfLines={3} maxLength={400} value={note}
           onChangeText={t => { setNote(t); setErr(''); }} placeholder="Explain the decision in plain words." placeholderTextColor={C.muted} style={[ui.input, { minHeight: 76 }]} />
       </View>
-      <ErrorText id="arb-err" text={err} />
-      <Row style={{ flexWrap: 'wrap' }}>
-        <Btn sm variant="primary" label="Uphold the decision" disabled={busy} onPress={() => decide('Upheld')} />
-        <Btn sm label="Overturn it" disabled={busy} onPress={() => decide('Overturned')} />
-        <Btn sm label="Change the action" disabled={busy} onPress={() => decide('Action changed')} />
-      </Row>
+      <Text style={ui.fieldLabel}>2. Your decision</Text>
+      <View style={{ gap: 4 }} id="arb-effects">
+        <P small><B>Uphold:</B> {removal ? `removes ${who}'s account and everything in it.` : 'keeps things as they are.'}</P>
+        <P small><B>Overturn:</B> lifts any mute, pause or age check on {who} and takes back their latest warning.</P>
+        <P small><B>Change the action:</B> choose what happens to {who} instead.</P>
+      </View>
+      {err ? <Text id="arb-err" role="alert" style={[ui.p, { color: C.danger, fontFamily: F.bold }]}>{err}</Text> : null}
+      {confirm ? (
+        <Card style={{ borderColor: C.dangerLine, backgroundColor: C.dangerSoft }}>
+          <P bold>Remove {who}'s account? This deletes everything in it and can't be undone.</P>
+          <Row style={{ flexWrap: 'wrap' }}>
+            <Btn sm variant="danger" label={`Yes, remove ${who}'s account`} disabled={busy} onPress={() => decide(confirm.outcome, confirm.act, true)} />
+            <Btn sm label="Cancel" onPress={() => setConfirm(null)} />
+          </Row>
+        </Card>
+      ) : changing ? (
+        <View style={{ gap: 8 }} role="radiogroup" aria-label="What to change" id="arb-acts">
+          {ARB_ACTS.map(([k, label]) => <Radio key={k} name="arb-act" value={k} label={label} on={act === k} onPress={() => { setAct(k); setErr(''); }} />)}
+          <Row style={{ flexWrap: 'wrap' }}>
+            <Btn sm variant="primary" label="Confirm the change" disabled={busy} onPress={() => decide('Action changed', act ?? undefined)} />
+            <Btn sm label="Back" onPress={() => { setChanging(false); setAct(null); }} />
+          </Row>
+        </View>
+      ) : (
+        <Row style={{ flexWrap: 'wrap' }}>
+          <Btn sm variant="primary" label="Uphold the decision" disabled={busy} onPress={() => decide('Upheld')} />
+          <Btn sm label="Overturn it" disabled={busy} onPress={() => decide('Overturned')} />
+          <Btn sm label="Change the action" disabled={busy} onPress={() => { setChanging(true); setErr(''); }} />
+        </Row>
+      )}
     </>
   );
 }

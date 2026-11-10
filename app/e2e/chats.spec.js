@@ -176,3 +176,18 @@ test('G-06 No dot without unread chats; a new reply adds one', async ({ page }) 
   await H.tab(page, 'Search').click(); await page.getByTestId('person').first().click(); await H.btn(page, 'Say hi').click();
   await H.send(page, 'Hi!'); await H.btn(page, 'Back').click(); await expect(page.locator('#unread-dot')).toBeVisible({ timeout: 8000 });
 });
+
+test('C-17 Delete a chat from Safety & options, after confirming', async ({ page }) => {
+  await demo(page); await H.openChat(page, 'SteadyBadger'); await H.btn(page, 'Safety & options').click();
+  await H.sheet(page).getByRole('button', { name: 'Delete chat' }).click();
+  await expect(H.sheet(page)).toContainText('Delete your chat with SteadyBadger?');
+  await H.sheet(page).getByRole('button', { name: 'Yes, delete the chat' }).click();
+  await expect(H.toast(page)).toContainText('Chat with SteadyBadger deleted.');
+  await expect(rows(page)).toHaveCount(5);
+});
+test('C-17 Cancel keeps the chat', async ({ page }) => {
+  await demo(page); await H.openChat(page, 'SteadyBadger'); await H.btn(page, 'Safety & options').click();
+  await H.sheet(page).getByRole('button', { name: 'Delete chat' }).click();
+  await H.sheet(page).getByRole('button', { name: 'Cancel' }).click();
+  await expect(H.sheet(page).getByRole('button', { name: 'Yes, delete the chat' })).toHaveCount(0);
+});
