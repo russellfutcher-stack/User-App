@@ -37,7 +37,7 @@ Done by Max on 29 Oct to 1 Nov 2026. **This is not the independent review the bu
 - **Room activity** (people active in the last 5 minutes) is a count only; nobody can see who.
 - **City** follows its own visibility setting in `find_members`; country is shown to all members.
 
-- **Allowed words (Rusty, 12 Nov 2026).** Rusty chose to allow cost, price, sell, sold, buy, other apps' names and links in messages (the table `public.safety_allowed`, which only the server functions can read). Members can now share links and their usernames on other apps, so conversations, and any dealing, can move off User where nothing is checked. Dealing in the message itself is still blocked. The reviewer should look at this choice; the community agreement still says "Don't share ... socials".
+- **Allowed words (Rusty, 12 Nov 2026).** Rusty chose to allow cost, price, sell, sold, buy, other apps' names and links in messages (the table `public.safety_allowed`, which only the server functions can read). Members can now share links and their usernames on other apps, so conversations, and any dealing, can move off User where nothing is checked. Dealing in the message itself is still blocked. The reviewer should look at this choice. The community agreement was changed to match (Rusty, 12 Nov 2026): "Stay anonymous. Don't share real names or home addresses, and think carefully before sharing a phone number or your username on another app."
 
 ## Needs Rusty (settings Max can't change)
 

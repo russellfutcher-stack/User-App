@@ -87,7 +87,7 @@ export function SignUp({ flow }: { flow: ReturnType<typeof useSignUp> }) {
             <View style={{ gap: 6 }} id="rules">
               <Bullet>Be kind. Everyone here is at a different stage, and all of them are welcome.</Bullet>
               <Bullet>No buying, selling, sharing or sourcing drugs. No dosing advice.</Bullet>
-              <Bullet>Stay anonymous. Don't share real names, addresses or socials, and think carefully before sharing a phone number.</Bullet>
+              <Bullet>Stay anonymous. Don't share real names or home addresses, and think carefully before sharing a phone number or your username on another app.</Bullet>
               <Bullet>We're peer support, not a crisis service. Help is always at the top.</Bullet>
             </View>
           </Section>
