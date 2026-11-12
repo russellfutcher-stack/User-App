@@ -3,6 +3,7 @@ import { CAREFUL, decide, quote, ROOM_SCHEMA, RoomCheck } from '../_shared/claud
 import { admin, must, reply, serve } from '../_shared/db.ts';
 import { ROOM_POLICY } from '../_shared/policy.ts';
 import { notAllowed } from '../_shared/safety.ts';
+import { allowedNote, allowedTerms } from '../_shared/moderate.ts';
 
 const TAKEN = 'A room with that name already exists or has been requested.';
 
@@ -14,11 +15,12 @@ serve(async (me, b) => {
   const age = must(await admin.from('profiles').select('age_check_at').eq('id', me.id).single()) as { age_check_at: string | null };
   const later = (t: string | null) => t === 'infinity' || (!!t && Date.parse(t) > Date.now());
   if (later(st.suspended_until) || later(st.muted_until) || age.age_check_at) return reply({ ok: false, error: "You can't ask for new rooms while your account is paused or muted." });
-  if (notAllowed(name + ' ' + desc)) return reply({ ok: false, error: "Room requests can't mention buying or selling, prices, links or contact details." });
+  const allowed = await allowedTerms();
+  if (notAllowed(name + ' ' + desc, allowed)) return reply({ ok: false, error: "Room requests can't mention buying or selling drugs, prices or payment details." });
   if ((must(await admin.rpc('requests_today', { m: me.id })) as number) >= 5) return reply({ ok: false, error: "You've asked for 5 rooms today. Try again tomorrow." });
   const rooms = must(await admin.from('rooms').select('name').eq('deleted', false)) as { name: string }[];
   if (rooms.some(r => r.name.toLowerCase() === name.toLowerCase())) return reply({ ok: false, error: TAKEN });
-  const input = `${quote('request', `Name: ${name}\nType: ${cat}\nPurpose: ${desc}`)}\n${quote('existing_rooms', rooms.map(r => r.name).join('\n'))}\nReview this room request.`;
+  const input = `${allowedNote(allowed)}\n${quote('request', `Name: ${name}\nType: ${cat}\nPurpose: ${desc}`)}\n${quote('existing_rooms', rooms.map(r => r.name).join('\n'))}\nReview this room request.`;
   const r = await decide<RoomCheck>({ model: CAREFUL, effort: 'medium', policy: ROOM_POLICY, input, schema: ROOM_SCHEMA });
   await admin.from('moderation').insert({ member: me.id, kind: 'room_request', target: name, body: desc, action: r?.value.decision || 'unchecked', reason: r?.value.reason, model: r?.model });
   if (!r) return reply({ ok: false, error: "We couldn't check your request just now. Please try again in a moment." });

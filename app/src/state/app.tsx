@@ -6,6 +6,8 @@ import type { AgeCheck } from '../backend/types';
 import { blankQuery, Query } from '../lib/match';
 import type { PathKey } from '../data/reference';
 
+export const PAGE = 10; // search matches shown at a time (Rusty, 12 Nov 2026)
+
 export type Tab = 'home' | 'me' | 'find' | 'chat' | 'rooms' | 'support';
 export type Page = 'welcome' | 'signup' | 'main';
 export type View = { name: 'chat'; with: string } | { name: 'room'; id: string; title: string } | null; // a chat or room, opened over the tabs
@@ -21,7 +23,7 @@ type Ctx = {
   exit: () => void; // the Exit button: back to Home; on Home (or the dashboard or age check) it signs out (Rusty, 4 and 8 Nov 2026)
   // Search: the choices being made (`query`), the last search run (`applied`), and whether all matches show.
   query: Query; setQuery: (q: Query) => void; applied: Query; setApplied: (q: Query) => void;
-  showAll: boolean; setShowAll: (v: boolean) => void;
+  shown: number; setShown: (n: number) => void; // how many search matches are listed: 10 at first, then 10 more each time
   matches: boolean; setMatches: (v: boolean) => void; // the matches screen after profile setup
   membersVer: number; membersChanged: () => void; // bumped after a block, so lists reload
   view: View; setView: (v: View) => void;
@@ -46,7 +48,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const [paused, setPaused] = useState<AgeCheck | null>(null); const [checkin, setCheckin] = useState(false); const [arbitrator, setArbitrator] = useState(false);
   const chatsChanged = useCallback(() => setChatsVer(v => v + 1), []);
   const [query, setQuery] = useState<Query>(blankQuery); const [applied, setApplied] = useState<Query>(blankQuery);
-  const [showAll, setShowAll] = useState(false); const [matches, setMatches] = useState(false); const [membersVer, setVer] = useState(0);
+  const [shown, setShown] = useState(PAGE); const [matches, setMatches] = useState(false); const [membersVer, setVer] = useState(0);
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const toast = useCallback((text: string, undo?: () => void) => {
@@ -81,7 +83,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     },
     signOut: () => {
       backend.signOut(); setProfile(null); setSheet(null); setPage('welcome'); setPaused(null); setCheckin(false); setArbitrator(false);
-      setQuery(blankQuery()); setApplied(blankQuery()); setShowAll(false); setMatches(false); setView(null); setRoomCat('interests');
+      setQuery(blankQuery()); setApplied(blankQuery()); setShown(PAGE); setMatches(false); setView(null); setRoomCat('interests');
     },
     update: patch => {
       setProfile(p => (p ? { ...p, ...patch } : p));
@@ -91,7 +93,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
       if (profile && (arbitrator || paused || (tab === 'home' && !view && !matches))) { value.signOut(); return; }
       setSheet(null); setView(null); setMatches(false); if (profile) setTabState('home'); else setPage('welcome');
     },
-    query, setQuery, applied, setApplied, showAll, setShowAll, matches, setMatches,
+    query, setQuery, applied, setApplied, shown, setShown, matches, setMatches,
     membersVer, membersChanged: () => { setVer(v => v + 1); chatsChanged(); },
     view, setView: v => { setSheet(null); setView(v); }, roomCat, setRoomCat, chatsVer, unread, chatsChanged, refreshUnread,
     paused, setPaused: p => { setSheet(null); setView(null); setPaused(p); },

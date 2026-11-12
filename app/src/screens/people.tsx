@@ -88,6 +88,7 @@ export function PersonRow({ m }: { m: Member }) {
         <Row style={{ gap: 8, flexWrap: 'wrap' }}>
           <Text style={[ui.p, ui.b, { fontSize: 15.5 }]}>{m.username}</Text>
           {m.isPeer ? <Pill peer text="Peer supporter" /> : null}
+          {m.sample ? <Pill text="Sample member" /> : null}
           {m.active === 'Online' ? <View aria-label="online" style={{ width: 9, height: 9, borderRadius: 5, backgroundColor: C.sage }} />
             : m.active ? <Text style={[ui.hint, { fontSize: 13 }]}>{m.active}</Text> : null}
         </Row>
@@ -113,6 +114,7 @@ export function ProfileSheet({ m }: { m: Member }) {
         <View style={{ flex: 1, minWidth: 0 }}><H2>{m.username}</H2><Text style={[ui.hint, { fontSize: 13 }]}>{[m.active, place(m)].filter(Boolean).join(' · ')}</Text></View>
         <Pct pct={m.pct} />
       </Row>
+      {m.sample ? <View id="sample-note"><Row style={{ gap: 8, flexWrap: 'wrap' }}><Pill text="Sample member" /><P small>Not a real person. Sample members show how User works, and their replies are written in advance.</P></Row></View> : null}
       {m.isPeer ? <Row style={{ gap: 8, flexWrap: 'wrap' }}><Pill peer text="Peer supporter" /><P small>Offers to listen to people who want peer support.</P></Row> : null}
       {m.byline ? <P>{m.byline}</P> : null}
       <Card tone="calm"><P small>{whyMatched(profile, m)}</P></Card>

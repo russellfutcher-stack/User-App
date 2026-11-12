@@ -58,12 +58,23 @@ test('C-06 A reply while you are away shows as New', async ({ page }) => {
   await H.signInDemo(page); await H.openChat(page, 'SteadyBadger'); await H.send(page, 'Thanks again'); await H.btn(page, 'Back').click();
   await expect(H.chatRow(page, 'SteadyBadger')).toContainText('New', { timeout: 8000 });
 });
-test('C-07 Dealing and contact details are not sent', async ({ page }) => {
+test('C-07 Dealing and payment details are not sent', async ({ page }) => {
   await H.signInDemo(page); await H.openChat(page, 'SteadyBadger');
-  for (const t of ['Anyone got any for sale?', 'add me on telegram', 'it is £20', 'see www.example.com']) {
+  for (const t of ['Anyone got any for sale?', 'send it to my cash app', 'it is £20', 'anyone holding? 🔌']) {
     const before = await page.getByTestId('mine').count(); await H.send(page, t);
     await expect(page.locator('#warn')).toContainText('Message not sent'); await expect(page.getByTestId('mine')).toHaveCount(before);
   }
+});
+test('C-18 Allowed words are sent: cost, price, sell, sold, buy, app names and links', async ({ page }) => {
+  await H.signInDemo(page); await H.openChat(page, 'SteadyBadger');
+  for (const t of ['I sold my old bike, the price was fair', 'what does it cost to buy a bus pass?', 'add me on Telegram or whats app', 'see www.example.com']) {
+    const before = await page.getByTestId('mine').count(); await H.send(page, t);
+    await expect(page.getByTestId('mine')).toHaveCount(before + 1); await expect(page.locator('#warn')).toHaveCount(0);
+  }
+});
+test('C-18 Dealing is still stopped when it uses allowed words', async ({ page }) => {
+  await H.signInDemo(page); await H.openChat(page, 'SteadyBadger');
+  await H.send(page, 'selling 2g, good price'); await expect(page.locator('#warn')).toContainText('buying, selling or sourcing drugs');
 });
 test('C-07 Recovery and harm-reduction context is allowed', async ({ page }) => {
   await H.signInDemo(page); await H.openChat(page, 'SteadyBadger');

@@ -72,8 +72,8 @@ test('M-09 Twenty mental health conditions', async ({ page }) => {
 test('M-09 Includes Self-harm and Autism', async ({ page }) => {
   await expect(H.chip(page, 'Self-harm')).toBeVisible(); await expect(H.chip(page, 'Autism')).toBeVisible();
 });
-test('M-10 Same 11 stages as setup', async ({ page }) => {
-  await expect(page.locator('#su-stage option')).toHaveCount(11); await expect(page.locator('#su-stage')).toHaveValue('early');
+test('M-10 Same 12 stages as setup', async ({ page }) => {
+  await expect(page.locator('#su-stage option')).toHaveCount(12); await expect(page.locator('#su-stage')).toHaveValue('early');
 });
 test('M-10 Changing the stage saves', async ({ page }) => {
   await page.locator('#su-stage').selectOption('long');

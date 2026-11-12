@@ -23,11 +23,13 @@ const check = (label, ok, extra = '') => { console.log((ok ? 'ok    ' : 'FAILED'
     const { data: list, error } = await a.rpc('find_members'); if (error) throw new Error('find_members: ' + error.message);
     const samples = list.filter(m => m.username !== 'zzliveb' + n);
     check('100 sample members', samples.filter(m => m.region).length === 100, samples.length + ' others');
-    check('21 sample peer supporters', samples.filter(m => m.is_peer && m.region).length === 21);
+    check('G-17 sample members are marked as samples', samples.filter(m => m.sample).length === 100);
+    check('G-17 no sample member is a peer supporter', samples.filter(m => m.sample && m.is_peer).length === 0);
     const mossy = list.find(m => m.username === 'MossyOtter');
     check('MossyOtter shows all its tags', mossy && mossy.tags.join() === 'I01,I02,I05,D02,O01', mossy && mossy.tags.join());
     const other = list.find(m => m.username === 'zzliveb' + n);
     check('the other member is listed', !!other);
+    check('G-17 a real member is not marked as a sample', other && other.sample === false);
     check('their hidden tags are not shown', other && other.tags.join() === 'I02', other && other.tags.join());
     check('but still count towards the score', other && other.pct > 60, other && other.pct + '%');
     const { count } = await a.from('profiles').select('*', { count: 'exact', head: true });

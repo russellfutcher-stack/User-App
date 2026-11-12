@@ -4,7 +4,7 @@ import { Text, View } from 'react-native';
 import { CATS, LOOKING, PATHS, PathKey, REF, TAG_CAT } from '../data/reference';
 import { Member } from '../backend';
 import { blankQuery, sameQuery, search } from '../lib/match';
-import { useApp } from '../state/app';
+import { PAGE, useApp } from '../state/app';
 import { Btn, Card, Chip, Chips, Field, H2, Label, P, Pill, Row, Select, s as ui } from '../components/ui';
 import { COUNTRIES } from '../data/places';
 import { C, F } from '../theme';
@@ -17,23 +17,24 @@ const GHead = ({ text, colour }: { text: string; colour: string }) => (
   </Row>
 );
 
-function Results({ members }: { members: Member[] | null }) {
-  const { applied, showAll, setShowAll } = useApp();
+function Results({ members, onNew }: { members: Member[] | null; onNew: () => void }) {
+  const { applied, shown: count, setShown } = useApp();
   if (!members) return <P muted>Finding your matches…</P>;
-  const list = search(members, applied), shown = showAll ? list : list.slice(0, 3);
+  const list = search(members, applied), shown = list.slice(0, count);
   return (
     <View style={{ gap: 10 }} id="results" aria-live="polite">
       <Row style={{ justifyContent: 'space-between' }}><H2>Your Matches</H2><Pill id="match-count" text={`${list.length} ${list.length === 1 ? 'person' : 'people'}`} /></Row>
       {list.length ? <>
         {shown.map(m => <PersonRow key={m.username} m={m} />)}
-        {list.length > 3 ? <Btn sm style={{ alignSelf: 'flex-start' }} label={showAll ? 'Show top 3' : `Show all ${list.length} matches`} onPress={() => setShowAll(!showAll)} /> : null}
+        {list.length > count ? <Btn block label="Next 10 matches" onPress={() => setShown(count + PAGE)} /> : null}
       </> : <Card><P>No one matches all of those yet. Try removing a filter, or join a room to meet people more broadly.</P></Card>}
+      <Btn block label="New search" onPress={onNew} />
     </View>
   );
 }
 
 export function Search({ toTop }: { toTop: () => void }) {
-  const { query, setQuery, applied, setApplied, toast } = useApp();
+  const { query, setQuery, applied, setApplied, toast, setShown } = useApp();
   const members = useMembers();
   const on = PATHS.filter(p => query.cats.includes(p.key));
   const toggle = (k: PathKey) => {
@@ -42,17 +43,22 @@ export function Search({ toTop }: { toTop: () => void }) {
   };
   const flip = (list: string[], id: string) => (list.includes(id) ? list.filter(x => x !== id) : [...list, id]);
   const run = () => {
-    setApplied(query); toTop();
+    setApplied(query); setShown(PAGE); toTop();
     const n = members ? search(members, query).length : 0;
     toast(`Search updated: ${n} ${n === 1 ? 'person' : 'people'}.`);
   };
-  const clear = () => { setQuery(blankQuery()); setApplied(blankQuery()); };
+  const clear = () => { setQuery(blankQuery()); setApplied(blankQuery()); setShown(PAGE); };
+  // New search: start again with no filters, at the choices.
+  const fresh = () => {
+    clear(); toast('New search. Choose what to look for.');
+    setTimeout(() => (globalThis as { document?: Document }).document?.getElementById('choose')?.scrollIntoView({ block: 'start' }), 50);
+  };
   const any = query.f.length || query.look.length || query.peerOnly || query.city.trim() || query.country;
   return (
     <>
       <H2 style={{ fontSize: 24, lineHeight: 28 }}>Search/Find a Companion</H2>
-      <Results members={members} />
-      <View style={{ gap: 10 }}>
+      <Results members={members} onNew={fresh} />
+      <View style={{ gap: 10 }} id="choose">
         <Label>1. Choose</Label>
         <ThreeTiles on={query.cats} onPress={toggle} />
         <P hint>{on.length === 3 ? 'All three are on. ' : ''}Tap a choice to turn it off or on, then pick items in each to combine them.</P>

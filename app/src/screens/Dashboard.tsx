@@ -3,7 +3,7 @@
 // Members are shown by username only.
 import React, { useCallback, useEffect, useState } from 'react';
 import { StyleSheet, Text, TextInput, View } from 'react-native';
-import { backend, ARB_ACTS, ArbAct, ArbCase, ArbFigures, ArbOutcome } from '../backend';
+import { backend, ARB_ACTS, ArbAct, ArbCase, ArbFigures, ArbMembers, ArbOutcome } from '../backend';
 import { SURE } from '../lib/review';
 import { useApp } from '../state/app';
 import { B, Btn, Card, H2, H3, P, Radio, Row, s as ui } from '../components/ui';
@@ -113,12 +113,13 @@ function CaseSheet({ c, done }: { c: ArbCase; done: () => void }) {
 export function Dashboard() {
   const { openSheet, toast, signOut } = useApp();
   const [f, setF] = useState<ArbFigures | null>(null); const [cases, setCases] = useState<ArbCase[] | null>(null);
+  const [mem, setMem] = useState<ArbMembers | null>(null);
   const load = useCallback(() => {
-    Promise.all([backend.arbFigures(), backend.arbCases()]).then(([a, b]) => { setF(a); setCases(b); })
+    Promise.all([backend.arbFigures(), backend.arbCases(), backend.arbMembers()]).then(([a, b, c]) => { setF(a); setCases(b); setMem(c); })
       .catch(() => toast("Couldn't load the dashboard. Check your connection and try again."));
   }, [toast]);
   useEffect(load, [load]);
-  if (!f || !cases) return <P muted>Loading…</P>;
+  if (!f || !cases || !mem) return <P muted>Loading…</P>;
   const flagged = cases.filter(c => c.flagged && c.by === 'automatic'), urgent = cases.filter(c => c.urgent);
   return (
     <>
@@ -126,6 +127,15 @@ export function Dashboard() {
         <Row style={{ justifyContent: 'space-between' }}><H2>Arbitrator dashboard</H2><Btn sm variant="quiet" label="Sign out" onPress={signOut} /></Row>
         <P small muted>How User is working, and how the AI Review Agent is deciding cases. {f.sample ? 'Figures marked as samples stand in for the live service in this demo. ' : ''}Members are shown by username only.</P>
       </View>
+      {mem.removeSamples ? (
+        <Card tone="warm"><View id="remove-samples" style={{ gap: 6 }}><H3>Time to remove the sample members</H3>
+          <P small>User has {fmt(mem.liveMembers)} real members, past the 500 you set. The {mem.samples} sample members can now be removed.</P></View></Card>
+      ) : null}
+      <Card>
+        <Row style={{ justifyContent: 'space-between' }}><H2>Members</H2><SampleTag on={mem.sample} /></Row>
+        <Figs id="members" rows={[[fmt(mem.liveMembers), 'live members'], [fmt(mem.deletedAccounts), 'members who deleted their account'], [fmt(mem.newThisMonth), 'new members this month']]} />
+        <P small muted>Real members only. The {mem.samples} sample members aren't counted. When there are 500 real members you'll get an email: the signal to remove the sample members.</P>
+      </Card>
       <Figs id="kpis" rows={[[fmt(f.activeToday), 'active today'], [fmt(f.activeWeek), 'active in the last 7 days'], [fmt(f.newMembers), 'new members this week'],
         [fmt(f.peers), 'peer supporters'], [fmt(f.wantPeers), 'members who want peer support'], [String(flagged.length), 'flagged for a check'], [String(urgent.length), 'urgent cases']]} />
 

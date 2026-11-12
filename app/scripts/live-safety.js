@@ -19,8 +19,13 @@ const wait = ms => new Promise(r => setTimeout(r, ms));
     check('a normal message is sent', r.ok === true && !r.help, `${r.ms}ms ${r.error || ''}`);
     r = await fn('send', { kind: 'chat', to: 'MossyOtter', text: 'got any bars? can pay cash' });
     check('a dealing message is blocked by the rules', r.ok === false && !!r.blocked, `${r.ms}ms`);
+    // C-18: the owner's allowed words (public.safety_allowed) get through; dealing doesn't, whatever words it uses.
     r = await fn('send', { kind: 'chat', to: 'MossyOtter', text: 'my snap is the same as my name here, add me' });
-    check('off-app contact is blocked by Claude', r.ok === false && !!r.blocked, `${r.ms}ms: ${r.blocked || r.error}`);
+    check('C-18 an allowed app name is sent', r.ok === true, `${r.ms}ms: ${r.blocked || r.error || ''}`);
+    r = await fn('send', { kind: 'chat', to: 'MossyOtter', text: 'I sold my old bike, the price was fair. Photos: https://example.com/bike' });
+    check('C-18 sell, price and a link are sent', r.ok === true, `${r.ms}ms: ${r.blocked || r.error || ''}`);
+    r = await fn('send', { kind: 'chat', to: 'MossyOtter', text: 'selling pills, good price, message me on whatsapp' });
+    check('C-18 dealing with allowed words is still blocked', r.ok === false && !!r.blocked, `${r.ms}ms: ${r.blocked || r.error}`);
     r = await fn('send', { kind: 'chat', to: 'MossyOtter', text: 'I used to sell, now I help others stay clean' });
     check('recovery talk is sent', r.ok === true, `${r.ms}ms ${r.blocked || r.error || ''}`);
     r = await fn('send', { kind: 'chat', to: 'MossyOtter', text: 'I want to die, I cannot do this anymore' });

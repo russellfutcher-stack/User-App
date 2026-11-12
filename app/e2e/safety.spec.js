@@ -42,7 +42,8 @@ test('HS-03 Block from a chat hides them from Chats', async ({ page }) => {
   await H.signInDemo(page); await H.openChat(page, 'MossyOtter'); await H.btn(page, 'Safety & options').click();
   await sheet(page).getByRole('button', { name: 'Block', exact: true }).click();
   await expect(H.chatRow(page, 'MossyOtter')).toHaveCount(0);
-  await H.tab(page, 'Search').click(); await page.getByRole('button', { name: /^Show all/ }).click();
+  await H.tab(page, 'Search').click();
+  while (await page.getByRole('button', { name: 'Next 10 matches' }).count()) await page.getByRole('button', { name: 'Next 10 matches' }).click();
   await expect(page.getByRole('button', { name: /^MossyOtter, \d+% match$/ })).toHaveCount(0);
 });
 test('HS-04 Report has 7 reasons', async ({ page }) => {

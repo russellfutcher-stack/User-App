@@ -112,8 +112,8 @@ test('AD-10 Peer support figures', async ({ page }) => {
   await expect(page.getByRole('heading', { name: 'Peer support' })).toBeVisible();
   await expect(H.screen(page)).toContainText('chats started with a peer supporter this week');
 });
-test('AD-10 Peer figures are marked as samples in the demo', async ({ page }) => {
-  await asArbitrator(page); await expect(H.screen(page).getByText('Sample', { exact: true })).toHaveCount(6);
+test('AD-10 Sample figures are marked in the demo, Members included', async ({ page }) => {
+  await asArbitrator(page); await expect(H.screen(page).getByText('Sample', { exact: true })).toHaveCount(7);
 });
 test('AD-11 Rooms and system health', async ({ page }) => {
   await asArbitrator(page);
@@ -156,4 +156,15 @@ test('AD-14 Overturning lifts an age check for the member', async ({ page }) => 
   await page.fill('#arb-note', 'Clearly an adult; the pause is lifted.'); await H.btn(page, 'Overturn it').click();
   await H.btn(page, 'Sign out').click(); await H.signInDemo(page);
   await expect(H.tab(page, 'Home')).toBeVisible();
+});
+
+test('AD-15 Members: live, deleted accounts and new this month', async ({ page }) => {
+  await asArbitrator(page);
+  const m = page.locator('#members');
+  for (const t of ['5,230', 'live members', '87', 'members who deleted their account', '412', 'new members this month']) await expect(m).toContainText(t);
+});
+test('AD-15 Past 500 real members it says to remove the sample members', async ({ page }) => {
+  await asArbitrator(page);
+  await expect(page.locator('#remove-samples')).toContainText('Time to remove the sample members');
+  await expect(H.screen(page)).toContainText("When there are 500 real members you'll get an email");
 });

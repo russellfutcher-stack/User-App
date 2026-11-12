@@ -4,7 +4,9 @@
 //   npx expo export --platform web --output-dir dist-live && node scripts/live-passkey.js dist-live
 const { chromium } = require('playwright');
 const http = require('http'), fs = require('fs'), path = require('path');
-const root = path.resolve(process.argv[2]); const PORT = 3000; // the passkey origin set in Supabase is http://localhost:3000
+const root = path.resolve(process.argv[2]); const PORT = 3000;
+// Since 10 Nov 2026 Supabase allows passkeys only from https://russellfutcher-stack.github.io (it refuses other origins with that
+// Relying Party ID), so this check can't run from localhost. To run it, temporarily change the passkey settings to localhost.
 http.createServer((q, r) => { let f = path.join(root, q.url.split('?')[0]); if (!fs.existsSync(f) || fs.statSync(f).isDirectory()) f = path.join(root, 'index.html'); r.writeHead(200, { 'content-type': f.endsWith('.js') ? 'text/javascript' : f.endsWith('.html') ? 'text/html' : 'application/octet-stream' }); fs.createReadStream(f).pipe(r); }).listen(PORT);
 const log = (s, v = '') => console.log(s.padEnd(34), v);
 (async () => {

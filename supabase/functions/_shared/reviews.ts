@@ -5,6 +5,7 @@ import { CAREFUL, decide, quote, REVIEW_SCHEMA, ReviewCheck } from './claude.ts'
 import { admin, must } from './db.ts';
 import { REVIEW_POLICY } from './policy.ts';
 import { notify } from './push.ts';
+import { allowedNote, allowedTerms } from './moderate.ts';
 
 const SURE = 0.85;
 const UNSURE_NOTE = "Reviewed automatically: we couldn't confirm the message was safe, so the decision stays. It will be checked again.";
@@ -24,7 +25,7 @@ export async function decideReview(id: string) {
     const strikes = must(await admin.from('strikes').select('category').eq('member', c.member)) as { category: string }[];
     related = rows.map(r => `Report about them: ${r.reason}. Outcome: ${r.outcome || 'pending'}`).join('\n') + `\nStrikes: ${strikes.map(s => s.category).join(', ') || 'none'}`;
   }
-  const input = `${quote('review', `Topic: ${c.topic}${c.urgent ? ' (urgent)' : ''}\nWhat the member wrote: ${c.body}`)}\n${quote('related', related || '(nothing related on record)')}\nDecide this review.`;
+  const input = `${allowedNote(await allowedTerms())}\n${quote('review', `Topic: ${c.topic}${c.urgent ? ' (urgent)' : ''}\nWhat the member wrote: ${c.body}`)}\n${quote('related', related || '(nothing related on record)')}\nDecide this review.`;
   const r = await decide<ReviewCheck>({ model: CAREFUL, effort: 'high', policy: REVIEW_POLICY, input, schema: REVIEW_SCHEMA });
   let v = r?.value, flagged = !v || v.confidence < SURE;
   if (!v) v = { decision: 'Upheld', confidence: 0, reason: 'The check could not decide.', member_note: UNSURE_NOTE };

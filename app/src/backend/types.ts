@@ -60,6 +60,8 @@ export type ArbFigures = {
 
 export const EMAIL_RE = /^[^@\s]+@[^@\s]+\.[^@\s]+$/;
 export const RESET_FAILED = "That code didn't work. Check it, or ask for a new one. Codes last 15 minutes.";
+// Real members only: sample members, arbitrators and test accounts aren't counted (Rusty, 12 Nov 2026).
+export type ArbMembers = { sample: boolean; liveMembers: number; deletedAccounts: number; newThisMonth: number; samples: number; removeSamples: boolean };
 export type Result<T> = { ok: true; value: T } | { ok: false; error: string };
 
 // Everything the app needs from a server. `local` keeps data in this browser
@@ -116,6 +118,7 @@ export interface Backend {
   // The arbitrator: an ordinary sign-in listed as an arbitrator sees the dashboard instead of the member pages.
   isArbitrator(): Promise<boolean>;
   arbFigures(): Promise<ArbFigures>;
+  arbMembers(): Promise<ArbMembers>; // live members, deleted accounts, new this month, and the 500-member signal
   arbCases(): Promise<ArbCase[]>;
   // The note (5+ characters) is shown to the member. Overturn lifts restrictions; Uphold on a removal removes the account; act is for 'Action changed'.
   arbDecide(id: string, outcome: ArbOutcome, note: string, act?: ArbAct): Promise<Result<null>>;

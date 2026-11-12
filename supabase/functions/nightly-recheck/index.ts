@@ -8,6 +8,7 @@ import { CAREFUL, client, MESSAGE_SCHEMA, MessageCheck, quote } from '../_shared
 import { admin, must, reply } from '../_shared/db.ts';
 import { POLICY } from '../_shared/policy.ts';
 import { CRISIS } from '../_shared/safety.ts';
+import { allowedNote, allowedTerms } from '../_shared/moderate.ts';
 
 const SAMPLE = 100; // messages a night: roughly $0.30 at batch prices (an estimate, to be measured)
 type Item = { id: string; kind: 'message' | 'post'; ref: number }; // only ids are kept: the text stays where it is, so disappearing messages still disappear
@@ -46,6 +47,7 @@ async function send() {
   const rows = must(await admin.rpc('recheck_sample', { n: SAMPLE })) as { kind: 'message' | 'post'; ref: number; body: string; place: string }[];
   if (!rows.length) return 0;
   const items: Item[] = rows.map((r, n) => ({ id: `r${n}`, kind: r.kind, ref: r.ref }));
+  const allowed = allowedNote(await allowedTerms());
   const batch = await client.messages.batches.create({
     requests: rows.map((r, n) => ({
       custom_id: `r${n}`,
@@ -53,7 +55,7 @@ async function send() {
         model: CAREFUL, max_tokens: 4000,
         output_config: { effort: 'medium', format: { type: 'json_schema', schema: MESSAGE_SCHEMA } },
         system: [{ type: 'text', text: POLICY, cache_control: { type: 'ephemeral' } }],
-        messages: [{ role: 'user', content: `${quote('context', `Where: ${r.place}\nThis message was already delivered; this is a second check.`)}\n${quote('message', r.body)}\nCheck this message.` }],
+        messages: [{ role: 'user', content: `${allowed}\n${quote('context', `Where: ${r.place}\nThis message was already delivered; this is a second check.`)}\n${quote('message', r.body)}\nCheck this message.` }],
       },
     })),
   // deno-lint-ignore no-explicit-any

@@ -3,6 +3,7 @@ import { CAREFUL, decide, quote, REPORT_SCHEMA, ReportCheck } from '../_shared/c
 import { admin, must, recent, reply, serve } from '../_shared/db.ts';
 import { REPORT_POLICY } from '../_shared/policy.ts';
 import { decideReview } from '../_shared/reviews.ts';
+import { allowedNote, allowedTerms } from '../_shared/moderate.ts';
 
 const REASONS = ['Offering or asking for drugs', 'Harassment or hate', 'Pressuring me to meet or share details', 'Seems to be in danger', 'Spam or scam', 'Under 18', 'Something else'];
 
@@ -26,7 +27,7 @@ serve(async (me, b) => {
   // deno-lint-ignore no-explicit-any
   (globalThis as any).EdgeRuntime?.waitUntil((async () => {
     const context = must(await admin.rpc('report_context', { reporter: me.id, reported: them })) as { who: string; body: string }[];
-    const input = `${quote('report', `Reason chosen: ${reason}`)}\n${quote('messages', context.length ? context.map(m => `${m.who}: ${m.body}`).join('\n') : '(they have not chatted)')}\nReview this report.`;
+    const input = `${allowedNote(await allowedTerms())}\n${quote('report', `Reason chosen: ${reason}`)}\n${quote('messages', context.length ? context.map(m => `${m.who}: ${m.body}`).join('\n') : '(they have not chatted)')}\nReview this report.`;
     const r = await decide<ReportCheck>({ model: CAREFUL, effort: 'medium', policy: REPORT_POLICY, input, schema: REPORT_SCHEMA });
     const outcome = r ? r.value.outcome : 'pending';
     await admin.from('reports').update({ outcome, note: r?.value.reporter_note }).eq('id', rep.id);

@@ -86,6 +86,6 @@ test('G-15 100 sample members, 21 peer supporters', async ({ page }) => {
 });
 test('G-15 Sample members are the same every time', async ({ page }) => {
   await H.open(page); await H.signInDemo(page); await H.tab(page, 'Search').click();
-  await expect(page.getByTestId('person')).toHaveCount(3);
-  expect((await page.getByTestId('person').allInnerTexts()).map(t => t.split('\n')[0])).toEqual(['JuniperWren', 'MossyOtter', 'MossyKestrel']);
+  await expect(page.getByTestId('person')).toHaveCount(10);
+  expect((await page.getByTestId('person').allInnerTexts()).map(t => t.split('\n')[0]).slice(0, 3)).toEqual(['JuniperWren', 'MossyOtter', 'MossyKestrel']);
 });

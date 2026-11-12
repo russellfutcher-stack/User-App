@@ -444,7 +444,7 @@ const CATS = [
 const TAG = {}; CATS.forEach(c=>REF[c.key].forEach(t=>TAG[t.id]={...t,cat:c.key}));
 const STAGES = [
   {id:'using',label:'Using, not looking to change right now'},{id:'thinking',label:'Thinking about change'},
-  {id:'cutting',label:'Cutting down / harm reduction'},{id:'quit',label:'I just gave up'},{id:'early3',label:'Early recovery (under 3 months)'},{id:'early6',label:'Early recovery (under 6 months)'},{id:'early',label:'Early recovery (under a year)'},
+  {id:'cutting',label:'Cutting down / harm reduction'},{id:'quit',label:'I just gave up'},{id:'early1',label:'Early recovery (under 1 month)'},{id:'early3',label:'Early recovery (under 3 months)'},{id:'early6',label:'Early recovery (under 6 months)'},{id:'early',label:'Early recovery (under a year)'},
   {id:'long',label:'Long-term recovery'},{id:'help',label:'Ready to help someone'},{id:'support',label:'Supporting someone I love'},{id:'na',label:'Prefer not to say'}];
 const STAGE_ORDER = ['using','thinking','cutting','quit','early3','early6','early','long'];
 const LOOKING = [
@@ -697,7 +697,8 @@ function stageCompat(a,b){
   if(a==='na'||b==='na') return .5;
   if(a==='help'||b==='help') return a===b?.6:.85; // helpers suit anyone who wants support
   if(a==='support'||b==='support') return a===b?1:.5;
-  const i=STAGE_ORDER.indexOf(a), j=STAGE_ORDER.indexOf(b); return Math.max(0,1-Math.abs(i-j)*.15);
+  const pos=x=>x==='early1'?3.5:STAGE_ORDER.indexOf(x); // under 1 month sits half a step after 'I just gave up'
+  return Math.max(0,1-Math.abs(pos(a)-pos(b))*.15);
 }
 // "Looking for" fit: what share of one list the other person can meet. Mentor and mentee complement each other.
 const LOOK_PAIRS={mentor:['mentoring'],mentoring:['mentor'],listen:['chat','checkin','night'],chat:['listen']};
@@ -733,7 +734,11 @@ const DEALING = /(\b(sell|selling|sold|for sale|plug|supplier|supply you|re-?up|
 // Recovery and harm-reduction context: "I used to sell", "I never deal", "naloxone". Allowed unless it also has prices, links, other apps or drug emojis.
 const RECOVERY = /\b(used to|use to|stopped|quit|gave up|no longer|never|don'?t|won'?t|not)\s+(sell|selling|deal|dealing|supply|supplying)\b|\bnaloxone\b|\bharm reduction\b/i;
 const HARD = /[$£€]\s?\d+|https?:|www\.|\b(telegram|wickr|whats ?app|snap ?chat|kik)\b|🔌|💊|❄|💉/i;
-const blocked = t => DEALING.test(t) && !(RECOVERY.test(t) && !HARD.test(t));
+// Allowed words (Rusty, 12 Nov 2026): never a reason to block on their own. 'link' allows web links. The real app keeps this list in the
+// database table safety_allowed, and the careful check is told about it too.
+const ALLOWED = ['cost','price','sell','sold','buy','link','whatsapp','snapchat','telegram','wickr','kik','instagram','insta','signal','facebook','messenger','tiktok'];
+const withoutAllowed = t => ALLOWED.reduce((s,w) => w==='link' ? s.replace(/https?:\/\/\S*|www\.\S*/gi,' ') : s.replace(new RegExp('\\b'+[...w].join('\\s?')+'\\b','gi'),' '), t);
+const blocked = text => { const t = withoutAllowed(text); return DEALING.test(t) && !(RECOVERY.test(t) && !HARD.test(t)); };
 const CRISIS = /(kill myself|suicid|end it all|want to die|don'?t want to (be here|live|wake up)|better off without me|overdos|\bod\b|took too many|self[- ]?harm|hurt myself|cutting myself)/i;
 
 /* ---------- Icons ---------- */
@@ -789,7 +794,7 @@ function renderHome(){
 function personRow(p,m){
   const tagHtml=p.tags.filter(t=>catOf(t)==='interests'||m.shared.includes(t)).slice(0,4).map(t=>`<span class="tag g-${grp(t)} ${m.shared.includes(t)?'shared':''}">${esc(TAG[t].label)}</span>`).join('');
   return `<button class="person" onclick="App.profile('${p.id}')">
-    <div class="body"><div class="row"><span class="name">${esc(p.handle)}</span>${p.peer?'<span class="pill peer">Peer supporter</span>':''}${p.active==='Online'?'<span class="online" aria-label="online"></span>':`<span class="small muted">${esc(p.active)}</span>`}</div>
+    <div class="body"><div class="row"><span class="name">${esc(p.handle)}</span>${p.peer?'<span class="pill peer">Peer supporter</span>':''}<span class="pill">Sample member</span>${p.active==='Online'?'<span class="online" aria-label="online"></span>':`<span class="small muted">${esc(p.active)}</span>`}</div>
     <div class="small muted">${esc(stageLabel(p.stage))} · ${esc(place(p))}</div><div class="chips">${tagHtml}</div></div>
     <div class="match">${m.pct}%<small>match</small></div></button>`;
 }
@@ -824,7 +829,7 @@ function renderFind(){
    <div class="section"><h2 style="font-size:24px">Search/Find a Companion</h2></div>
    <div class="section" id="results" aria-live="polite"></div>
    <div class="section">
-     <span class="label">1. Choose</span>
+     <span class="label" id="choose">1. Choose</span>
      ${threeTiles('filter')}
      <p class="hint">${on.length===3?"All three are on. ":""}Tap a choice to turn it off or on, then pick items in each to combine them.</p>
      ${on.map((path,i)=>`<div class="section"><span class="label ghead g-${path.g}">${i+2}. ${dName(path)}</span>${path.cats.map(c=>`${path.cats.length>1?`<span class="label sub">${CATS.find(x=>x.key===c).name}</span>`:''}<div class="chips" role="group" aria-label="${dName(path)}: ${CATS.find(x=>x.key===c).name}">${REF[c].map(t=>`<button class="chip" aria-pressed="${S.ui.f.includes(t.id)}" onclick="App.f('${t.id}')">${esc(t.label)}</button>`).join('')}</div>`).join('')}</div>`).join('')}
@@ -864,9 +869,10 @@ function renderResults(){
   if(A.city) list=list.filter(({p})=>!!p.city&&p.city.toLowerCase().startsWith(A.city));
   if(q) list=list.filter(({p})=>p.handle.toLowerCase().includes(q)||p.bio.toLowerCase().includes(q)||p.tags.some(t=>scope.includes(catOf(t))&&(TAG[t].label.toLowerCase().includes(q)||aliasHit(q,t))));
   list.sort((a,b)=>((b.fit||0)-(a.fit||0))||(b.m.pct-a.m.pct));
-  const shown = S.ui.all ? list : list.slice(0,3);
+  const shown = list.slice(0, S.ui.shown||10); // 10 at a time (Rusty, 12 Nov 2026)
   $('#results').innerHTML = `<div class="row between"><h2>Your Matches</h2><span class="pill" id="match-count">${list.length} ${list.length===1?'person':'people'}</span></div>`+
-    (list.length?shown.map(({p,m})=>personRow(p,m)).join('')+(list.length>3?`<button class="btn sm" style="align-self:flex-start" onclick="App.showAll()">${S.ui.all?'Show top 3':'Show all '+list.length+' matches'}</button>`:''):`<div class="card"><p>No one matches all of those yet. Try removing a filter, or join a room to meet people more broadly.</p></div>`);
+    (list.length?shown.map(({p,m})=>personRow(p,m)).join('')+(list.length>shown.length?`<button class="btn block" onclick="App.next10()">Next 10 matches</button>`:''):`<div class="card"><p>No one matches all of those yet. Try removing a filter, or join a room to meet people more broadly.</p></div>`)+
+    `<button class="btn block" onclick="App.newSearch()">New search</button>`;
 }
 
 /* ---------- Profile sheet ---------- */
@@ -877,6 +883,7 @@ function profileSheet(id){
   const p=person(id), m=match(p);
   const groups=PATHS.map(g=>{ const t=p.tags.filter(x=>g.cats.includes(catOf(x))); return `<div class="section"><span class="label ghead g-${g.g}">${g.name}</span><div class="chips">${t.length?t.map(x=>`<span class="tag g-${g.g} ${m.shared.includes(x)?'shared':''}">${esc(TAG[x].label)}</span>`).join(''):'<span class="small muted">Not shared</span>'}</div></div>`; }).join('');
   sheet(`<div class="row"><div class="grow" style="flex:1;min-width:0"><h2>${esc(p.handle)}</h2><div class="small muted">${esc(p.active)} · ${esc(place(p))}</div></div><div class="match">${m.pct}%<small>match</small></div></div>
+    <div class="row wrap" id="sample-note"><span class="pill">Sample member</span><span class="small">Not a real person. Sample members show how User works, and their replies are written in advance.</span></div>
     ${p.peer?'<p class="peer-on"><span class="pill peer">Peer supporter</span> Offers to listen to people who want peer support.</p>':''}
     <p>${esc(p.bio)}</p>
     <div class="card calm"><p class="small">${esc(whyMatched(p,m))}</p></div>
@@ -907,6 +914,7 @@ function renderChat(id){
   const msgs=(S.convos[id]||[]).filter(m=>!S.prefs.disappearing||m.ts>week);
   sc.innerHTML=`<div class="msgs" id="msgs">
      <div class="bubble sys">You're both anonymous, and every message is checked for safety. Never share your real name or address. <button class="btn sm quiet" onclick="App.chatMenu('${id}')">Safety &amp; options</button></div>
+     <div class="bubble sys" id="sample-chat">${esc(p.handle)} is a sample member, not a real person. Their replies are written in advance to show how User works.</div>
      ${S.prefs.disappearing?'<div class="bubble sys">Disappearing messages are on. Messages are deleted 7 days after they are sent.</div>':''}
      ${msgs.map(bubble).join('')}</div>
    <div id="warn"></div>
@@ -917,7 +925,7 @@ function renderChat(id){
 const bubble = m => m.f==='sys' ? `<div class="bubble sys">${esc(m.t)}</div>` : `<div class="bubble ${m.f==='me'?'me':'them'}">${m.who?`<span class="who">${esc(m.who)}</span>`:''}${esc(m.t)}</div>`;
 function scrollMsgs(){ const m=$('#msgs'); if(m) m.scrollTop=m.scrollHeight; }
 function guard(text){
-  if(blocked(text)){ $('#warn').innerHTML=`<div class="warnbox" role="alert"><b>Message not sent</b>It looks like it could be about buying or selling, or sharing links or other apps' contact details. User doesn't allow sourcing or off-app contact, to keep everyone safe. If you're struggling with cravings, the Help button has people to talk to right now. <button class="btn sm quiet" onclick="App.humanReview('A message that was blocked')">Think this is wrong? Ask for a review</button></div>`; return false; }
+  if(blocked(text)){ $('#warn').innerHTML=`<div class="warnbox" role="alert"><b>Message not sent</b>It looks like it could be about buying, selling or sourcing drugs, or sharing payment details. User doesn't allow that, to keep everyone safe. If you're struggling with cravings, the Help button has people to talk to right now. <button class="btn sm quiet" onclick="App.humanReview('A message that was blocked')">Think this is wrong? Ask for a review</button></div>`; return false; }
   $('#warn').innerHTML=''; return true;
 }
 
@@ -1099,7 +1107,7 @@ function renderOnboard(){
     <div class="section small"><b>Our community agreement</b>
       <p>• Be kind. Everyone here is at a different stage, and all of them are welcome.</p>
       <p>• No buying, selling, sharing or sourcing drugs. No dosing advice.</p>
-      <p>• Stay anonymous. Don't share real names, addresses or socials, and think carefully before sharing a phone number.</p>
+      <p>• Stay anonymous. Don't share real names or home addresses, and think carefully before sharing a phone number or your username on another app.</p>
       <p>• We're peer support, not a crisis service. Help is always at the top.</p></div>
     <details class="salt"><summary>What is a salted hash?</summary>
       <p class="small">User never keeps your actual password. When you create one, we add a random string of characters called a <b>salt</b>, then run the two together through a one-way formula called a <b>hash</b>. That turns them into a long scrambled code, which is all we store.</p>
@@ -1202,6 +1210,10 @@ function renderSupport(){
      <h3>Lower your risk</h3>
      <ul class="small"><li>Don't use alone. If you do, tell someone or use a never-use-alone service.</li><li>Mixing opioids, benzodiazepines and alcohol greatly raises the risk.</li><li>Your tolerance drops fast after a break, a hospital stay or prison.</li><li>Street drugs may contain fentanyl or nitazenes. Use test strips where they're available, and start with a small amount.</li><li>Carry naloxone. Many pharmacies and drug services give it out free.</li></ul>
      <p class="hint">In many places, laws protect people who call for help at an overdose. Check what applies where you live.</p></section>
+   <section class="card" aria-labelledby="sl-h" id="strikes"><h2 id="sl-h">The strike ladder</h2>
+     <p class="small muted">Breaking the community agreement on purpose, such as dealing, harassment or hate, counts as a strike. A report about you that's upheld can count as one too. Each strike counts for 30 days.</p>
+     <div class="lines">${[['Any strike','A warning. The message isn\'t sent and you\'re told why.'],['3 in 7 days','Muted for 24 hours: you can\'t send messages or posts.'],['5 in 30 days','Your account is paused for 7 days.'],['3 for dealing in 7 days','Your account is paused while it is reviewed.']].map(([a,b])=>`<div class="line"><b>${a}</b><span>${b}</span></div>`).join('')}</div>
+     <p class="small muted">Think a decision was wrong? Ask for a review below. If it was a mistake, the strike is taken back and any mute or pause is lifted.</p></section>
    <section class="card" aria-labelledby="hr-h"><h2 id="hr-h">Ask for a review</h2>
      <p class="small muted">If you think a safety decision was wrong, ask for a review. Every review is decided straight away, and an independent arbitrator checks decisions and can change them.</p>
      <button class="btn" style="align-self:flex-start" onclick="App.humanReview('')">Ask for a review</button>
@@ -1212,6 +1224,7 @@ function renderSupport(){
 /* ---------- Human arbitrator dashboard ---------- */
 // Sample figures stand in for the live service; review cases raised in this browser are shown live.
 const ARB = {
+  members:{live:5230,deleted:87,newMonth:412},
   kpis:[['1,284','active today'],['4,912','active in the last 7 days'],['318','new members this week'],['146','peer supporters'],['1,037','members who want peer support']],
   cases:[
     {id:'HR-0991',topic:'Report: seems to be in danger',raised:'Automatic',due:'Today, 6pm',urgent:true,text:'A member wrote that they had taken too many pills. Help was shown to them straight away. The report asks for a check that the right support was offered.'},
@@ -1275,6 +1288,9 @@ function renderDashboard(){
   const table=(list,label)=>`<div class="tbl"><table aria-label="${label}"><thead><tr><th>Case</th><th>About</th><th>Raised by</th><th>Confidence</th><th>Due</th><th>Decision</th><th></th></tr></thead><tbody>${list.map(row).join('')||'<tr><td colspan="7" class="muted">Nothing here.</td></tr>'}</tbody></table></div>`;
   $('#screen').innerHTML=`<div class="section"><h2>Arbitrator dashboard</h2>
      <p class="small muted">How User is working, and how the AI Review Agent is deciding cases. Figures marked as samples stand in for the live service in this prototype. Members are shown by username only.</p></div>
+   ${ARB.members.live>=500?`<div class="card warm" id="remove-samples"><h3>Time to remove the sample members</h3><p class="small">User has ${ARB.members.live.toLocaleString()} real members, past the 500 you set. The 100 sample members can now be removed.</p></div>`:''}
+   <section class="card"><div class="row between"><h2>Members</h2><span class="pill">Sample</span></div><div class="kpis" id="members">${figs([[ARB.members.live.toLocaleString(),'live members'],[String(ARB.members.deleted),'members who deleted their account'],[String(ARB.members.newMonth),'new members this month']])}</div>
+     <p class="small muted">Real members only. The 100 sample members aren't counted. When there are 500 real members you'll get an email: the signal to remove the sample members.</p></section>
    <div class="kpis">${figs(ARB.kpis.concat([[String(flags.length),'flagged for a check'],[String(urgent.length),'urgent cases']]))}</div>
    <section class="card" aria-labelledby="dq-h"><div class="row between"><h2 id="dq-h">Review queue</h2><span class="pill amber">${flags.length} flagged</span></div>
      <p class="small muted">The AI Review Agent decides every case. Danger, under-18 and account removal cases are decided first, within minutes. When it is less than ${Math.round(AI_THRESHOLD*100)}% confident it still decides, using the safest outcome, and flags the case for you to check.</p>
@@ -1337,7 +1353,7 @@ const App = {
   submitRoom(){ const name=$('#rq-name').value.trim(), cat=$('#rq-cat').value, desc=$('#rq-desc').value.trim(), err=m=>$('#rq-err').textContent=m;
     if(name.length<3) return err('Give the room a name of at least 3 characters.');
     if(desc.length<10) return err('Say what the room is for in at least 10 characters.');
-    if(blocked(name+' '+desc)) return err('Room requests can\'t mention buying or selling, prices, links or contact details.');
+    if(blocked(name+' '+desc)) return err('Room requests can\'t mention buying or selling drugs, prices or payment details.');
     if(allRooms().concat(S.rooms.requests||[]).some(r=>r.name.toLowerCase()===name.toLowerCase())) return err('A room with that name already exists or has been requested.');
     const q={id:'c'+Date.now().toString(36),name,cat,desc,status:'Checking'}; (S.rooms.requests=S.rooms.requests||[]).push(q); save(); renderRooms();
     $('.sheet').innerHTML=`<div class="grab"></div><div class="success" role="status"><div class="tick" aria-hidden="true">✓</div><h2>Request sent successfully</h2>
@@ -1398,9 +1414,10 @@ const App = {
     const st='Decided: '+outcome+(act?' ('+ARB_ACTS.find(x=>x[0]===act)[2]+')':''), mine=S.cases.find(c=>c.id===id);
     if(mine){ mine.status=st; mine.note=note; mine.by='Arbitrator'; } else S.arb.decided[id]={status:st,note};
     save(); closeSheet(); renderDashboard(); toast(id+' decided: '+st.replace('Decided: ','')+'.'); },
-  showAll(){ S.ui.all=!S.ui.all; save(); renderResults(); },
-  clearAll(){ S.ui.cats=['interests','drugs','mh']; S.ui.f=[]; S.ui.q=''; S.ui.look=[]; S.ui.peerOnly=false; S.ui.city=''; S.ui.country=''; S.ui.applied=draft(); save(); renderFind(); },
-  search(){ S.ui.applied=draft(); save(); renderFind(); $('#screen').scrollTop=0; const n=$('#match-count'); toast('Search updated: '+(n?n.textContent:'')+'.'); },
+  next10(){ S.ui.shown=(S.ui.shown||10)+10; save(); renderResults(); },
+  newSearch(){ App.clearAll(); toast('New search. Choose what to look for.'); setTimeout(()=>$('#choose')?.scrollIntoView({block:'start'}),50); },
+  clearAll(){ S.ui.cats=['interests','drugs','mh']; S.ui.f=[]; S.ui.q=''; S.ui.look=[]; S.ui.peerOnly=false; S.ui.city=''; S.ui.country=''; S.ui.shown=10; S.ui.applied=draft(); save(); renderFind(); },
+  search(){ S.ui.shown=10; S.ui.applied=draft(); save(); renderFind(); $('#screen').scrollTop=0; const n=$('#match-count'); toast('Search updated: '+(n?n.textContent:'')+'.'); },
   f(id){ const i=S.ui.f.indexOf(id); i<0?S.ui.f.push(id):S.ui.f.splice(i,1); save(); renderFind(); },
   look(id){ const t=S.ui.look, i=t.indexOf(id); i<0?t.push(id):t.splice(i,1); save(); const sc=$('#screen').scrollTop; renderFind(); $('#screen').scrollTop=sc; },
   where(k,v){ S.ui[k]=v; save(); const sc=$('#screen').scrollTop; renderFind(); $('#screen').scrollTop=sc; },
