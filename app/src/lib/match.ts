@@ -8,6 +8,7 @@ export type Member = {
   username: string; isPeer: boolean; wantsPeer: boolean; region: string; active: string;
   city?: string; country?: string; // city only when they let you see it
   stage: string; tags: string[]; looking: string[]; byline: string; pct: number;
+  sample?: boolean; // one of the sample members, marked 'Sample member' (Rusty, 12 Nov 2026)
 };
 type Them = Pick<Member, 'isPeer' | 'wantsPeer' | 'stage' | 'tags' | 'looking'>;
 
@@ -22,7 +23,9 @@ function stageCompat(a: string, b: string) {
   if (a === 'na' || b === 'na') return 0.5;
   if (a === 'help' || b === 'help') return a === b ? 0.6 : 0.85; // helpers suit anyone who wants support
   if (a === 'support' || b === 'support') return a === b ? 1 : 0.5;
-  const i = STAGE_ORDER.indexOf(a), j = STAGE_ORDER.indexOf(b); return Math.max(0, 1 - Math.abs(i - j) * 0.15);
+  // Early recovery (under 1 month) sits half a step between 'I just gave up' and under 3 months (Rusty, 12 Nov 2026).
+  const pos = (s: string) => (s === 'early1' ? 3.5 : STAGE_ORDER.indexOf(s));
+  return Math.max(0, 1 - Math.abs(pos(a) - pos(b)) * 0.15);
 }
 // "Looking for" fit: what share of one list the other person can meet. Mentor and mentee complement each other.
 const LOOK_PAIRS: Record<string, string[]> = { mentor: ['mentoring'], mentoring: ['mentor'], listen: ['chat', 'checkin', 'night'], chat: ['listen'] };

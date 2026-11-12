@@ -5,7 +5,7 @@ const heads = page => H.screen(page).getByRole('heading', { level: 2 }).allTextC
 
 test('SP-01 Page order', async ({ page }) => {
   await expect(H.screen(page).getByRole('heading', { name: 'Overdose information' })).toBeVisible();
-  expect(await heads(page)).toEqual(['Support', 'Peer supporters', 'Help services by country', 'Overdose information', 'Ask for a review']);
+  expect(await heads(page)).toEqual(['Support', 'Peer supporters', 'Help services by country', 'Overdose information', 'The strike ladder', 'Ask for a review']);
   await expect(H.screen(page)).toContainText('A message for you');
 });
 test('SP-01 Ends with the disclaimer', async ({ page }) => {
@@ -96,4 +96,12 @@ test('SP-13 The answer shows on the Support page as Decided: Answered', async ({
   await page.fill('#hr-text', 'I have a question about my privacy settings.'); await H.btn(page, 'Request a review').click();
   await expect(page.locator('#rv-status')).toContainText('Answered automatically:', { timeout: 6000 }); await H.btn(page, 'Done').click();
   await expect(page.getByTestId('my-review')).toContainText('Decided: Answered');
+});
+
+test('SP-14 The strike ladder shows how strikes add up', async ({ page }) => {
+  const s = page.locator('#strikes');
+  for (const t of ['Each strike counts for 30 days.', 'Any strike', '3 in 7 days', 'Muted for 24 hours', '5 in 30 days', 'paused for 7 days', '3 for dealing in 7 days', 'paused while it is reviewed']) await expect(s).toContainText(t);
+});
+test('SP-14 It explains the way back', async ({ page }) => {
+  await expect(page.locator('#strikes')).toContainText('If it was a mistake, the strike is taken back and any mute or pause is lifted.');
 });

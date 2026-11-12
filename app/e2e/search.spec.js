@@ -27,12 +27,10 @@ test('DS-02 Shows the top 10 at first, with Next 10 matches', async ({ page }) =
 test('DS-02 Next 10 matches goes away once all are shown', async ({ page }) => {
   await showAll(page); await expect(people(page)).toHaveCount(100); await expect(next(page)).toHaveCount(0);
 });
-test('DS-18 Return to Homepage and New search sit under the matches', async ({ page }) => {
+test('DS-18 New search sits under Next 10 matches, with no Return to Homepage', async ({ page }) => {
   const text = await page.locator('#results').innerText();
-  expect(text.indexOf('Next 10 matches')).toBeLessThan(text.indexOf('Return to Homepage'));
-  expect(text.indexOf('Return to Homepage')).toBeLessThan(text.indexOf('New search'));
-  await H.btn(page, 'Return to Homepage').click();
-  await expect(H.tab(page, 'Home')).toHaveAttribute('aria-selected', 'true');
+  expect(text.indexOf('Next 10 matches')).toBeLessThan(text.indexOf('New search'));
+  await expect(page.getByRole('button', { name: 'Return to Homepage' })).toHaveCount(0);
 });
 test('DS-18 New search clears the filters and starts again at 10', async ({ page }) => {
   await pick(page, 'Books & reading'); await go(page); await next(page).click().catch(() => {});
@@ -187,4 +185,14 @@ test('DS-17 City matches the start of the name, any case, and shows in the summa
   for (const t of await people(page).allInnerTexts()) expect(t).toContain('Manchester');
   await expect(H.screen(page).getByText('In manch')).toBeVisible();
   await page.locator('#s-city').fill('Nowhereville'); await go(page); await expect(count(page)).toHaveText('0 people');
+});
+
+test('G-17 Sample members are marked on their card and profile', async ({ page }) => {
+  await expect(people(page).first()).toContainText('Sample member');
+  await people(page).first().click();
+  await expect(H.sheet(page).locator('#sample-note')).toContainText('Not a real person.');
+});
+test('G-17 A chat with a sample member says so', async ({ page }) => {
+  await H.openChat(page, 'SteadyBadger');
+  await expect(page.locator('#sample-chat')).toHaveText('SteadyBadger is a sample member, not a real person. Their replies are written in advance to show how User works.');
 });

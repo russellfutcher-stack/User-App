@@ -17,7 +17,7 @@ const GHead = ({ text, colour }: { text: string; colour: string }) => (
   </Row>
 );
 
-function Results({ members, onNew, onHome }: { members: Member[] | null; onNew: () => void; onHome: () => void }) {
+function Results({ members, onNew }: { members: Member[] | null; onNew: () => void }) {
   const { applied, shown: count, setShown } = useApp();
   if (!members) return <P muted>Finding your matches…</P>;
   const list = search(members, applied), shown = list.slice(0, count);
@@ -28,14 +28,13 @@ function Results({ members, onNew, onHome }: { members: Member[] | null; onNew: 
         {shown.map(m => <PersonRow key={m.username} m={m} />)}
         {list.length > count ? <Btn block label="Next 10 matches" onPress={() => setShown(count + PAGE)} /> : null}
       </> : <Card><P>No one matches all of those yet. Try removing a filter, or join a room to meet people more broadly.</P></Card>}
-      <Btn block label="Return to Homepage" onPress={onHome} />
       <Btn block label="New search" onPress={onNew} />
     </View>
   );
 }
 
 export function Search({ toTop }: { toTop: () => void }) {
-  const { query, setQuery, applied, setApplied, toast, setShown, setTab } = useApp();
+  const { query, setQuery, applied, setApplied, toast, setShown } = useApp();
   const members = useMembers();
   const on = PATHS.filter(p => query.cats.includes(p.key));
   const toggle = (k: PathKey) => {
@@ -58,7 +57,7 @@ export function Search({ toTop }: { toTop: () => void }) {
   return (
     <>
       <H2 style={{ fontSize: 24, lineHeight: 28 }}>Search/Find a Companion</H2>
-      <Results members={members} onNew={fresh} onHome={() => setTab('home')} />
+      <Results members={members} onNew={fresh} />
       <View style={{ gap: 10 }} id="choose">
         <Label>1. Choose</Label>
         <ThreeTiles on={query.cats} onPress={toggle} />

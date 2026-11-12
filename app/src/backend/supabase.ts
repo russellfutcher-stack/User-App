@@ -180,8 +180,8 @@ export function supabaseBackend(url: string, anonKey: string): Backend {
     async members() {
       await settled(); // so the score uses the profile just saved
       const { data, error } = await db.rpc('find_members'); must(error);
-      return (data || []).map((r: { username: string; is_peer: boolean; wants_peer: boolean; region: string; active: string; stage: string; looking: string[]; byline: string; tags: string[]; pct: number; city: string | null; home_country: string | null }): Member => ({
-        username: r.username, isPeer: r.is_peer, wantsPeer: r.wants_peer, region: r.region, active: r.active, stage: r.stage, city: r.city || '', country: r.home_country || '',
+      return (data || []).map((r: { username: string; is_peer: boolean; wants_peer: boolean; region: string; active: string; stage: string; looking: string[]; byline: string; tags: string[]; pct: number; city: string | null; home_country: string | null; sample?: boolean }): Member => ({
+        username: r.username, isPeer: r.is_peer, wantsPeer: r.wants_peer, region: r.region, active: r.active, stage: r.stage, city: r.city || '', country: r.home_country || '', sample: !!r.sample,
         looking: r.looking, byline: r.byline, tags: r.tags, pct: r.pct,
       }));
     },
@@ -281,6 +281,10 @@ export function supabaseBackend(url: string, anonKey: string): Backend {
     async arbFigures() {
       const { data, error } = await db.rpc('arb_figures'); must(error);
       return { ...(data as object), sample: false } as Awaited<ReturnType<Backend['arbFigures']>>;
+    },
+    async arbMembers() {
+      const { data, error } = await db.rpc('arb_members'); must(error);
+      return { ...(data as object), sample: false } as Awaited<ReturnType<Backend['arbMembers']>>;
     },
     async arbCases() {
       const { data, error } = await db.rpc('arb_cases'); must(error);

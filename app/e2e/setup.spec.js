@@ -20,10 +20,11 @@ test('FP-02 Byline is optional and saves', async ({ page }) => {
 test('FP-02 Byline stops at 240 characters', async ({ page }) => {
   await page.fill('#su-bio', 'x'.repeat(300)); await expect(page.locator('#su-bio')).toHaveValue('x'.repeat(240));
 });
-test('FP-03 Eleven stages including the new ones', async ({ page }) => {
+test('FP-03 Twelve stages including the new ones', async ({ page }) => {
   const opts = await page.locator('#su-stage option').allTextContents();
-  expect(opts).toHaveLength(11);
-  for (const o of ['I just gave up', 'Early recovery (under 3 months)', 'Early recovery (under 6 months)', 'Early recovery (under a year)']) expect(opts).toContain(o);
+  expect(opts).toHaveLength(12);
+  expect(opts.indexOf('Early recovery (under 1 month)')).toBe(opts.indexOf('I just gave up') + 1);
+  for (const o of ['I just gave up', 'Early recovery (under 1 month)', 'Early recovery (under 3 months)', 'Early recovery (under 6 months)', 'Early recovery (under a year)']) expect(opts).toContain(o);
 });
 test('FP-03 Default is Prefer not to say', async ({ page }) => {
   await expect(page.locator('#su-stage')).toHaveValue('na');

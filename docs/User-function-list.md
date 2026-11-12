@@ -9,7 +9,7 @@ Prototype version 24. Every function a person can use in the prototype, each wit
 - **Saved only**: the choice is saved but has no visible effect yet.
 - **Placeholder**: the button only shows a message.
 
-Totals: Working 157, Simulated 7, Saved only 2, Placeholder 2, 168 functions in all.
+Totals: Working 160, Simulated 7, Saved only 2, Placeholder 2, 171 functions in all.
 
 ## Global
 
@@ -31,6 +31,7 @@ Totals: Working 157, Simulated 7, Saved only 2, Placeholder 2, 168 functions in 
 | G-14 | Plain safety wording | Look through every page | No mention of AI agents, staff, volunteers, moderators or Night Owls. The app says 'every message is checked for safety'. | Working | - |
 | G-15 | Sample community | Use the app | 100 fictional members (12 written by hand, 88 generated the same way every time), 21 of them peer supporters. Every room has 4 to 6 posts, and the demo account has 6 chats, 3 unread. | Working | - |
 | G-16 | Hide (quick exit) | Tap Hide | User is replaced by Google's home page; Back doesn't bring it back, and you're signed out (Rusty, 4 Nov 2026). | Working | Web app only. |
+| G-17 | Sample members are marked | View a sample member's card, profile or chat | The 100 sample members stay after launch (Rusty, 12 Nov 2026) and still reply, but each shows a 'Sample member' tag; the profile says 'Not a real person…' and a chat with one says their replies are written in advance. On the live server none of them is a peer supporter. They're removed when there are 500 real members. | Working | Real on the Supabase server; checked with app/scripts/live-matching.js. |
 
 ## Welcome & Sign in
 
@@ -72,7 +73,7 @@ Totals: Working 157, Simulated 7, Saved only 2, Placeholder 2, 168 functions in 
 |---|---|---|---|---|---|
 | FP-01 | Setup page | After Create account, or signing in before setup is done | 'Welcome, [name]. Let's set up your profile.' 4 numbered sections. No tab bar. | Working | - |
 | FP-02 | Byline | Type in 'Your byline' | Optional, up to 240 characters. | Working | - |
-| FP-03 | Where are you at | Choose | 11 options, including I just gave up, Early recovery (under 3 months), (under 6 months) and (under a year). Default 'Prefer not to say'. | Working | - |
+| FP-03 | Where are you at | Choose | 12 options, including I just gave up, Early recovery (under 1 month) (Rusty, 12 Nov 2026), (under 3 months), (under 6 months) and (under a year). Default 'Prefer not to say'. | Working | - |
 | FP-04 | I'm looking for | Tap options | 14 options. | Working | - |
 | FP-05 | Peer support question | 'Would you like peer support?' | Yes or Not right now. Must be answered before saving. | Working | - |
 | FP-06 | Your three choices | Tap items | Same lists and counters as the Me page. | Working | - |
@@ -105,7 +106,7 @@ Totals: Working 157, Simulated 7, Saved only 2, Placeholder 2, 168 functions in 
 | M-07 | Interests list | Open Me | 20 interests. | Working | - |
 | M-08 | Drug use list | Open Me | Medications (20), Other Substances (10), Alcohol, nicotine & gambling (4). | Working | - |
 | M-09 | Mental health list | Open Me | 20 conditions. | Working | - |
-| M-10 | Where are you at | Edit profile | The same 11 options as setup. | Working | - |
+| M-10 | Where are you at | Edit profile | The same 12 options as setup. | Working | - |
 | M-11 | I'm looking for | Edit profile | 14 options. | Working | - |
 | M-12 | Privacy: who sees each choice | Change the 3 settings | Saves and confirms. | Saved only | Hiding tags from other members can only be enforced on a server. |
 | M-13 | Show me in Search results | Toggle | Saves the choice. | Saved only | Hiding from other members' searches needs a server. |
@@ -145,7 +146,7 @@ Totals: Working 157, Simulated 7, Saved only 2, Placeholder 2, 168 functions in 
 | DS-15 | Search button | Change anything, tap Search | A notice shows until you tap Search. Search updates Your Matches, scrolls to the top and confirms the number found. | Working | - |
 | DS-16 | Drug use headings | Look under Drug use | Medications, Other Substances, Alcohol, nicotine & gambling. | Working | - |
 | DS-17 | Search by location | Fill in City or choose Country under Location, then tap Search | Country keeps only people in that country. City keeps people whose city starts with what was typed (any case). People are found by city only if they let you see it. Shown in the 'Finding people with' summary. | Working | Real on the Supabase server. |
-| DS-18 | Return to Homepage and New search | Under the matches, tap 'Return to Homepage' or 'New search' | Return to Homepage opens Home. New search clears every filter, shows the top 10 again, says 'New search. Choose what to look for.' and scrolls to 1. Choose. | Working | - |
+| DS-18 | New search | Under the matches, tap 'New search' | Clears every filter, shows the top 10 again, says 'New search. Choose what to look for.' and scrolls to 1. Choose. (Return to Homepage was removed, Rusty, 12 Nov 2026.) | Working | - |
 
 ## Chats
 
@@ -205,6 +206,7 @@ Totals: Working 157, Simulated 7, Saved only 2, Placeholder 2, 168 functions in 
 | SP-11 | Automatic review decision | Send any review | Every review is decided automatically. A naloxone or recovery message is overturned; an unclear one keeps the safest outcome and says it will be checked again. | Working | Real decisions come from the review check on the Supabase server. |
 | SP-10 | Arbitrator changes a decision | After the arbitrator changes it | The case shows the new decision with 'Arbitrator:' and their note. | Working | Real on the Supabase server; checked with app/scripts/live-arbitrator.js. |
 | SP-13 | A question is answered | Ask for a review with a question, for example about your data | Answered and closed straight away ('Answered automatically: …') from the privacy policy's facts. Whoever runs User gets an email alert with the case number only (Rusty, 7 Nov 2026). | Working | Real answers come from the review check on the Supabase server. |
+| SP-14 | The strike ladder | Open Support | Shows how strikes add up: any strike is a warning; 3 in 7 days, a 24-hour mute; 5 in 30 days, a 7-day pause; 3 for dealing in 7 days, paused while reviewed. Each counts for 30 days, and a review can take one back. | Working | - |
 
 ## Help & Safety
 
@@ -229,6 +231,7 @@ Totals: Working 157, Simulated 7, Saved only 2, Placeholder 2, 168 functions in 
 | AD-03 | Review queue | Open the dashboard | One Decided table: every case with its decision, the agent's confidence, who decided it, and a Flagged tag when under 85%. Urgent cases are red. Live cases are marked 'This browser'. | Working | Live queue on the Supabase server. |
 | AD-13 | AI Review Agent | Every case | Decides every case, including danger, under 18 and account removal. Under 85% confidence it keeps the safest outcome and flags the case. The naloxone and 'I used to sell' cases are overturned. | Working | Real decisions come from the review check on the Supabase server. |
 | AD-14 | Decisions take effect | Decide a case | Overturn lifts any mute, pause or age check and takes back the latest warning. Uphold on 'Account removal proposed' removes the account. Change the action: a warning, a 24-hour mute, a 7-day pause, lift a mute or pause, or remove the account. Removing asks to confirm (Rusty, 8 Nov 2026). | Working | Real on the Supabase server; checked with app/scripts/live-arbitrator.js. |
+| AD-15 | Members | Open the dashboard | Live members, members who deleted their account and new members this month, counting real members only. At 500 real members the arbitrator gets one email, and the dashboard says it's time to remove the sample members. | Working | Live on the Supabase server (arb_members, and the daily milestones function); samples in the demo. |
 | AD-04 | Change a decision | Tap Check, write a note, choose an outcome | Shows the agent's decision and reason, and who actions apply to. Uphold, Overturn or Change the action; a note of at least 5 characters is required, shown in red if missing. The case then shows 'by Arbitrator'. | Working | - |
 | AD-05 | Decision reaches the member | Decide a case raised in this browser, then sign in as the member | The Support page shows the decision and note. | Working | Real on the Supabase server; checked with app/scripts/live-arbitrator.js. |
 | AD-06 | Message safety | Open the dashboard | Messages checked, blocked, Help shown, check time, and blocked messages by reason. | Working | Live figures on the Supabase server; samples in the demo. |

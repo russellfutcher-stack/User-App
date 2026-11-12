@@ -8,6 +8,14 @@ import { STAGES } from '../data/reference';
 import { useApp } from '../state/app';
 import { B, Bullet, Btn, Card, Disclaimer, H2, H3, Label, P, Pill, Row, Select, s as ui } from '../components/ui';
 import { ReviewSheet } from './Safety';
+
+// How strikes add up (Rusty, 12 Nov 2026). Matches add_strike in the database.
+export const STRIKE_LADDER: [string, string][] = [
+  ['Any strike', "A warning. The message isn't sent and you're told why."],
+  ['3 in 7 days', "Muted for 24 hours: you can't send messages or posts."],
+  ['5 in 30 days', 'Your account is paused for 7 days.'],
+  ['3 for dealing in 7 days', 'Your account is paused while it is reviewed.'],
+];
 import { C, F } from '../theme';
 
 const stageLabel = (id: string) => STAGES.find(s => s.id === id)?.label || '';
@@ -105,6 +113,17 @@ export function Support() {
         <Bullet>Street drugs may contain fentanyl or nitazenes. Use test strips where they're available, and start with a small amount.</Bullet>
         <Bullet>Carry naloxone. Many pharmacies and drug services give it out free.</Bullet>
         <P hint>In many places, laws protect people who call for help at an overdose. Check what applies where you live.</P>
+      </Card>
+
+      <Card>
+        <View id="strikes" style={{ gap: 10 }}>
+          <H2>The strike ladder</H2>
+          <P small muted>Breaking the community agreement on purpose, such as dealing, harassment or hate, counts as a strike. A report about you that's upheld can count as one too. Each strike counts for 30 days.</P>
+          {STRIKE_LADDER.map(([when, what]) => (
+            <View key={when} style={ui.line}><Text style={[ui.p, ui.b, { minWidth: 110 }]}>{when}</Text><Text style={[ui.p, { flex: 1 }]}>{what}</Text></View>
+          ))}
+          <P small muted>Think a decision was wrong? Ask for a review below. If it was a mistake, the strike is taken back and any mute or pause is lifted.</P>
+        </View>
       </Card>
 
       <Card>

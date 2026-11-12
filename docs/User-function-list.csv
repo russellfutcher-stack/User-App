@@ -15,6 +15,7 @@ G-13,Global,No avatars,Look at every page and profile,No avatar pictures anywher
 G-14,Global,Plain safety wording,Look through every page,"No mention of AI agents, staff, volunteers, moderators or Night Owls. The app says 'every message is checked for safety'.",Working,
 G-15,Global,Sample community,Use the app,"100 fictional members (12 written by hand, 88 generated the same way every time), 21 of them peer supporters. Every room has 4 to 6 posts, and the demo account has 6 chats, 3 unread.",Working,
 G-16,Global,Hide (quick exit),Tap Hide,"User is replaced by Google's home page; Back doesn't bring it back, and you're signed out (Rusty, 4 Nov 2026).",Working,Web app only.
+G-17,Global,Sample members are marked,"View a sample member's card, profile or chat","The 100 sample members stay after launch (Rusty, 12 Nov 2026) and still reply, but each shows a 'Sample member' tag; the profile says 'Not a real person…' and a chat with one says their replies are written in advance. On the live server none of them is a peer supporter. They're removed when there are 500 real members.",Working,Real on the Supabase server; checked with app/scripts/live-matching.js.
 WS-01,Welcome & Sign in,Welcome page,Open the app,"The User name, the byline 'Connection and Recovery' and a one-line description.",Working,
 WS-02,Welcome & Sign in,Benefits,Open the app,'Why people use User' lists 4 benefits.,Working,
 WS-03,Welcome & Sign in,How to use it,Open the app,5 numbered steps. The last explains how to become a peer supporter.,Working,
@@ -41,7 +42,7 @@ SN-14,Sign-up,Create account,Tap Create account,"Creates the account with a salt
 SN-15,Sign-up,What is a salted hash?,Step 1: open the box,Plain-language explanation of salts and hashes.,Working,
 FP-01,Profile setup,Setup page,"After Create account, or signing in before setup is done","'Welcome, [name]. Let's set up your profile.' 4 numbered sections. No tab bar.",Working,
 FP-02,Profile setup,Byline,Type in 'Your byline',"Optional, up to 240 characters.",Working,
-FP-03,Profile setup,Where are you at,Choose,"11 options, including I just gave up, Early recovery (under 3 months), (under 6 months) and (under a year). Default 'Prefer not to say'.",Working,
+FP-03,Profile setup,Where are you at,Choose,"12 options, including I just gave up, Early recovery (under 1 month) (Rusty, 12 Nov 2026), (under 3 months), (under 6 months) and (under a year). Default 'Prefer not to say'.",Working,
 FP-04,Profile setup,I'm looking for,Tap options,14 options.,Working,
 FP-05,Profile setup,Peer support question,'Would you like peer support?',Yes or Not right now. Must be answered before saving.,Working,
 FP-06,Profile setup,Your three choices,Tap items,Same lists and counters as the Me page.,Working,
@@ -64,7 +65,7 @@ M-06,Me,My profile: counters,Change tags,'[n] added' updates instantly.,Working,
 M-07,Me,Interests list,Open Me,20 interests.,Working,
 M-08,Me,Drug use list,Open Me,"Medications (20), Other Substances (10), Alcohol, nicotine & gambling (4).",Working,
 M-09,Me,Mental health list,Open Me,20 conditions.,Working,
-M-10,Me,Where are you at,Edit profile,The same 11 options as setup.,Working,
+M-10,Me,Where are you at,Edit profile,The same 12 options as setup.,Working,
 M-11,Me,I'm looking for,Edit profile,14 options.,Working,
 M-12,Me,Privacy: who sees each choice,Change the 3 settings,Saves and confirms.,Saved only,Hiding tags from other members can only be enforced on a server.
 M-13,Me,Show me in Search results,Toggle,Saves the choice.,Saved only,Hiding from other members' searches needs a server.
@@ -99,7 +100,7 @@ DS-14,Search page,Say hi,Tap Say hi,Opens a chat.,Working,Starting a chat with a
 DS-15,Search page,Search button,"Change anything, tap Search","A notice shows until you tap Search. Search updates Your Matches, scrolls to the top and confirms the number found.",Working,
 DS-16,Search page,Drug use headings,Look under Drug use,"Medications, Other Substances, Alcohol, nicotine & gambling.",Working,
 DS-17,Search page,Search by location,"Fill in City or choose Country under Location, then tap Search",Country keeps only people in that country. City keeps people whose city starts with what was typed (any case). People are found by city only if they let you see it. Shown in the 'Finding people with' summary.,Working,Real on the Supabase server.
-DS-18,Search page,Return to Homepage and New search,"Under the matches, tap 'Return to Homepage' or 'New search'","Return to Homepage opens Home. New search clears every filter, shows the top 10 again, says 'New search. Choose what to look for.' and scrolls to 1. Choose.",Working,
+DS-18,Search page,New search,"Under the matches, tap 'New search'","Clears every filter, shows the top 10 again, says 'New search. Choose what to look for.' and scrolls to 1. Choose. (Return to Homepage was removed, Rusty, 12 Nov 2026.)",Working,
 C-01,Chats,Chat list,Open Chats,"Most recent first (6 chats for the demo account), with a New tag on unread chats.",Working,
 C-02,Chats,No chats,New account,Message and a Search for people button.,Working,
 C-03,Chats,Open a chat,Tap a conversation,Says you're anonymous and every message is checked for safety. Marks the chat as read.,Working,
@@ -144,6 +145,7 @@ SP-09,Support,Review requested,Send a valid review,'Review requested' with a cas
 SP-11,Support,Automatic review decision,Send any review,Every review is decided automatically. A naloxone or recovery message is overturned; an unclear one keeps the safest outcome and says it will be checked again.,Working,Real decisions come from the review check on the Supabase server.
 SP-10,Support,Arbitrator changes a decision,After the arbitrator changes it,The case shows the new decision with 'Arbitrator:' and their note.,Working,Real on the Supabase server; checked with app/scripts/live-arbitrator.js.
 SP-13,Support,A question is answered,"Ask for a review with a question, for example about your data","Answered and closed straight away ('Answered automatically: …') from the privacy policy's facts. Whoever runs User gets an email alert with the case number only (Rusty, 7 Nov 2026).",Working,Real answers come from the review check on the Supabase server.
+SP-14,Support,The strike ladder,Open Support,"Shows how strikes add up: any strike is a warning; 3 in 7 days, a 24-hour mute; 5 in 30 days, a 7-day pause; 3 for dealing in 7 days, paused while reviewed. Each counts for 30 days, and a review can take one back.",Working,
 HS-01,Help & Safety,Help sheet,Tap Help now,"Emergency advice, 7 helplines, grounding, a button to the Support page and Close.",Working,
 HS-02,Help & Safety,Help sheet: to Support,Tap 'See help services for every country',Opens the Support page.,Working,
 HS-03,Help & Safety,Block a person,Block from a profile or chat,"Hides them from Home, Search and Chats.",Working,Blocks must be enforced on a server.
@@ -158,6 +160,7 @@ AD-02,Arbitrator dashboard,Summary figures,Open the dashboard,"Active today, act
 AD-03,Arbitrator dashboard,Review queue,Open the dashboard,"One Decided table: every case with its decision, the agent's confidence, who decided it, and a Flagged tag when under 85%. Urgent cases are red. Live cases are marked 'This browser'.",Working,Live queue on the Supabase server.
 AD-13,Arbitrator dashboard,AI Review Agent,Every case,"Decides every case, including danger, under 18 and account removal. Under 85% confidence it keeps the safest outcome and flags the case. The naloxone and 'I used to sell' cases are overturned.",Working,Real decisions come from the review check on the Supabase server.
 AD-14,Arbitrator dashboard,Decisions take effect,Decide a case,"Overturn lifts any mute, pause or age check and takes back the latest warning. Uphold on 'Account removal proposed' removes the account. Change the action: a warning, a 24-hour mute, a 7-day pause, lift a mute or pause, or remove the account. Removing asks to confirm (Rusty, 8 Nov 2026).",Working,Real on the Supabase server; checked with app/scripts/live-arbitrator.js.
+AD-15,Arbitrator dashboard,Members,Open the dashboard,"Live members, members who deleted their account and new members this month, counting real members only. At 500 real members the arbitrator gets one email, and the dashboard says it's time to remove the sample members.",Working,"Live on the Supabase server (arb_members, and the daily milestones function); samples in the demo."
 AD-04,Arbitrator dashboard,Change a decision,"Tap Check, write a note, choose an outcome","Shows the agent's decision and reason, and who actions apply to. Uphold, Overturn or Change the action; a note of at least 5 characters is required, shown in red if missing. The case then shows 'by Arbitrator'.",Working,
 AD-05,Arbitrator dashboard,Decision reaches the member,"Decide a case raised in this browser, then sign in as the member",The Support page shows the decision and note.,Working,Real on the Supabase server; checked with app/scripts/live-arbitrator.js.
 AD-06,Arbitrator dashboard,Message safety,Open the dashboard,"Messages checked, blocked, Help shown, check time, and blocked messages by reason.",Working,Live figures on the Supabase server; samples in the demo.

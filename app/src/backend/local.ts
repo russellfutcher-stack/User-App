@@ -171,7 +171,7 @@ export function localBackend(): Backend {
     async saveProfile(patch) { await withMe(a => { a.profile = { ...a.profile, ...patch }; }); },
     async members() {
       await queue.catch(() => undefined); const s = await load(); const a = current && s.accounts[current]; if (!a) return [];
-      return SAMPLES.filter(m => !a.blocked.includes(m.username)).map(m => ({ ...m, ...sampleLocation(m.username, m.region), pct: score(a.profile, m) }));
+      return SAMPLES.filter(m => !a.blocked.includes(m.username)).map(m => ({ ...m, ...sampleLocation(m.username, m.region), sample: true, pct: score(a.profile, m) }));
     },
     async block(username) { await withMe(a => { if (!a.blocked.includes(username)) a.blocked.push(username); }); },
     async blocked() { const s = await load(); return (current && s.accounts[current]?.blocked) || []; },
@@ -268,6 +268,7 @@ export function localBackend(): Backend {
     async muteChat(w) { await withMe(a => { a.muted = { ...a.muted, [w]: Date.now() + 8 * 3600000 }; }); },
     async isArbitrator() { return current === ARB; },
     async arbFigures() { return { ...SAMPLE_FIGURES }; },
+    async arbMembers() { return { sample: true, liveMembers: 5230, deletedAccounts: 87, newThisMonth: 412, samples: 100, removeSamples: true }; },
     async arbCases() {
       const s = await load(); if (current !== ARB) return [];
       const decided = (c: Omit<ArbCase, 'status' | 'note' | 'by'>, d: Decision, arb?: ArbDecision): ArbCase => (arb

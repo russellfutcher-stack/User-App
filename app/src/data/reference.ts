@@ -55,7 +55,7 @@ export const PATHS: { key: PathKey; g: 'int' | 'drug' | 'mh'; name: string; cats
 export const STAGES = [
   { id: 'using', label: 'Using, not looking to change right now' }, { id: 'thinking', label: 'Thinking about change' },
   { id: 'cutting', label: 'Cutting down / harm reduction' }, { id: 'quit', label: 'I just gave up' },
-  { id: 'early3', label: 'Early recovery (under 3 months)' }, { id: 'early6', label: 'Early recovery (under 6 months)' },
+  { id: 'early1', label: 'Early recovery (under 1 month)' }, { id: 'early3', label: 'Early recovery (under 3 months)' }, { id: 'early6', label: 'Early recovery (under 6 months)' },
   { id: 'early', label: 'Early recovery (under a year)' }, { id: 'long', label: 'Long-term recovery' },
   { id: 'help', label: 'Ready to help someone' }, { id: 'support', label: 'Supporting someone I love' }, { id: 'na', label: 'Prefer not to say' }];
 

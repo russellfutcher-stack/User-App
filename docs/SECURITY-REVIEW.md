@@ -39,6 +39,8 @@ Done by Max on 29 Oct to 1 Nov 2026. **This is not the independent review the bu
 
 - **Allowed words (Rusty, 12 Nov 2026).** Rusty chose to allow cost, price, sell, sold, buy, other apps' names and links in messages (the table `public.safety_allowed`, which only the server functions can read). Members can now share links and their usernames on other apps, so conversations, and any dealing, can move off User where nothing is checked. Dealing in the message itself is still blocked. The reviewer should look at this choice. The community agreement was changed to match (Rusty, 12 Nov 2026): "Stay anonymous. Don't share real names or home addresses, and think carefully before sharing a phone number or your username on another app."
 
+- **Sample members after launch (Rusty, 12 Nov 2026).** The 100 sample members stay and reply with lines written in advance until there are 500 real members. Rusty first asked for them to appear as real people; he then chose to mark each one "Sample member" (card, profile and chat) and remove their peer supporter badges, so nobody is misled or relies on one for support. The `milestones` function emails the arbitrator once at 500 real members.
+
 ## Needs Rusty (settings Max can't change)
 
 1. **Turn on leaked-password protection** in Supabase: Authentication, then Sign In / Providers or Attack Protection, then "Prevent use of leaked passwords". It stops people using passwords already stolen in other breaches. (It may need a paid Supabase plan.)
