@@ -83,7 +83,7 @@ M-25,Me,Notifications on this device,Turn on the switch under Privacy & visibili
 M-26,Me,Location,"Under My profile, fill in City and choose Country","City (up to 60 letters) and a country from the Support page's list, saved as you type. 'Who sees my city' starts as People I chat with. The country is shown to everyone on the person's card; the city only to the people chosen. Separate from the Support page's country.",Working,Real on the Supabase server (find_members hides the city unless allowed).
 M-27,Me,Email for password resets,Security: tap 'Add email',"Optional. Saved only for reset codes, never shown to anyone, and nobody can find you by it. Change or remove it at any time. A bad address is refused.",Working,Real on the Supabase server; checked with app/scripts/live-reset-rooms.js.
 DS-01,Search page,Your Matches,Open Search,"At the top with a count, sorted by match score.",Working,Real matches come from real members on a server.
-DS-02,Search page,Top 3 / show all,Tap Show all / Show top 3,Expands or shrinks the list.,Working,
+DS-02,Search page,10 matches at a time,Tap 'Next 10 matches',The top 10 matches show first. Each tap of Next 10 matches adds the next 10 best; the button goes once every match is shown. A new search starts again at 10.,Working,
 DS-03,Search page,Choice tiles On/Off,"Tap Interest, Drug use or Mental health","Labelled '1. Choose', with no Search heading above. All On by default. Off hides that choice's items and removes its picks.",Working,
 DS-04,Search page,Pick items,Tap items,Selected items turn yellow. Interest shows all 20 interests.,Working,
 DS-05,Search page,Combining choices,"Pick in several choices, then Search","Any pick within a choice counts; every choice used must match. For example, Pets & dog walking + Alcohol + Generalised anxiety returns only members with all three.",Working,
@@ -99,6 +99,7 @@ DS-14,Search page,Say hi,Tap Say hi,Opens a chat.,Working,Starting a chat with a
 DS-15,Search page,Search button,"Change anything, tap Search","A notice shows until you tap Search. Search updates Your Matches, scrolls to the top and confirms the number found.",Working,
 DS-16,Search page,Drug use headings,Look under Drug use,"Medications, Other Substances, Alcohol, nicotine & gambling.",Working,
 DS-17,Search page,Search by location,"Fill in City or choose Country under Location, then tap Search",Country keeps only people in that country. City keeps people whose city starts with what was typed (any case). People are found by city only if they let you see it. Shown in the 'Finding people with' summary.,Working,Real on the Supabase server.
+DS-18,Search page,Return to Homepage and New search,"Under the matches, tap 'Return to Homepage' or 'New search'","Return to Homepage opens Home. New search clears every filter, shows the top 10 again, says 'New search. Choose what to look for.' and scrolls to 1. Choose.",Working,
 C-01,Chats,Chat list,Open Chats,"Most recent first (6 chats for the demo account), with a New tag on unread chats.",Working,
 C-02,Chats,No chats,New account,Message and a Search for people button.,Working,
 C-03,Chats,Open a chat,Tap a conversation,Says you're anonymous and every message is checked for safety. Marks the chat as read.,Working,

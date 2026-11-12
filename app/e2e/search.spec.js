@@ -5,7 +5,9 @@ const names = async page => (await people(page).allInnerTexts()).map(t => t.spli
 const count = page => page.locator('#match-count');
 const pick = (page, label) => H.chip(page, label).click();
 const go = page => H.btn(page, 'Search').click();
-const showAll = page => page.getByRole('button', { name: /^Show all \d+ matches$/ }).click();
+const next = page => page.getByRole('button', { name: 'Next 10 matches' });
+// Taps Next 10 matches until every match is listed.
+const showAll = async page => { while (await next(page).count()) await next(page).click(); };
 test.beforeEach(async ({ page }) => { await H.open(page); await H.signInDemo(page); await H.tab(page, 'Search').click(); });
 
 test('DS-01 Your Matches at the top with a count', async ({ page }) => {
@@ -17,12 +19,27 @@ test('DS-01 Sorted by match score', async ({ page }) => {
   const pcts = (await people(page).allInnerTexts()).map(t => +t.match(/(\d+)%/)[1]);
   expect(pcts).toHaveLength(100); expect([...pcts].sort((a, b) => b - a)).toEqual(pcts);
 });
-test('DS-02 Shows the top 3 at first', async ({ page }) => {
-  await expect(people(page)).toHaveCount(3); await expect(H.btn(page, 'Show all 100 matches')).toBeVisible();
+test('DS-02 Shows the top 10 at first, with Next 10 matches', async ({ page }) => {
+  await expect(people(page)).toHaveCount(10); await expect(next(page)).toBeVisible();
+  await next(page).click(); await expect(people(page)).toHaveCount(20);
+  await next(page).click(); await expect(people(page)).toHaveCount(30);
 });
-test('DS-02 Show all, then Show top 3', async ({ page }) => {
-  await showAll(page); await expect(people(page)).toHaveCount(100);
-  await H.btn(page, 'Show top 3').click(); await expect(people(page)).toHaveCount(3);
+test('DS-02 Next 10 matches goes away once all are shown', async ({ page }) => {
+  await showAll(page); await expect(people(page)).toHaveCount(100); await expect(next(page)).toHaveCount(0);
+});
+test('DS-18 Return to Homepage and New search sit under the matches', async ({ page }) => {
+  const text = await page.locator('#results').innerText();
+  expect(text.indexOf('Next 10 matches')).toBeLessThan(text.indexOf('Return to Homepage'));
+  expect(text.indexOf('Return to Homepage')).toBeLessThan(text.indexOf('New search'));
+  await H.btn(page, 'Return to Homepage').click();
+  await expect(H.tab(page, 'Home')).toHaveAttribute('aria-selected', 'true');
+});
+test('DS-18 New search clears the filters and starts again at 10', async ({ page }) => {
+  await pick(page, 'Books & reading'); await go(page); await next(page).click().catch(() => {});
+  await H.btn(page, 'New search').click();
+  await expect(H.toast(page)).toHaveText('New search. Choose what to look for.');
+  await expect(count(page)).toHaveText('100 people'); await expect(people(page)).toHaveCount(10);
+  await expect(H.chip(page, 'Books & reading')).toHaveAttribute('aria-checked', 'false');
 });
 test('DS-03 All three choices are On, labelled 1. Choose', async ({ page }) => {
   await expect(H.screen(page).getByText('1. Choose', { exact: true })).toBeVisible();
@@ -88,9 +105,9 @@ test('DS-10 No results message', async ({ page }) => {
   await expect(count(page)).toHaveText('0 people');
   await expect(H.screen(page)).toContainText('No one matches all of those yet. Try removing a filter, or join a room to meet people more broadly.');
 });
-test('DS-10 No Show all button with no results', async ({ page }) => {
+test('DS-10 No Next 10 matches button with no results', async ({ page }) => {
   await pick(page, 'GHB / GBL'); await pick(page, 'Eating disorders'); await go(page);
-  await expect(page.getByRole('button', { name: /^Show all/ })).toHaveCount(0);
+  await expect(next(page)).toHaveCount(0);
 });
 test('DS-11 Card shows name, badge, status, stage, place and match', async ({ page }) => {
   const first = people(page).first();

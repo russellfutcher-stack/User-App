@@ -9,7 +9,7 @@ Prototype version 24. Every function a person can use in the prototype, each wit
 - **Saved only**: the choice is saved but has no visible effect yet.
 - **Placeholder**: the button only shows a message.
 
-Totals: Working 156, Simulated 7, Saved only 2, Placeholder 2, 167 functions in all.
+Totals: Working 157, Simulated 7, Saved only 2, Placeholder 2, 168 functions in all.
 
 ## Global
 
@@ -129,7 +129,7 @@ Totals: Working 156, Simulated 7, Saved only 2, Placeholder 2, 167 functions in 
 | ID | Function | How to trigger | Expected result / rules | Status | Needs a backend |
 |---|---|---|---|---|---|
 | DS-01 | Your Matches | Open Search | At the top with a count, sorted by match score. | Working | Real matches come from real members on a server. |
-| DS-02 | Top 3 / show all | Tap Show all / Show top 3 | Expands or shrinks the list. | Working | - |
+| DS-02 | 10 matches at a time | Tap 'Next 10 matches' | The top 10 matches show first. Each tap of Next 10 matches adds the next 10 best; the button goes once every match is shown. A new search starts again at 10. | Working | - |
 | DS-03 | Choice tiles On/Off | Tap Interest, Drug use or Mental health | Labelled '1. Choose', with no Search heading above. All On by default. Off hides that choice's items and removes its picks. | Working | - |
 | DS-04 | Pick items | Tap items | Selected items turn yellow. Interest shows all 20 interests. | Working | - |
 | DS-05 | Combining choices | Pick in several choices, then Search | Any pick within a choice counts; every choice used must match. For example, Pets & dog walking + Alcohol + Generalised anxiety returns only members with all three. | Working | - |
@@ -145,6 +145,7 @@ Totals: Working 156, Simulated 7, Saved only 2, Placeholder 2, 167 functions in 
 | DS-15 | Search button | Change anything, tap Search | A notice shows until you tap Search. Search updates Your Matches, scrolls to the top and confirms the number found. | Working | - |
 | DS-16 | Drug use headings | Look under Drug use | Medications, Other Substances, Alcohol, nicotine & gambling. | Working | - |
 | DS-17 | Search by location | Fill in City or choose Country under Location, then tap Search | Country keeps only people in that country. City keeps people whose city starts with what was typed (any case). People are found by city only if they let you see it. Shown in the 'Finding people with' summary. | Working | Real on the Supabase server. |
+| DS-18 | Return to Homepage and New search | Under the matches, tap 'Return to Homepage' or 'New search' | Return to Homepage opens Home. New search clears every filter, shows the top 10 again, says 'New search. Choose what to look for.' and scrolls to 1. Choose. | Working | - |
 
 ## Chats
 
