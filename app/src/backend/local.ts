@@ -35,7 +35,7 @@ const check = (text: string): { blocked: boolean; help: boolean; young: boolean 
 const YOUNG = /\b(i'?m|i am|im) (1[0-7]|[1-9])\b(?! ?(days?|weeks?|months?|years?|hours?|minutes?|mins?|times?|drinks?)\b)|\b(1[0-7]|[1-9]) ?(years? old|yo|y\/o)\b|\bin year ([7-9]|1[01])\b/i;
 const AGE = "User is for adults, so this message wasn't sent. Please confirm you are 18 or older to carry on.";
 const AGE_REVIEW = "User is for adults, so this message wasn't sent. Your account is paused while it is reviewed.";
-const NOT_SENT = "It looks like it could be about buying or selling, or sharing links or other apps' contact details. User doesn't allow sourcing or off-app contact, to keep everyone safe. If you're struggling with cravings, the Help button has people to talk to right now.";
+const NOT_SENT = "It looks like it could be about buying, selling or sourcing drugs, or sharing payment details. User doesn't allow that, to keep everyone safe. If you're struggling with cravings, the Help button has people to talk to right now.";
 type Store = { accounts: Record<string, Account>; device: string | null; current: string | null; arb?: Record<string, ArbDecision> };
 // The demo arbitrator, as in the prototype: username Arbitrator, password "fair review". Not a member account.
 const ARB = '~arbitrator';

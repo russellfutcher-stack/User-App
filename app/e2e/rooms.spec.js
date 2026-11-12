@@ -89,7 +89,7 @@ test('R-09 Short name or purpose is refused', async ({ page }) => {
 });
 test('R-09 Dealing words and existing names are refused', async ({ page }) => {
   await request(page, 'Plug Room', 'Where to buy, cash app welcome.');
-  await expect(page.locator('#rq-err')).toHaveText("Room requests can't mention buying or selling, prices, links or contact details.");
+  await expect(page.locator('#rq-err')).toHaveText("Room requests can't mention buying or selling drugs, prices or payment details.");
   await page.fill('#rq-name', 'book nook'); await page.fill('#rq-desc', 'Another place for readers.'); await H.btn(page, 'Send request').click();
   await expect(page.locator('#rq-err')).toHaveText('A room with that name already exists or has been requested.');
 });

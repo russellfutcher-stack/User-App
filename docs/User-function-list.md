@@ -9,7 +9,7 @@ Prototype version 24. Every function a person can use in the prototype, each wit
 - **Saved only**: the choice is saved but has no visible effect yet.
 - **Placeholder**: the button only shows a message.
 
-Totals: Working 155, Simulated 7, Saved only 2, Placeholder 2, 166 functions in all.
+Totals: Working 156, Simulated 7, Saved only 2, Placeholder 2, 167 functions in all.
 
 ## Global
 
@@ -167,6 +167,7 @@ Totals: Working 155, Simulated 7, Saved only 2, Placeholder 2, 166 functions in 
 | C-15 | Swipe to delete a chat | Swipe a chat to the left in the Chats list, then tap Delete | A red Delete button appears behind the chat. Tapping it removes the chat and shows 'Chat with … deleted.' with Undo. A short swipe snaps back, and a swipe never opens the chat. Works with a finger or a mouse. | Working | - |
 | C-16 | Undo a deleted chat | Tap Undo on the toast within 5 seconds | The chat comes back with its messages and unread state. | Working | - |
 | C-17 | Delete a chat from its options | In a chat, tap 'Safety & options', then 'Delete chat' | Asks to confirm ('Delete your chat with …? … keeps their copy.'). Yes removes it from your Chats with an Undo toast; Cancel keeps it. | Working | - |
+| C-18 | Allowed words | Send a message with cost, price, sell, sold, buy, an app name (WhatsApp, Snapchat, Telegram and so on) or a link | Sent. These words are on the owner's allowed list, the database table safety_allowed (Rusty, 12 Nov 2026), so they never block a message on their own, and the careful check is told they're allowed. Dealing is still stopped whatever words it uses ('selling 2g, good price'). Rusty adds or removes words in Supabase: Table Editor, safety_allowed. | Working | Real on the Supabase server; checked with app/scripts/live-safety.js. |
 
 ## Rooms
 

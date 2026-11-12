@@ -37,6 +37,8 @@ Done by Max on 29 Oct to 1 Nov 2026. **This is not the independent review the bu
 - **Room activity** (people active in the last 5 minutes) is a count only; nobody can see who.
 - **City** follows its own visibility setting in `find_members`; country is shown to all members.
 
+- **Allowed words (Rusty, 12 Nov 2026).** Rusty chose to allow cost, price, sell, sold, buy, other apps' names and links in messages (the table `public.safety_allowed`, which only the server functions can read). Members can now share links and their usernames on other apps, so conversations, and any dealing, can move off User where nothing is checked. Dealing in the message itself is still blocked. The reviewer should look at this choice; the community agreement still says "Don't share ... socials".
+
 ## Needs Rusty (settings Max can't change)
 
 1. **Turn on leaked-password protection** in Supabase: Authentication, then Sign In / Providers or Attack Protection, then "Prevent use of leaked passwords". It stops people using passwords already stolen in other breaches. (It may need a paid Supabase plan.)

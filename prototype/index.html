@@ -733,7 +733,11 @@ const DEALING = /(\b(sell|selling|sold|for sale|plug|supplier|supply you|re-?up|
 // Recovery and harm-reduction context: "I used to sell", "I never deal", "naloxone". Allowed unless it also has prices, links, other apps or drug emojis.
 const RECOVERY = /\b(used to|use to|stopped|quit|gave up|no longer|never|don'?t|won'?t|not)\s+(sell|selling|deal|dealing|supply|supplying)\b|\bnaloxone\b|\bharm reduction\b/i;
 const HARD = /[$£€]\s?\d+|https?:|www\.|\b(telegram|wickr|whats ?app|snap ?chat|kik)\b|🔌|💊|❄|💉/i;
-const blocked = t => DEALING.test(t) && !(RECOVERY.test(t) && !HARD.test(t));
+// Allowed words (Rusty, 12 Nov 2026): never a reason to block on their own. 'link' allows web links. The real app keeps this list in the
+// database table safety_allowed, and the careful check is told about it too.
+const ALLOWED = ['cost','price','sell','sold','buy','link','whatsapp','snapchat','telegram','wickr','kik','instagram','insta','signal','facebook','messenger','tiktok'];
+const withoutAllowed = t => ALLOWED.reduce((s,w) => w==='link' ? s.replace(/https?:\/\/\S*|www\.\S*/gi,' ') : s.replace(new RegExp('\\b'+[...w].join('\\s?')+'\\b','gi'),' '), t);
+const blocked = text => { const t = withoutAllowed(text); return DEALING.test(t) && !(RECOVERY.test(t) && !HARD.test(t)); };
 const CRISIS = /(kill myself|suicid|end it all|want to die|don'?t want to (be here|live|wake up)|better off without me|overdos|\bod\b|took too many|self[- ]?harm|hurt myself|cutting myself)/i;
 
 /* ---------- Icons ---------- */
@@ -917,7 +921,7 @@ function renderChat(id){
 const bubble = m => m.f==='sys' ? `<div class="bubble sys">${esc(m.t)}</div>` : `<div class="bubble ${m.f==='me'?'me':'them'}">${m.who?`<span class="who">${esc(m.who)}</span>`:''}${esc(m.t)}</div>`;
 function scrollMsgs(){ const m=$('#msgs'); if(m) m.scrollTop=m.scrollHeight; }
 function guard(text){
-  if(blocked(text)){ $('#warn').innerHTML=`<div class="warnbox" role="alert"><b>Message not sent</b>It looks like it could be about buying or selling, or sharing links or other apps' contact details. User doesn't allow sourcing or off-app contact, to keep everyone safe. If you're struggling with cravings, the Help button has people to talk to right now. <button class="btn sm quiet" onclick="App.humanReview('A message that was blocked')">Think this is wrong? Ask for a review</button></div>`; return false; }
+  if(blocked(text)){ $('#warn').innerHTML=`<div class="warnbox" role="alert"><b>Message not sent</b>It looks like it could be about buying, selling or sourcing drugs, or sharing payment details. User doesn't allow that, to keep everyone safe. If you're struggling with cravings, the Help button has people to talk to right now. <button class="btn sm quiet" onclick="App.humanReview('A message that was blocked')">Think this is wrong? Ask for a review</button></div>`; return false; }
   $('#warn').innerHTML=''; return true;
 }
 
@@ -1337,7 +1341,7 @@ const App = {
   submitRoom(){ const name=$('#rq-name').value.trim(), cat=$('#rq-cat').value, desc=$('#rq-desc').value.trim(), err=m=>$('#rq-err').textContent=m;
     if(name.length<3) return err('Give the room a name of at least 3 characters.');
     if(desc.length<10) return err('Say what the room is for in at least 10 characters.');
-    if(blocked(name+' '+desc)) return err('Room requests can\'t mention buying or selling, prices, links or contact details.');
+    if(blocked(name+' '+desc)) return err('Room requests can\'t mention buying or selling drugs, prices or payment details.');
     if(allRooms().concat(S.rooms.requests||[]).some(r=>r.name.toLowerCase()===name.toLowerCase())) return err('A room with that name already exists or has been requested.');
     const q={id:'c'+Date.now().toString(36),name,cat,desc,status:'Checking'}; (S.rooms.requests=S.rooms.requests||[]).push(q); save(); renderRooms();
     $('.sheet').innerHTML=`<div class="grab"></div><div class="success" role="status"><div class="tick" aria-hidden="true">✓</div><h2>Request sent successfully</h2>
