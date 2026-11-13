@@ -79,7 +79,7 @@ Totals: Working 160, Simulated 7, Saved only 2, Placeholder 2, 171 functions in 
 | FP-06 | Your three choices | Tap items | Same lists and counters as the Me page. | Working | - |
 | FP-07 | Who can see what | 3 settings | Defaults: interests Everyone; drug use and mental health People I chat with. Options: Everyone / People I chat with / Only me. | Working | - |
 | FP-08 | Save profile | Tap 'Save profile and see my matches' | Needs the peer support answer and at least one interest, each with its own message. | Working | - |
-| FP-09 | Matches screen | After saving | 'Here are your matches' lists everyone by match score, with Continue to Home and Refine on the Search page. | Working | Real matches come from real members on a server. |
+| FP-09 | Matches screen | After saving | 'Here are your matches' lists the top 10 by match score, with Next 10 matches to add 10 more (Rusty, 13 Nov 2026), then Continue to Home and Refine on the Search page. | Working | Real matches come from real members on the Supabase server. |
 
 ## Home
 
@@ -157,7 +157,7 @@ Totals: Working 160, Simulated 7, Saved only 2, Placeholder 2, 171 functions in 
 | C-03 | Open a chat | Tap a conversation | Says you're anonymous and every message is checked for safety. Marks the chat as read. | Working | - |
 | C-04 | Conversation starters | Chat with fewer than 3 messages | 6 starters fill the message box. | Working | - |
 | C-05 | Send a message | Type and Send | Up to 1000 characters; empty messages ignored. | Working | Delivering messages to the other person needs a server. |
-| C-06 | Simulated reply | Send a message | Typing indicator, then a reply. | Simulated | Replies come from real people; the prototype simulates them. |
+| C-06 | Sample member replies | Send a message to a sample member | Typing indicator, then a reply. On the live server the reply is sent by the server about 2 seconds later, so it comes even if you leave the chat, and every message gets its own reply (Rusty, 13 Nov 2026). | Simulated | Real on the Supabase server for sample members; checked with app/scripts/live-chats.js. Real members reply themselves. |
 | C-07 | Dealing and contact filter | Selling words, prices, links, other apps' names, drug emojis | Not sent; a red 'Message not sent' box explains why. Recovery or harm-reduction context, such as 'I used to sell, now I help others stay clean' or naloxone, is allowed unless it also has prices, links or other apps. | Working | The real check is the AI Moderator on a server; the prototype uses simple rules. |
 | C-08 | Phone numbers allowed | Send a phone number | The message is sent. | Working | The real check is the AI Moderator on a server. |
 | C-09 | Crisis detection | Crisis words | Sent, then the Help sheet opens. | Working | The real check is the AI Moderator on a server. |
@@ -178,7 +178,7 @@ Totals: Working 160, Simulated 7, Saved only 2, Placeholder 2, 171 functions in 
 | R-01 | Room type tiles | Tap Interest, Drug use or Mental health | One type at a time, remembered. | Working | - |
 | R-02 | Room list | Open Rooms | Type tag, name, Joined tag, description, members and how many are active now. No Moderated tag. | Working | - |
 | R-03 | Room catalogue | Check each type | Interest 5, Drug use 5, Mental health 4 (14 built-in rooms), plus rooms created for you. | Working | - |
-| R-04 | Your rooms | Join rooms | All joined rooms. | Working | - |
+| R-04 | Your rooms | Join rooms | All joined rooms, as the first section at the top of the Rooms page (Rusty, 13 Nov 2026). | Working | - |
 | R-05 | Open a room | Tap a room | Description, 'Every message is checked for safety', members, how many were active in the last 5 minutes, a Room details button, and messages. | Simulated | - |
 | R-06 | Join a room | Tap 'Join room to post' | Joins and shows the message box. | Working | Room membership needs a server. |
 | R-07 | Post in a room | Type and Post | Same filter and crisis detection as chats. | Working | Posts reaching other members need a server. |

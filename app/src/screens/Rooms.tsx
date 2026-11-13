@@ -48,16 +48,6 @@ export function Rooms() {
   return (
     <>
       <View style={{ gap: 4 }}><H2>Rooms</H2><P small muted>Small group chats in three choices. Every message is checked for safety.</P></View>
-      <View style={{ gap: 10 }}>
-        <Label>Choose a type of room</Label>
-        <PathTiles label="Room types" idPrefix="roomtype" on={[roomCat]} foot={k => `${all.filter(r => r.cat === k).length} rooms`} onPress={setRoomCat} />
-      </View>
-      <View style={{ gap: 10 }} id="room-list">
-        <Row style={{ gap: 8 }}><View style={{ width: 18, height: 18, borderWidth: 2, borderColor: C.frame, backgroundColor: GROUP_COLOUR[g.g] }} /><Text style={{ fontFamily: F.display, fontSize: 18, color: C.ink }}>{choiceName(g.key)} rooms</Text></Row>
-        {rooms === null ? <P muted>Loading rooms…</P> : all.filter(r => r.cat === roomCat).map(r => (
-          <Pressable key={r.id} role="button" aria-label={r.name} onPress={() => setView({ name: 'room', id: r.id, title: r.name })}><RoomRow r={r} /></Pressable>
-        ))}
-      </View>
       <View style={{ gap: 10 }} id="your-rooms">
         <Label>Your rooms</Label>
         {mine.length ? <>
@@ -68,6 +58,16 @@ export function Rooms() {
           ))}
           <P hint>Swipe a room to the left to leave it. Rooms you created can be deleted.</P>
         </> : <P small muted>You haven't joined any rooms yet.</P>}
+      </View>
+      <View style={{ gap: 10 }}>
+        <Label>Choose a type of room</Label>
+        <PathTiles label="Room types" idPrefix="roomtype" on={[roomCat]} foot={k => `${all.filter(r => r.cat === k).length} rooms`} onPress={setRoomCat} />
+      </View>
+      <View style={{ gap: 10 }} id="room-list">
+        <Row style={{ gap: 8 }}><View style={{ width: 18, height: 18, borderWidth: 2, borderColor: C.frame, backgroundColor: GROUP_COLOUR[g.g] }} /><Text style={{ fontFamily: F.display, fontSize: 18, color: C.ink }}>{choiceName(g.key)} rooms</Text></Row>
+        {rooms === null ? <P muted>Loading rooms…</P> : all.filter(r => r.cat === roomCat).map(r => (
+          <Pressable key={r.id} role="button" aria-label={r.name} onPress={() => setView({ name: 'room', id: r.id, title: r.name })}><RoomRow r={r} /></Pressable>
+        ))}
       </View>
       <Card>
         <H3>Start a new room</H3>

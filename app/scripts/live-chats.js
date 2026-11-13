@@ -44,11 +44,17 @@ const wait = ms => new Promise(r => setTimeout(r, ms));
     check('a blocked person cannot message', sendBlocked.ok === false, sendBlocked.error);
     check('and the chat is hidden for both', (await rpc(a, 'my_chats')).length === 0 && (await rpc(b, 'my_chats')).length === 0);
     await rpc(a, 'unblock', { name: B }); check('unblocking brings the chat back', (await rpc(a, 'my_chats')).length === 1);
+    // C-06: the server sends the reply itself, about 2 seconds later, even if nobody asks for it (Rusty, 13 Nov 2026).
     await say(a, 'MossyOtter', 'Hello Mossy, how is your week going?');
-    const rep = await rpc(a, 'sample_reply', { name: 'MossyOtter' });
-    const mossy = await rpc(a, 'chat_messages', { name: 'MossyOtter' });
-    check('a sample member replies', rep.length === 1 && mossy.some(m => !m.mine && /Biscuit/.test(m.body)));
-    check('only once per message', (await rpc(a, 'sample_reply', { name: 'MossyOtter' })).length === 0);
+    await new Promise(r => setTimeout(r, 5000));
+    let mossy = await rpc(a, 'chat_messages', { name: 'MossyOtter' });
+    check('C-06 a sample member replies by itself', mossy.length === 2 && !mossy[1].mine && /Biscuit/.test(mossy[1].body), mossy.map(m => m.mine ? 'me' : 'them').join(','));
+    await rpc(a, 'sample_reply', { name: 'MossyOtter' }); // the old way of asking, from copies of the app still open
+    check('C-06 asking again adds no second reply', (await rpc(a, 'chat_messages', { name: 'MossyOtter' })).length === 2);
+    await say(a, 'MossyOtter', 'Two quick ones:'); await say(a, 'MossyOtter', 'what helps you on hard days?');
+    await new Promise(r => setTimeout(r, 5000));
+    mossy = await rpc(a, 'chat_messages', { name: 'MossyOtter' });
+    check('C-06 two quick messages get two replies', mossy.filter(m => !m.mine).length === 3, mossy.map(m => m.mine ? 'me' : 'them').join(','));
     const { count } = await b.from('messages').select('*', { count: 'exact', head: true });
     check("members can't read other people's chats", count === 2, count + ' readable');
     const rooms = await rpc(a, 'my_rooms');

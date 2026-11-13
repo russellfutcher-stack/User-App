@@ -154,7 +154,7 @@ export function Chat({ withUser }: { withUser: string }) {
       const reply = await backend.sampleReply(withUser).catch(() => null);
       if (!here.current) return; setTyping(false);
       if (reply) { setMsgs(l => (l && !l.some(m => m.id === reply.id) ? [...l, reply] : l)); await backend.messages(withUser).catch(() => null); refreshUnread(); }
-    }, 2200 + Math.random() * 1200);
+    }, 3200 + Math.random() * 800); // the server replies after about 2 seconds
     return true;
   };
   return (

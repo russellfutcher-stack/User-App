@@ -70,8 +70,18 @@ test('H-10 No check-in and no Your rooms section', async ({ page }) => {
 test('FP-09 Saving opens Here are your matches, by score', async ({ page }) => {
   await H.open(page); await H.createAccount(page, 'Matcher_1'); await H.finishSetup(page, 'Music', { toHome: false });
   await expect(page.locator('#tabs')).toHaveCount(0);
-  const pcts = (await page.locator('#match-list [data-testid="person"]').allInnerTexts()).map(t => +t.match(/(\d+)%/)[1]);
+  const list = page.locator('#match-list [data-testid="person"]');
+  await expect(list).toHaveCount(10);
+  const next = page.locator('#match-list').getByRole('button', { name: 'Next 10 matches' });
+  while (await next.count()) await next.click();
+  const pcts = (await list.allInnerTexts()).map(t => +t.match(/(\d+)%/)[1]);
   expect(pcts).toHaveLength(100); expect([...pcts].sort((a, b) => b - a)).toEqual(pcts);
+});
+test('FP-09 Shows 10 matches, then Next 10 matches adds 10 more', async ({ page }) => {
+  await H.open(page); await H.createAccount(page, 'Matcher_2'); await H.finishSetup(page, 'Music', { toHome: false });
+  const list = page.locator('#match-list [data-testid="person"]');
+  await expect(list).toHaveCount(10);
+  await page.getByRole('button', { name: 'Next 10 matches' }).click(); await expect(list).toHaveCount(20);
 });
 test('FP-09 Continue to Home and Refine on the Search page', async ({ page }) => {
   await H.open(page); await H.createAccount(page, 'Matcher_2'); await H.finishSetup(page, 'Music', { toHome: false });
