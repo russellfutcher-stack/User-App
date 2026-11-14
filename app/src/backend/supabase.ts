@@ -197,9 +197,10 @@ export function supabaseBackend(url: string, anonKey: string): Backend {
       return (data || []).map((r: { id: number; mine: boolean; body: string; created_at: string }): Msg => ({ id: String(r.id), mine: r.mine, text: r.body, at: Date.parse(r.created_at) }));
     },
     async send(w, text) { return checked('chat', w, text); },
+    // The server sends sample members' replies itself (send function); this just picks up the latest one if it has arrived.
     async sampleReply(w) {
-      const { data, error } = await db.rpc('sample_reply', { name: w }); if (error || !data?.length) return null;
-      const all = await this.messages(w); return all.find(m => m.id === String(data[0].id)) || null;
+      const all = await this.messages(w); const last = all[all.length - 1];
+      return last && !last.mine ? last : null;
     },
     async deleteChat(w) {
       const { error } = await db.rpc('hide_chat', { name: w, hide: true }); must(error);

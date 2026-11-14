@@ -38,6 +38,10 @@ test('R-03 Rooms created for you are added to their type', async ({ page }) => {
   await request(page, 'Cyclists in Recovery', 'Riding together on daytime routes.');
   await H.btn(page, 'Done').click(); await expect(type(page, 'interests')).toContainText('6 rooms');
 });
+test('R-04 Your rooms is the first section on the page', async ({ page }) => {
+  const yoursTop = (await page.locator('#your-rooms').boundingBox()).y, listTop = (await page.locator('#room-list').boundingBox()).y;
+  expect(yoursTop).toBeLessThan(listTop);
+});
 test('R-04 Your rooms lists joined rooms', async ({ page }) => {
   await expect(yours(page)).toHaveCount(2);
   expect((await yours(page).allInnerTexts()).join(' ')).toContain('Book Nook');

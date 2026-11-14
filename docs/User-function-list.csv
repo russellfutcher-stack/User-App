@@ -48,7 +48,7 @@ FP-05,Profile setup,Peer support question,'Would you like peer support?',Yes or 
 FP-06,Profile setup,Your three choices,Tap items,Same lists and counters as the Me page.,Working,
 FP-07,Profile setup,Who can see what,3 settings,Defaults: interests Everyone; drug use and mental health People I chat with. Options: Everyone / People I chat with / Only me.,Working,
 FP-08,Profile setup,Save profile,Tap 'Save profile and see my matches',"Needs the peer support answer and at least one interest, each with its own message.",Working,
-FP-09,Profile setup,Matches screen,After saving,"'Here are your matches' lists everyone by match score, with Continue to Home and Refine on the Search page.",Working,Real matches come from real members on a server.
+FP-09,Profile setup,Matches screen,After saving,"'Here are your matches' lists the top 10 by match score, with Next 10 matches to add 10 more (Rusty, 13 Nov 2026), then Continue to Home and Refine on the Search page.",Working,Real matches come from real members on the Supabase server.
 H-01,Home,Greeting,Open Home,Greeting by time of day with your stage.,Working,
 H-05,Home,Three choice tiles,Tap a tile,"Interest, Drug use, Mental health, each with the number of members who have tags in it. Opens Search with that choice on.",Working,
 H-06,Home,New messages,Have unread chats,Lists unread chats (3 for the demo account); hidden when none.,Simulated,Real unread messages need a server.
@@ -106,7 +106,7 @@ C-02,Chats,No chats,New account,Message and a Search for people button.,Working,
 C-03,Chats,Open a chat,Tap a conversation,Says you're anonymous and every message is checked for safety. Marks the chat as read.,Working,
 C-04,Chats,Conversation starters,Chat with fewer than 3 messages,6 starters fill the message box.,Working,
 C-05,Chats,Send a message,Type and Send,Up to 1000 characters; empty messages ignored.,Working,Delivering messages to the other person needs a server.
-C-06,Chats,Simulated reply,Send a message,"Typing indicator, then a reply.",Simulated,Replies come from real people; the prototype simulates them.
+C-06,Chats,Sample member replies,Send a message to a sample member,"Typing indicator, then a reply. On the live server the reply is sent by the server about 2 seconds later, so it comes even if you leave the chat, and every message gets its own reply (Rusty, 13 Nov 2026).",Simulated,Real on the Supabase server for sample members; checked with app/scripts/live-chats.js. Real members reply themselves.
 C-07,Chats,Dealing and contact filter,"Selling words, prices, links, other apps' names, drug emojis","Not sent; a red 'Message not sent' box explains why. Recovery or harm-reduction context, such as 'I used to sell, now I help others stay clean' or naloxone, is allowed unless it also has prices, links or other apps.",Working,The real check is the AI Moderator on a server; the prototype uses simple rules.
 C-08,Chats,Phone numbers allowed,Send a phone number,The message is sent.,Working,The real check is the AI Moderator on a server.
 C-09,Chats,Crisis detection,Crisis words,"Sent, then the Help sheet opens.",Working,The real check is the AI Moderator on a server.
@@ -122,7 +122,7 @@ C-18,Chats,Allowed words,"Send a message with cost, price, sell, sold, buy, an a
 R-01,Rooms,Room type tiles,"Tap Interest, Drug use or Mental health","One type at a time, remembered.",Working,
 R-02,Rooms,Room list,Open Rooms,"Type tag, name, Joined tag, description, members and how many are active now. No Moderated tag.",Working,
 R-03,Rooms,Room catalogue,Check each type,"Interest 5, Drug use 5, Mental health 4 (14 built-in rooms), plus rooms created for you.",Working,
-R-04,Rooms,Your rooms,Join rooms,All joined rooms.,Working,
+R-04,Rooms,Your rooms,Join rooms,"All joined rooms, as the first section at the top of the Rooms page (Rusty, 13 Nov 2026).",Working,
 R-05,Rooms,Open a room,Tap a room,"Description, 'Every message is checked for safety', members, how many were active in the last 5 minutes, a Room details button, and messages.",Simulated,
 R-06,Rooms,Join a room,Tap 'Join room to post',Joins and shows the message box.,Working,Room membership needs a server.
 R-07,Rooms,Post in a room,Type and Post,Same filter and crisis detection as chats.,Working,Posts reaching other members need a server.

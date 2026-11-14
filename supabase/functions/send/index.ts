@@ -56,6 +56,15 @@ serve(async (me, b) => {
     : await admin.rpc('deliver_message', { sender: me.id, name: to, body: text });
   if (r.error) return reply({ ok: false, error: /blocked/.test(r.error.message) ? "You can't message this person." : 'trouble' });
   const row = (r.data as { id: number; created_at: string }[])[0];
+  // A sample member replies a moment later, from here, so the reply comes even if the member leaves the chat (Rusty, 13 Nov 2026).
+  if (kind === 'chat') {
+    const sample = must(await admin.from('profiles').select('is_sample').eq('username', to).maybeSingle()) as { is_sample: boolean } | null;
+    if (sample?.is_sample) {
+      // deno-lint-ignore no-explicit-any
+      (globalThis as any).EdgeRuntime?.waitUntil(new Promise(done => setTimeout(done, 2000))
+        .then(() => admin.rpc('sample_reply_to', { sender: me.id, name: to })).catch(e => console.error(e)));
+    }
+  }
   // A neutral notification for the other person, unless they've muted this chat. Sent after the reply, so nobody waits.
   if (kind === 'chat') {
     // deno-lint-ignore no-explicit-any
