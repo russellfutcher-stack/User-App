@@ -53,3 +53,6 @@ e2e-results/
 !.env.example
 dist-netlify/
 user-app-netlify.zip
+
+# The stand-alone website, made by scripts/make-site.js
+dist-site/

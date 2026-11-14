@@ -23,7 +23,7 @@ export async function notify(member: string, kind: keyof typeof TEXT) {
   const subs = must(await admin.from('push_subs').select('endpoint, p256dh, auth').eq('member', member)) as { endpoint: string; p256dh: string; auth: string }[];
   if (!subs.length) return 0;
   const k = await pushKeys();
-  webpush.setVapidDetails('https://russellfutcher-stack.github.io/User-App/', k.public_key, k.private_key);
+  webpush.setVapidDetails('https://userconnect-au.github.io/', k.public_key, k.private_key);
   const body = JSON.stringify({ title: 'User', body: TEXT[kind], tag: kind });
   let sent = 0;
   await Promise.all(subs.map(async s => {

@@ -1,14 +1,14 @@
-// Links to the public website's Terms of Service and Privacy Policy (Rusty, 14 Nov 2026). The website lives next to
-// the app: /User-App/about/... on GitHub Pages, or /about/... when the app is served from the root of an address.
+// Links to the public website and its Terms of Service and Privacy Policy (Rusty, 14 Nov 2026).
+// Live, the website is at the top of the address and the app is at /app/ (SITE). Anywhere else (tests, a preview),
+// the app is at the top and the same pages are at /about/.
 import { Linking } from 'react-native';
 
-export function legalUrl(page: 'terms' | 'privacy') {
+export const SITE = 'https://userconnect-au.github.io/';
+export function siteUrl() {
   const loc = (globalThis as { location?: Location }).location;
-  if (!loc) return `https://russellfutcher-stack.github.io/User-App/about/${page}/`;
-  const base = (loc.pathname.match(/^\/[^/]+\//) || ['/'])[0];
-  return `${loc.origin}${base === '/about/' ? '/' : base}about/${page}/`;
+  if (!loc) return SITE;
+  return loc.pathname.startsWith('/app/') ? `${loc.origin}/` : `${loc.origin}/about/`;
 }
-// The public information website, opened in a new tab from the bottom of Home (Rusty, 14 Nov 2026).
-export function siteUrl() { return legalUrl('terms').replace(/terms\/$/, ''); }
+export const legalUrl = (page: 'terms' | 'privacy') => `${siteUrl()}${page}/`;
 export const openSite = () => Linking.openURL(siteUrl());
 export const openLegal = (page: 'terms' | 'privacy') => Linking.openURL(legalUrl(page));

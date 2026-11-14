@@ -1,4 +1,4 @@
-// Writes the public information website (public/about/index.html), served at /User-App/about/ and readable without an account.
+// Writes the public information website: public/about/ (served next to the app in tests and previews) and dist-site/ (the stand-alone website at https://userconnect-au.github.io/).
 // The wording comes from the app itself (the Welcome page, the community agreement, and the Support page's help services),
 // so the two never drift apart. The privacy policy is only included once site/settings.json names who runs User. No email
 // address is published; questions go through Ask for a review in the app (Rusty, 4 Nov 2026). Run from app/:  node scripts/make-site.js   (deploy-web.sh runs it too)
@@ -108,4 +108,16 @@ for (const [slug, title] of [['terms', 'Terms of Service'], ['privacy', 'Privacy
   fs.writeFileSync(path.join(root, `public/about/${slug}/index.html`), page);
 }
 fs.writeFileSync(path.join(root, 'public/about/index.html'), html);
+// The same pages as the stand-alone website at the top of the address, with the app at /app/ (Rusty, 14 Nov 2026).
+// deploy-web.sh publishes dist-site/ at the top and the app inside it.
+const site = path.join(root, 'dist-site');
+fs.rmSync(site, { recursive: true, force: true });
+const top = s => s.replace('href="../favicon-48.png"', 'href="app/favicon-48.png"').replace('class="btn" href="../"', 'class="btn" href="app/"');
+const sub = s => s.replace('href="../../favicon-48.png"', 'href="../app/favicon-48.png"').replace('class="btn" href="../../"', 'class="btn" href="../app/"');
+fs.mkdirSync(site, { recursive: true });
+fs.writeFileSync(path.join(site, 'index.html'), top(html));
+for (const slug of ready ? ['terms', 'privacy'] : []) {
+  fs.mkdirSync(path.join(site, slug), { recursive: true });
+  fs.writeFileSync(path.join(site, slug, 'index.html'), sub(fs.readFileSync(path.join(root, `public/about/${slug}/index.html`), 'utf8')));
+}
 console.log(`Wrote public/about/index.html${ready ? '' : ' (privacy policy left out until site/settings.json is filled in)'}`);
