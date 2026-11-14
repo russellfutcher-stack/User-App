@@ -121,6 +121,8 @@ export function Dashboard() {
   useEffect(load, [load]);
   if (!f || !cases || !mem) return <P muted>Loading…</P>;
   const flagged = cases.filter(c => c.flagged && c.by === 'automatic'), urgent = cases.filter(c => c.urgent);
+  // Cases you've decided are final, so they leave the queue (Rusty, 14 Nov 2026).
+  const queue = cases.filter(c => c.by !== 'arbitrator');
   return (
     <>
       <View style={{ gap: 6 }}>
@@ -142,9 +144,9 @@ export function Dashboard() {
       <Card>
         <Row style={{ justifyContent: 'space-between' }}><H2>Review queue</H2><Text style={[ui.pill, s.amber]}>{flagged.length} flagged</Text></Row>
         <P small muted>The AI Review Agent decides every case. Danger, under-18 and account removal cases are decided first, within minutes. When it is less than {Math.round(SURE * 100)}% confident it still decides, using the safest outcome, and flags the case for you to check.</P>
-        <H3>Decided ({cases.length})</H3>
+        <H3>Decided ({queue.length})</H3>
         <View style={{ gap: 8 }} id="cases">
-          {cases.length ? cases.map(c => (
+          {queue.length ? queue.map(c => (
             <View key={c.id + (c.member || '')} testID="case" style={[s.case, c.urgent && s.urgent]}>
               <Row style={{ justifyContent: 'space-between' }}>
                 <Text style={[ui.p, { fontFamily: F.bold }]}>{c.id}</Text>
@@ -160,9 +162,9 @@ export function Dashboard() {
                 </Row>
                 <Btn sm label="Check" onPress={() => openSheet(<CaseSheet c={c} done={load} />)} />
               </Row>
-            </View>)) : <P small muted>Nothing here.</P>}
+            </View>)) : <P small muted>Nothing waiting. Every case has been finalised.</P>}
         </View>
-        <P hint>You can check any decision and change it. Flagged and urgent cases are worth checking first.</P>
+        <P hint>You can check any decision and change it. Flagged and urgent cases are worth checking first. A case leaves this list once you finalise it with your own decision; the member still sees it on their Support page.</P>
         <Figs rows={[[`${pct(f.autoDecided, f.reviewsWeek)}%`, 'of reviews decided automatically this week'],
           [f.autoSeconds == null ? '-' : `${f.autoSeconds} s`, 'average time to an automatic decision'], [String(f.changedByArbitrator), 'changed by an arbitrator this week']]} />
       </Card>

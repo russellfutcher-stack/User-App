@@ -58,12 +58,12 @@ test('AD-04 Changing a decision needs a note', async ({ page }) => {
   await H.btn(page, 'Uphold the decision').click();
   await expect(page.locator('#arb-err')).toHaveText('Add a short note explaining your decision first. The member sees it.');
 });
-test("AD-04 The case then shows 'by Arbitrator'", async ({ page }) => {
+test('AD-04 A case you finalise leaves the review queue', async ({ page }) => {
   await asArbitrator(page); await check(page, 'HR-0974');
   await page.fill('#arb-note', 'Telegram details are not allowed, even for groups.'); await H.btn(page, 'Change the action').click();
   await page.getByRole('radio', { name: 'Give a warning' }).click(); await H.btn(page, 'Confirm the change').click();
   await expect(H.toast(page)).toHaveText('HR-0974 decided: Action changed (warning).');
-  await expect(caseRow(page, 'HR-0974')).toContainText('Decided: Action changed (warning)'); await expect(caseRow(page, 'HR-0974')).toContainText('by Arbitrator');
+  await expect(caseRow(page, 'HR-0974')).toHaveCount(0);
 });
 test('AD-05 The decision reaches the member on the Support page', async ({ page }) => {
   await memberReview(page, 'I am not sure why this happened to me.'); await asArbitrator(page); await check(page, 'HR-1001');
@@ -72,11 +72,12 @@ test('AD-05 The decision reaches the member on the Support page', async ({ page 
   await expect(page.getByTestId('my-review')).toContainText('Decided: Overturned');
   await expect(page.getByTestId('my-review')).toContainText('Arbitrator: Looked again: your message was fine, the block is removed.');
 });
-test('SP-10 An arbitrator decision is kept after signing in again', async ({ page }) => {
+test('SP-10 A finalised case stays out of the queue after signing in again', async ({ page }) => {
   await asArbitrator(page); await check(page, 'HR-0971');
   await page.fill('#arb-note', 'Spam adverts are removed.'); await H.btn(page, 'Uphold the decision').click();
   await H.btn(page, 'Sign out').click(); await asArbitrator(page);
-  await expect(caseRow(page, 'HR-0971')).toContainText('by Arbitrator');
+  await expect(page.getByTestId('case').first()).toBeVisible();
+  await expect(caseRow(page, 'HR-0971')).toHaveCount(0);
 });
 test('AD-06 Message safety figures', async ({ page }) => {
   await asArbitrator(page);

@@ -154,14 +154,14 @@ export function Chat({ withUser }: { withUser: string }) {
       const reply = await backend.sampleReply(withUser).catch(() => null);
       if (!here.current) return; setTyping(false);
       if (reply) { setMsgs(l => (l && !l.some(m => m.id === reply.id) ? [...l, reply] : l)); await backend.messages(withUser).catch(() => null); refreshUnread(); }
-    }, 3200 + Math.random() * 800); // the server replies after about 2 seconds
+    }, 4500 + Math.random() * 1000); // the server writes the reply in about 3 seconds; new messages also arrive live
     return true;
   };
   return (
     <View style={{ flex: 1 }}>
       <ScrollView ref={scroller} id="msgs" style={{ flex: 1 }} contentContainerStyle={{ padding: 16, gap: 8 }}>
         <Sys id="chat-intro">You're both anonymous, and every message is checked for safety. Never share your real name or address.</Sys>
-        {SAMPLE_HANDLES.includes(withUser) ? <Sys id="sample-chat">{withUser} is a sample member, not a real person. Their replies are written in advance to show how User works.</Sys> : null}
+        {SAMPLE_HANDLES.includes(withUser) ? <Sys id="sample-chat">{withUser} is a sample member, not a real person. Their replies are automatic, to show how User works.</Sys> : null}
         <Btn variant="quiet" sm label="Safety & options" onPress={() => openSheet(<ChatOptions withUser={withUser} />)} />
         {profile.prefs.disappearing ? <Sys>Disappearing messages are on. Messages are deleted 7 days after they are sent.</Sys> : null}
         {shown.map(m => <Bubble key={m.id} m={m} />)}

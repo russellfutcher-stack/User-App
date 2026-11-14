@@ -41,6 +41,8 @@ Done by Max on 29 Oct to 1 Nov 2026. **This is not the independent review the bu
 
 - **Sample members after launch (Rusty, 12 Nov 2026).** The 100 sample members stay and reply with lines written in advance until there are 500 real members. Rusty first asked for them to appear as real people; he then chose to mark each one "Sample member" (card, profile and chat) and remove their peer supporter badges, so nobody is misled or relies on one for support. The `milestones` function emails the arbitrator once at 500 real members.
 
+- **Sample members write their own replies (Rusty, 14 Nov 2026).** When a member messages a sample member, Claude Haiku writes the reply in character from the sample member's profile, with the last 16 messages of that chat (`supabase/functions/_shared/samples.ts`). It's told never to give dosing advice, arrange drugs or meetings, or share contacts; to point anyone at risk to Help; and to say honestly it's a sample member if asked. Replies that trip the word filter fall back to a line written in advance. The member's messages go to Anthropic for this, as they already do for the safety check.
+
 ## Needs Rusty (settings Max can't change)
 
 1. **Turn on leaked-password protection** in Supabase: Authentication, then Sign In / Providers or Attack Protection, then "Prevent use of leaked passwords". It stops people using passwords already stolen in other breaches. (It may need a paid Supabase plan.)

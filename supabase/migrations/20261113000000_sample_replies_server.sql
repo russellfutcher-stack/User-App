@@ -39,3 +39,24 @@ language sql stable security definer set search_path = '' as $$
 $$;
 revoke execute on function public.sample_reply(text) from public, anon;
 grant execute on function public.sample_reply(text) to authenticated;
+
+-- Rusty, 14 Nov 2026: sample members' replies are written to what was said (supabase/functions/_shared/samples.ts).
+-- sample_say adds that reply, but only if the member's message is still unanswered.
+create or replace function public.sample_say(sender uuid, name text, body text) returns bigint
+language plpgsql security definer set search_path = '' as $$
+#variable_conflict use_variable
+declare them uuid; c uuid; mine int; said int; out bigint;
+begin
+  if char_length(trim(body)) = 0 or char_length(body) > 1000 then return null; end if;
+  select p.id into them from public.profiles p where p.username operator(public.=) name::public.citext and p.is_sample;
+  c := public.chat_with(sender, them);
+  if them is null or c is null or public.blocked_between(sender, them) then return null; end if;
+  perform pg_advisory_xact_lock(hashtext(c::text));
+  select count(*) filter (where m.sender = sender), count(*) filter (where m.sender = them) into mine, said
+    from public.messages m where m.chat_id = c;
+  if said >= mine then return null; end if;
+  insert into public.messages (chat_id, sender, body) values (c, them, trim(body)) returning id into out;
+  return out;
+end $$;
+revoke execute on function public.sample_say(uuid, text, text) from public, anon, authenticated;
+grant execute on function public.sample_say(uuid, text, text) to service_role;

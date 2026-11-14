@@ -2,6 +2,7 @@
 import { admin, must, recent, reply, serve } from '../_shared/db.ts';
 import { checkMessage } from '../_shared/moderate.ts';
 import { notify } from '../_shared/push.ts';
+import { sampleReply } from '../_shared/samples.ts';
 
 const HELD = "This message couldn't be checked just now, so it wasn't sent. Please try again in a moment.";
 const until = (t: string) => new Date(t).toLocaleString('en-GB', { weekday: 'short', hour: 'numeric', minute: '2-digit', timeZone: 'UTC' }) + ' (UTC)';
@@ -56,13 +57,14 @@ serve(async (me, b) => {
     : await admin.rpc('deliver_message', { sender: me.id, name: to, body: text });
   if (r.error) return reply({ ok: false, error: /blocked/.test(r.error.message) ? "You can't message this person." : 'trouble' });
   const row = (r.data as { id: number; created_at: string }[])[0];
-  // A sample member replies a moment later, from here, so the reply comes even if the member leaves the chat (Rusty, 13 Nov 2026).
+  // A sample member replies a moment later, from here, so the reply comes even if the member leaves the chat (Rusty, 13 Nov 2026),
+  // written to what was said (Rusty, 14 Nov 2026).
   if (kind === 'chat') {
     const sample = must(await admin.from('profiles').select('is_sample').eq('username', to).maybeSingle()) as { is_sample: boolean } | null;
     if (sample?.is_sample) {
       // deno-lint-ignore no-explicit-any
-      (globalThis as any).EdgeRuntime?.waitUntil(new Promise(done => setTimeout(done, 2000))
-        .then(() => admin.rpc('sample_reply_to', { sender: me.id, name: to })).catch(e => console.error(e)));
+      (globalThis as any).EdgeRuntime?.waitUntil(new Promise(done => setTimeout(done, 1000))
+        .then(() => sampleReply(me.id, to)).catch(e => console.error(e)));
     }
   }
   // A neutral notification for the other person, unless they've muted this chat. Sent after the reply, so nobody waits.

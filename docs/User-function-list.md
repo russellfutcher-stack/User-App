@@ -9,7 +9,7 @@ Prototype version 24. Every function a person can use in the prototype, each wit
 - **Saved only**: the choice is saved but has no visible effect yet.
 - **Placeholder**: the button only shows a message.
 
-Totals: Working 160, Simulated 7, Saved only 2, Placeholder 2, 171 functions in all.
+Totals: Working 159, Simulated 7, Saved only 2, Placeholder 2, 170 functions in all.
 
 ## Global
 
@@ -31,7 +31,7 @@ Totals: Working 160, Simulated 7, Saved only 2, Placeholder 2, 171 functions in 
 | G-14 | Plain safety wording | Look through every page | No mention of AI agents, staff, volunteers, moderators or Night Owls. The app says 'every message is checked for safety'. | Working | - |
 | G-15 | Sample community | Use the app | 100 fictional members (12 written by hand, 88 generated the same way every time), 21 of them peer supporters. Every room has 4 to 6 posts, and the demo account has 6 chats, 3 unread. | Working | - |
 | G-16 | Hide (quick exit) | Tap Hide | User is replaced by Google's home page; Back doesn't bring it back, and you're signed out (Rusty, 4 Nov 2026). | Working | Web app only. |
-| G-17 | Sample members are marked | View a sample member's card, profile or chat | The 100 sample members stay after launch (Rusty, 12 Nov 2026) and still reply, but each shows a 'Sample member' tag; the profile says 'Not a real person…' and a chat with one says their replies are written in advance. On the live server none of them is a peer supporter. They're removed when there are 500 real members. | Working | Real on the Supabase server; checked with app/scripts/live-matching.js. |
+| G-17 | Sample members are marked | View a sample member's card, profile or chat | The 100 sample members stay after launch (Rusty, 12 Nov 2026) and reply to what was said, in character from their profile (Rusty, 14 Nov 2026), but each shows a 'Sample member' tag; the profile says 'Not a real person…' and a chat with one says their replies are automatic. On the live server none of them is a peer supporter. They're removed when there are 500 real members. | Working | Real on the Supabase server; checked with app/scripts/live-matching.js. |
 
 ## Welcome & Sign in
 
@@ -146,7 +146,6 @@ Totals: Working 160, Simulated 7, Saved only 2, Placeholder 2, 171 functions in 
 | DS-15 | Search button | Change anything, tap Search | A notice shows until you tap Search. Search updates Your Matches, scrolls to the top and confirms the number found. | Working | - |
 | DS-16 | Drug use headings | Look under Drug use | Medications, Other Substances, Alcohol, nicotine & gambling. | Working | - |
 | DS-17 | Search by location | Fill in City or choose Country under Location, then tap Search | Country keeps only people in that country. City keeps people whose city starts with what was typed (any case). People are found by city only if they let you see it. Shown in the 'Finding people with' summary. | Working | Real on the Supabase server. |
-| DS-18 | New search | Under the matches, tap 'New search' | Clears every filter, shows the top 10 again, says 'New search. Choose what to look for.' and scrolls to 1. Choose. (Return to Homepage was removed, Rusty, 12 Nov 2026.) | Working | - |
 
 ## Chats
 
@@ -157,7 +156,7 @@ Totals: Working 160, Simulated 7, Saved only 2, Placeholder 2, 171 functions in 
 | C-03 | Open a chat | Tap a conversation | Says you're anonymous and every message is checked for safety. Marks the chat as read. | Working | - |
 | C-04 | Conversation starters | Chat with fewer than 3 messages | 6 starters fill the message box. | Working | - |
 | C-05 | Send a message | Type and Send | Up to 1000 characters; empty messages ignored. | Working | Delivering messages to the other person needs a server. |
-| C-06 | Sample member replies | Send a message to a sample member | Typing indicator, then a reply. On the live server the reply is sent by the server about 2 seconds later, so it comes even if you leave the chat, and every message gets its own reply (Rusty, 13 Nov 2026). | Simulated | Real on the Supabase server for sample members; checked with app/scripts/live-chats.js. Real members reply themselves. |
+| C-06 | Sample member replies | Send a message to a sample member | Typing indicator, then a reply. On the live server each sample member writes their own reply to what was said, in character from their profile, about 3 seconds later, even if you leave the chat; every message gets a reply, and if asked they say honestly they're a sample member (Rusty, 14 Nov 2026). The demo uses lines written in advance. | Simulated | Real on the Supabase server for sample members; checked with app/scripts/live-chats.js. Real members reply themselves. |
 | C-07 | Dealing and contact filter | Selling words, prices, links, other apps' names, drug emojis | Not sent; a red 'Message not sent' box explains why. Recovery or harm-reduction context, such as 'I used to sell, now I help others stay clean' or naloxone, is allowed unless it also has prices, links or other apps. | Working | The real check is the AI Moderator on a server; the prototype uses simple rules. |
 | C-08 | Phone numbers allowed | Send a phone number | The message is sent. | Working | The real check is the AI Moderator on a server. |
 | C-09 | Crisis detection | Crisis words | Sent, then the Help sheet opens. | Working | The real check is the AI Moderator on a server. |
@@ -228,7 +227,7 @@ Totals: Working 160, Simulated 7, Saved only 2, Placeholder 2, 171 functions in 
 |---|---|---|---|---|---|
 | AD-01 | Arbitrator sign-in | Sign in as Arbitrator / fair review | Opens the dashboard with no tab bar. | Working | Real arbitrators are accounts listed in public.arbitrators; checked with app/scripts/live-arbitrator.js. |
 | AD-02 | Summary figures | Open the dashboard | Active today, active in 7 days, new members, peer supporters, members who want peer support, cases flagged for a check, urgent cases. | Working | Live figures on the Supabase server; samples in the demo. |
-| AD-03 | Review queue | Open the dashboard | One Decided table: every case with its decision, the agent's confidence, who decided it, and a Flagged tag when under 85%. Urgent cases are red. Live cases are marked 'This browser'. | Working | Live queue on the Supabase server. |
+| AD-03 | Review queue | Open the dashboard | One Decided table of cases still open to change: each with its decision, the agent's confidence and a Flagged tag when under 85%. Urgent cases are red. A case leaves the table once the arbitrator finalises it with their own decision (Rusty, 14 Nov 2026); the member still sees it on their Support page. | Working | Live queue on the Supabase server. |
 | AD-13 | AI Review Agent | Every case | Decides every case, including danger, under 18 and account removal. Under 85% confidence it keeps the safest outcome and flags the case. The naloxone and 'I used to sell' cases are overturned. | Working | Real decisions come from the review check on the Supabase server. |
 | AD-14 | Decisions take effect | Decide a case | Overturn lifts any mute, pause or age check and takes back the latest warning. Uphold on 'Account removal proposed' removes the account. Change the action: a warning, a 24-hour mute, a 7-day pause, lift a mute or pause, or remove the account. Removing asks to confirm (Rusty, 8 Nov 2026). | Working | Real on the Supabase server; checked with app/scripts/live-arbitrator.js. |
 | AD-15 | Members | Open the dashboard | Live members, members who deleted their account and new members this month, counting real members only. At 500 real members the arbitrator gets one email, and the dashboard says it's time to remove the sample members. | Working | Live on the Supabase server (arb_members, and the daily milestones function); samples in the demo. |

@@ -872,7 +872,7 @@ function renderResults(){
   const shown = list.slice(0, S.ui.shown||10); // 10 at a time (Rusty, 12 Nov 2026)
   $('#results').innerHTML = `<div class="row between"><h2>Your Matches</h2><span class="pill" id="match-count">${list.length} ${list.length===1?'person':'people'}</span></div>`+
     (list.length?shown.map(({p,m})=>personRow(p,m)).join('')+(list.length>shown.length?`<button class="btn block" onclick="App.next10()">Next 10 matches</button>`:''):`<div class="card"><p>No one matches all of those yet. Try removing a filter, or join a room to meet people more broadly.</p></div>`)+
-    `<button class="btn block" onclick="App.newSearch()">New search</button>`;
+    '';
 }
 
 /* ---------- Profile sheet ---------- */
@@ -883,7 +883,7 @@ function profileSheet(id){
   const p=person(id), m=match(p);
   const groups=PATHS.map(g=>{ const t=p.tags.filter(x=>g.cats.includes(catOf(x))); return `<div class="section"><span class="label ghead g-${g.g}">${g.name}</span><div class="chips">${t.length?t.map(x=>`<span class="tag g-${g.g} ${m.shared.includes(x)?'shared':''}">${esc(TAG[x].label)}</span>`).join(''):'<span class="small muted">Not shared</span>'}</div></div>`; }).join('');
   sheet(`<div class="row"><div class="grow" style="flex:1;min-width:0"><h2>${esc(p.handle)}</h2><div class="small muted">${esc(p.active)} · ${esc(place(p))}</div></div><div class="match">${m.pct}%<small>match</small></div></div>
-    <div class="row wrap" id="sample-note"><span class="pill">Sample member</span><span class="small">Not a real person. Sample members show how User works, and their replies are written in advance.</span></div>
+    <div class="row wrap" id="sample-note"><span class="pill">Sample member</span><span class="small">Not a real person. Sample members show how User works, and their replies are automatic.</span></div>
     ${p.peer?'<p class="peer-on"><span class="pill peer">Peer supporter</span> Offers to listen to people who want peer support.</p>':''}
     <p>${esc(p.bio)}</p>
     <div class="card calm"><p class="small">${esc(whyMatched(p,m))}</p></div>
@@ -914,7 +914,7 @@ function renderChat(id){
   const msgs=(S.convos[id]||[]).filter(m=>!S.prefs.disappearing||m.ts>week);
   sc.innerHTML=`<div class="msgs" id="msgs">
      <div class="bubble sys">You're both anonymous, and every message is checked for safety. Never share your real name or address. <button class="btn sm quiet" onclick="App.chatMenu('${id}')">Safety &amp; options</button></div>
-     <div class="bubble sys" id="sample-chat">${esc(p.handle)} is a sample member, not a real person. Their replies are written in advance to show how User works.</div>
+     <div class="bubble sys" id="sample-chat">${esc(p.handle)} is a sample member, not a real person. Their replies are automatic, to show how User works.</div>
      ${S.prefs.disappearing?'<div class="bubble sys">Disappearing messages are on. Messages are deleted 7 days after they are sent.</div>':''}
      ${msgs.map(bubble).join('')}</div>
    <div id="warn"></div>
@@ -1286,6 +1286,7 @@ function renderDashboard(){
   const cases=arbCases(), flags=cases.filter(flagged), urgent=cases.filter(c=>c.urgent||(c.auto&&c.live));
   const row=c=>`<tr class="${c.urgent||(c.auto&&c.live)?'urgent':''}"><td class="mono">${esc(c.id)}</td><td>${esc(c.topic)}${c.live?' <span class="pill">This browser</span>':''}</td><td>${esc(c.raised)}</td><td>${Math.round(c.ai.confidence*100)}%${flagged(c)?' <span class="pill amber">Flagged</span>':''}</td><td>${esc(c.due)}</td><td><span class="pill">${esc(c.status||'Being reviewed')}</span>${c.by?`<div class="small muted">by ${esc(c.by)}</div>`:''}</td><td><button class="btn sm" onclick="App.openCase('${c.id}')">Check</button></td></tr>`;
   const table=(list,label)=>`<div class="tbl"><table aria-label="${label}"><thead><tr><th>Case</th><th>About</th><th>Raised by</th><th>Confidence</th><th>Due</th><th>Decision</th><th></th></tr></thead><tbody>${list.map(row).join('')||'<tr><td colspan="7" class="muted">Nothing here.</td></tr>'}</tbody></table></div>`;
+  const queue=cases.filter(c=>c.by!=='Arbitrator'); // cases you've decided are final, so they leave the queue (Rusty, 14 Nov 2026)
   $('#screen').innerHTML=`<div class="section"><h2>Arbitrator dashboard</h2>
      <p class="small muted">How User is working, and how the AI Review Agent is deciding cases. Figures marked as samples stand in for the live service in this prototype. Members are shown by username only.</p></div>
    ${ARB.members.live>=500?`<div class="card warm" id="remove-samples"><h3>Time to remove the sample members</h3><p class="small">User has ${ARB.members.live.toLocaleString()} real members, past the 500 you set. The 100 sample members can now be removed.</p></div>`:''}
@@ -1294,8 +1295,8 @@ function renderDashboard(){
    <div class="kpis">${figs(ARB.kpis.concat([[String(flags.length),'flagged for a check'],[String(urgent.length),'urgent cases']]))}</div>
    <section class="card" aria-labelledby="dq-h"><div class="row between"><h2 id="dq-h">Review queue</h2><span class="pill amber">${flags.length} flagged</span></div>
      <p class="small muted">The AI Review Agent decides every case. Danger, under-18 and account removal cases are decided first, within minutes. When it is less than ${Math.round(AI_THRESHOLD*100)}% confident it still decides, using the safest outcome, and flags the case for you to check.</p>
-     <h3>Decided (${cases.length})</h3>${table(cases,'Decided')}
-     <p class="hint">You can check any decision and change it. Flagged and urgent cases are worth checking first.</p>
+     <h3>Decided (${queue.length})</h3>${queue.length?table(queue,'Decided'):'<p class="small muted">Nothing waiting. Every case has been finalised.</p>'}
+     <p class="hint">You can check any decision and change it. Flagged and urgent cases are worth checking first. A case leaves this list once you finalise it with your own decision; the member still sees it on their Support page.</p>
      ${figs(ARB.auto)}</section>
    <section class="card" aria-labelledby="ds-h"><h2 id="ds-h">Message safety this week <span class="pill sample">Sample</span></h2>${figs(ARB.safety)}
      <h3>Blocked messages by reason</h3>${hbars(ARB.blockedBy,'Blocked messages by reason')}</section>

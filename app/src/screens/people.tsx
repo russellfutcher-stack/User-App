@@ -114,7 +114,7 @@ export function ProfileSheet({ m }: { m: Member }) {
         <View style={{ flex: 1, minWidth: 0 }}><H2>{m.username}</H2><Text style={[ui.hint, { fontSize: 13 }]}>{[m.active, place(m)].filter(Boolean).join(' · ')}</Text></View>
         <Pct pct={m.pct} />
       </Row>
-      {m.sample ? <View id="sample-note"><Row style={{ gap: 8, flexWrap: 'wrap' }}><Pill text="Sample member" /><P small>Not a real person. Sample members show how User works, and their replies are written in advance.</P></Row></View> : null}
+      {m.sample ? <View id="sample-note"><Row style={{ gap: 8, flexWrap: 'wrap' }}><Pill text="Sample member" /><P small>Not a real person. Sample members show how User works, and their replies are automatic.</P></Row></View> : null}
       {m.isPeer ? <Row style={{ gap: 8, flexWrap: 'wrap' }}><Pill peer text="Peer supporter" /><P small>Offers to listen to people who want peer support.</P></Row> : null}
       {m.byline ? <P>{m.byline}</P> : null}
       <Card tone="calm"><P small>{whyMatched(profile, m)}</P></Card>
