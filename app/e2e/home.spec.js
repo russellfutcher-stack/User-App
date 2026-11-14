@@ -99,3 +99,13 @@ test('G-15 Sample members are the same every time', async ({ page }) => {
   await expect(page.getByTestId('person')).toHaveCount(10);
   expect((await page.getByTestId('person').allInnerTexts()).map(t => t.split('\n')[0]).slice(0, 3)).toEqual(['JuniperWren', 'MossyOtter', 'MossyKestrel']);
 });
+
+test('H-11 A link to the website at the bottom of Home', async ({ page }) => {
+  await H.open(page); await H.signInDemo(page);
+  await expect(page.locator('#site-link')).toHaveText('Visit the User website');
+  await expect(page.locator('#site-link a')).toHaveAttribute('href', /\/about\/$/);
+});
+test('H-11 The website opens in a new tab', async ({ page }) => {
+  await H.open(page); await H.signInDemo(page);
+  await expect(page.locator('#site-link a')).toHaveAttribute('target', '_blank');
+});

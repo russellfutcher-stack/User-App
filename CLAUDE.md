@@ -7,3 +7,5 @@
 - App wording never mentions AI agents, staff, moderators or Night Owls. It says "every message is checked for safety".
 - Privacy: drug use and mental health tags default to "People I chat with". Store members' data in Australia (Supabase, Sydney). No real names, emails or phone numbers are required.
 - Never commit secrets or API keys.
+
+- Exception (Rusty, 14 Nov 2026): Mae is always described as "automatic, not a real person", and sample members say honestly that they are automatic if sincerely asked. Nothing in the app may claim they are real people.

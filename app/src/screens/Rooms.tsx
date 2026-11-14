@@ -155,8 +155,14 @@ export function RoomScreen({ id }: { id: string }) {
     setRoom({ ...room, joined: true, members: room.members + 1 }); chatsChanged(); toast("Joined. Say hello when you're ready.");
   };
   const post = async (t: string) => {
-    return sendChecked(() => backend.post(id, t), setWhy, m => setPosts(l => [...(l || []), m]), toast,
+    const sent = await sendChecked(() => backend.post(id, t), setWhy, m => setPosts(l => [...(l || []), m]), toast,
       () => openSheet(<HelpSheet intro="It sounds like things might be really hard right now. These lines are open now." />), setPaused);
+    // Someone in the room replies a moment later (Rusty, 14 Nov 2026); on the server it also arrives live.
+    if (sent) setTimeout(async () => {
+      const reply = await backend.roomReply(id).catch(() => null);
+      if (reply) setPosts(l => (l && !l.some(m => m.id === reply.id) ? [...l, reply] : l));
+    }, 4500 + Math.random() * 1000);
+    return sent;
   };
   return (
     <View style={{ flex: 1 }}>

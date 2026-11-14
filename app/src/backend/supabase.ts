@@ -229,6 +229,8 @@ export function supabaseBackend(url: string, anonKey: string): Backend {
     async joinRoom(id) { const { error } = await db.rpc('join_room', { room: id }); must(error); },
     async roomSeen(id) { await db.rpc('room_seen', { room: id }); },
     async post(id, text) { return checked('room', id, text); },
+    // The server writes the reply itself (send function); this just picks it up if it has arrived.
+    async roomReply(id) { const all = await this.roomPosts(id); const last = all[all.length - 1]; return last && !last.mine ? last : null; },
     async leaveRoom(id) {
       const { error } = await db.rpc('leave_room', { room: id }); must(error);
       return async () => { const r = await db.rpc('undo_leave_room', { room: id }); must(r.error); };

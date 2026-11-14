@@ -2,7 +2,7 @@ import React from 'react';
 import { View } from 'react-native';
 import { PathKey } from '../data/reference';
 import { useApp } from '../state/app';
-import { B, Card, Disclaimer, H2, H3, Label, P } from '../components/ui';
+import { B, Card, Disclaimer, H2, H3, Label, P, SiteLink } from '../components/ui';
 import { AboutUser } from './Welcome';
 import { stageLabel, ThreeTiles, useMembers } from './people';
 
@@ -35,6 +35,7 @@ export function Home() {
           <P small>Tap <B>Help</B> at the top of any screen, or open the <B>Support</B> page for help services in your country, overdose information and peer supporters.</P>
         </View>
       </Card>
+      <SiteLink />
       <Disclaimer />
     </>
   );

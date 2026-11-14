@@ -179,12 +179,23 @@ test('DS-17 City matches the start of the name, any case, and shows in the summa
   await page.locator('#s-city').fill('Nowhereville'); await go(page); await expect(count(page)).toHaveText('0 people');
 });
 
-test('G-17 Sample members are marked on their card and profile', async ({ page }) => {
-  await expect(people(page).first()).toContainText('Sample member');
+test('G-17 Sample members have a small Sample tag on their card and profile', async ({ page }) => {
+  await expect(people(page).first()).toContainText('Sample'); await expect(people(page).first()).not.toContainText('Sample member');
   await people(page).first().click();
-  await expect(H.sheet(page).locator('#sample-note')).toContainText('Not a real person.');
+  await expect(H.sheet(page).locator('#sample-note')).toHaveText('Sample'); await expect(H.sheet(page)).not.toContainText('Not a real person');
 });
-test('G-17 A chat with a sample member says so', async ({ page }) => {
+test('G-17 A chat with a sample member does not announce it', async ({ page }) => {
   await H.openChat(page, 'SteadyBadger');
-  await expect(page.locator('#sample-chat')).toHaveText('SteadyBadger is a sample member, not a real person. Their replies are automatic, to show how User works.');
+  await expect(page.locator('#sample-chat')).toHaveCount(0); await expect(page.locator('#msgs')).not.toContainText('sample member');
+});
+test('DS-18 Mae is offered on the Search page, marked as not a real person', async ({ page }) => {
+  await expect(page.locator('#mae-card')).toContainText('Talk to Mae');
+  await expect(page.locator('#mae-card')).toContainText('Mae is automatic, not a real person.');
+  expect(await names(page)).not.toContain('Mae');
+});
+test('DS-18 Chat with Mae opens a chat that says she is automatic, and she replies', async ({ page }) => {
+  await H.btn(page, 'Chat with Mae').click();
+  await expect(page.locator('#mae-chat')).toHaveText("Mae is automatic, not a real person. She's always here to talk. If you're in danger, tap Help at the top.");
+  await H.send(page, 'Hi Mae, rough day.');
+  await expect(page.locator('#msgs').getByText("Hi, I'm really glad you messaged. How are you feeling right now?")).toBeVisible({ timeout: 10000 });
 });

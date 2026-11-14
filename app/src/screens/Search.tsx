@@ -5,8 +5,9 @@ import { CATS, LOOKING, PATHS, PathKey, REF, TAG_CAT } from '../data/reference';
 import { Member } from '../backend';
 import { blankQuery, sameQuery, search } from '../lib/match';
 import { PAGE, useApp } from '../state/app';
-import { Btn, Card, Chip, Chips, Field, H2, Label, P, Pill, Row, Select, s as ui } from '../components/ui';
+import { Btn, Card, Chip, Chips, Field, H2, H3, Label, P, Pill, Row, Select, s as ui } from '../components/ui';
 import { COUNTRIES } from '../data/places';
+import { MAE } from '../data/community';
 import { C, F } from '../theme';
 import { choiceName, GROUP_COLOUR, PersonRow, PlainTag, Tag, ThreeTiles, useMembers } from './people';
 
@@ -33,7 +34,7 @@ function Results({ members }: { members: Member[] | null }) {
 }
 
 export function Search({ toTop }: { toTop: () => void }) {
-  const { query, setQuery, applied, setApplied, toast, setShown } = useApp();
+  const { query, setQuery, applied, setApplied, toast, setShown, setTab, setView } = useApp();
   const members = useMembers();
   const on = PATHS.filter(p => query.cats.includes(p.key));
   const toggle = (k: PathKey) => {
@@ -51,6 +52,13 @@ export function Search({ toTop }: { toTop: () => void }) {
   return (
     <>
       <H2 style={{ fontSize: 24, lineHeight: 28 }}>Search/Find a Companion</H2>
+      <Card tone="calm">
+        <View id="mae-card" style={{ gap: 8 }}>
+          <H3>Talk to Mae</H3>
+          <P small>Would you rather not talk to a person right now? Mae is always here to listen, encourage you and be on your side. Mae is automatic, not a real person.</P>
+          <Btn variant="primary" label="Chat with Mae" onPress={() => { setTab('chat'); setView({ name: 'chat', with: MAE }); }} />
+        </View>
+      </Card>
       <Results members={members} />
       <View style={{ gap: 10 }} id="choose">
         <Label>1. Choose</Label>
