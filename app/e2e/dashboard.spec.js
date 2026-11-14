@@ -169,3 +169,15 @@ test('AD-15 Past 500 real members it says to remove the sample members', async (
   await expect(page.locator('#remove-samples')).toContainText('Time to remove the sample members');
   await expect(H.screen(page)).toContainText("When there are 500 real members you'll get an email");
 });
+
+test('AD-16 Latest reports show who reported whom', async ({ page }) => {
+  await asArbitrator(page);
+  await expect(page.locator('#report-list')).toContainText('MossyOtter reported PixelHare');
+  await expect(H.screen(page)).toContainText('Only you see who made a report. The person reported is never told.');
+});
+test('AD-16 A report made in the app shows with the reporter', async ({ page }) => {
+  await H.signInDemo(page); await H.tab(page, 'Search').click(); await page.getByTestId('person').first().click();
+  await H.sheet(page).getByRole('button', { name: 'Report', exact: true }).click(); await H.btn(page, 'Spam or scam').click();
+  await H.tab(page, 'Me').click(); await H.btn(page, 'Sign out').click(); await asArbitrator(page);
+  await expect(page.getByTestId('report').first()).toContainText('QuietHeron reported JuniperWren');
+});

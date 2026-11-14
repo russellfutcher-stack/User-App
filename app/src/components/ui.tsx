@@ -1,6 +1,7 @@
 // Building blocks that copy the prototype's look: cards, buttons, chips, toggles and fields.
 import React, { ReactNode } from 'react';
 import { Platform, Pressable, StyleProp, StyleSheet, Text, TextInput, TextInputProps, TextStyle, View, ViewStyle } from 'react-native';
+import { openLegal } from '../lib/links';
 import { C, F, R, soft } from '../theme';
 
 // Gradients: React Native and the web read different style names.
@@ -120,6 +121,13 @@ export const Meter = ({ pct }: { pct: number }) => (
 
 export const Bullet = ({ children }: { children: ReactNode }) => <Text style={[s.p, s.small]}>• {children}</Text>;
 
+// The Terms of Service and Privacy Policy, on the website (Rusty, 14 Nov 2026).
+export const LegalLinks = ({ lead }: { lead?: string }) => (
+  <Text style={[s.hint, { textAlign: 'center', fontSize: 13 }]} id="legal">
+    {lead ? lead + ' ' : ''}<Text role="link" style={{ textDecorationLine: 'underline' }} onPress={() => openLegal('terms')}>Terms of Service</Text>
+    {' · '}<Text role="link" style={{ textDecorationLine: 'underline' }} onPress={() => openLegal('privacy')}>Privacy Policy</Text>
+  </Text>
+);
 export const Disclaimer = () => <Text style={[s.hint, { textAlign: 'center', fontSize: 13 }]}>User is peer support, not a medical or emergency service.</Text>;
 
 export const s = StyleSheet.create({

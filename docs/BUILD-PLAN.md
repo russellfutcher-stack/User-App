@@ -59,6 +59,8 @@ Agreed changes from the prototype: the sign-in error now says "Check for typos, 
 - Still to do before launch: the independent security review, and the three settings in `docs/SECURITY-REVIEW.md`.
 
 - ~~Review email alerts.~~ Done 7 Nov 2026: a question through Ask for a review is answered and closed automatically (SP-13), and Rusty gets an email with the case number only (`supabase/functions/_shared/alert.ts`, via Resend; see `docs/SUPABASE-SETUP.md`). Checked: the test email arrived.
+- ~~Terms of Service and Privacy Policy.~~ Written by Max, 14 Nov 2026 (Victoria law, chosen by Rusty): `app/site/legal/terms.html` and `privacy.html`, published at /about/terms/ and /about/privacy/ by `make-site.js`, and linked from sign-up step 1 (SN-16) and the Me page (M-28). A lawyer should read both before launch.
+- Safety changes (Rusty, 14 Nov 2026): no message is held (an unsure first check goes to a careful second check, whose decision is final); one ordinary report a day, while danger and under-18 reports can always be made (HS-10); each decision can be reviewed once (SP-15, `supabase/migrations/20261114000000_reviews_once_reports.sql`); the arbitrator sees who made each report (AD-16); the review email now has the case number and topic in the subject, with the username and what the member wrote; and an automatic review decision can no longer overwrite one the arbitrator has already made, which had put finalised cases back in the queue (checked live).
 
 ## Phase 2
 

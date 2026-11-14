@@ -3,7 +3,7 @@
 // Members are shown by username only.
 import React, { useCallback, useEffect, useState } from 'react';
 import { StyleSheet, Text, TextInput, View } from 'react-native';
-import { backend, ARB_ACTS, ArbAct, ArbCase, ArbFigures, ArbMembers, ArbOutcome } from '../backend';
+import { backend, ARB_ACTS, ArbAct, ArbCase, ArbFigures, ArbMembers, ArbOutcome, ArbReport } from '../backend';
 import { SURE } from '../lib/review';
 import { useApp } from '../state/app';
 import { B, Btn, Card, H2, H3, P, Radio, Row, s as ui } from '../components/ui';
@@ -37,6 +37,7 @@ function Bars({ rows, label, id }: { rows: [string, number][]; label: string; id
     </View>
   );
 }
+const OUTCOME: Record<string, string> = { no_action: 'No action', warn: 'Warning', mute: 'Muted 24h', remove: 'Removal proposed', pending: 'Checking', 'urgent review': 'Urgent review' };
 const SampleTag = ({ on }: { on: boolean }) => (on ? <Text style={[ui.pill, { alignSelf: 'flex-start' }]}>Sample</Text> : null);
 
 // One case. Decisions take effect on the member the case is about (Rusty, 8 Nov 2026): Overturn lifts restrictions,
@@ -113,9 +114,9 @@ function CaseSheet({ c, done }: { c: ArbCase; done: () => void }) {
 export function Dashboard() {
   const { openSheet, toast, signOut } = useApp();
   const [f, setF] = useState<ArbFigures | null>(null); const [cases, setCases] = useState<ArbCase[] | null>(null);
-  const [mem, setMem] = useState<ArbMembers | null>(null);
+  const [mem, setMem] = useState<ArbMembers | null>(null); const [reports, setReports] = useState<ArbReport[]>([]);
   const load = useCallback(() => {
-    Promise.all([backend.arbFigures(), backend.arbCases(), backend.arbMembers()]).then(([a, b, c]) => { setF(a); setCases(b); setMem(c); })
+    Promise.all([backend.arbFigures(), backend.arbCases(), backend.arbMembers(), backend.arbReports()]).then(([a, b, c, d]) => { setF(a); setCases(b); setMem(c); setReports(d); })
       .catch(() => toast("Couldn't load the dashboard. Check your connection and try again."));
   }, [toast]);
   useEffect(load, [load]);
@@ -172,13 +173,25 @@ export function Dashboard() {
       <Card>
         <H2>Message safety this week</H2><SampleTag on={f.sample} />
         <Figs id="safety" rows={[[fmt(f.checked), 'messages checked'], [`${fmt(f.blocked)} (${(f.checked ? (f.blocked / f.checked) * 100 : 0).toFixed(1)}%)`, 'messages blocked'],
-          [fmt(f.help), 'times Help was shown after crisis words'], [fmt(f.held), 'messages held for a re-check']]} />
+          [fmt(f.help), 'times Help was shown after crisis words'], [fmt(f.held), "messages not sent because the check couldn't run"]]} />
         <H3>Blocked messages by reason</H3><Bars rows={f.blockedBy} label="Blocked messages by reason" />
       </Card>
 
       <Card>
         <H2>Reports this week</H2><SampleTag on={f.sample} />
         <Bars rows={f.reports} label="Reports by reason" id="reports" />
+        <H3>Latest reports</H3>
+        <View style={{ gap: 6 }} id="report-list">
+          {reports.length ? reports.slice(0, 20).map((r, i) => (
+            <View key={i} testID="report" style={ui.line}>
+              <View style={{ flex: 1, minWidth: 0 }}>
+                <Text style={ui.p}><Text style={{ fontFamily: F.bold }}>{r.reporter}</Text> reported <Text style={{ fontFamily: F.bold }}>{r.reported}</Text></Text>
+                <Text style={[ui.hint, { marginTop: 2 }]}>{r.reason} · {new Date(r.at).toLocaleString('en-AU', { day: 'numeric', month: 'short', hour: 'numeric', minute: '2-digit' })}</Text>
+              </View>
+              <Text style={ui.pill}>{OUTCOME[r.outcome] || r.outcome}</Text>
+            </View>)) : <P small muted>No reports yet.</P>}
+        </View>
+        <P hint>Only you see who made a report. The person reported is never told.</P>
       </Card>
 
       <Card>

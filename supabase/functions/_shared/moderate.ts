@@ -18,7 +18,8 @@ export async function allowedTerms(): Promise<string[]> {
 export const allowedNote = (terms: string[]) => quote('allowed_terms', terms.length ? terms.join(', ') : '(none)');
 
 export const NOT_SENT = "It looks like it could be about buying, selling or sourcing drugs, or sharing payment details. User doesn't allow that, to keep everyone safe. If you're struggling with cravings, the Help button has people to talk to right now.";
-export type Outcome = { action: 'deliver' | 'help' | 'block' | 'hold'; category: string; confidence: number; note: string; strike: boolean; model: string };
+// 'unchecked' only when the checking service couldn't be reached: the message isn't sent, and the member can try again.
+export type Outcome = { action: 'deliver' | 'help' | 'block' | 'unchecked'; category: string; confidence: number; note: string; strike: boolean; model: string };
 
 export async function checkMessage(text: string, where: string, strikes: number): Promise<Outcome> {
   const allowed = await allowedTerms();
@@ -28,10 +29,9 @@ export async function checkMessage(text: string, where: string, strikes: number)
   }
   const input = `${allowedNote(allowed)}\n${quote('context', `Where: ${where}\nThe sender's strikes in the last 30 days: ${strikes}`)}\n${quote('message', text)}\nCheck this message.`;
   let r = await decide<MessageCheck>({ model: FIRST, effort: 'low', policy: POLICY, input, schema: MESSAGE_SCHEMA });
-  if (!r || r.value.decision === 'hold' || r.value.confidence < 0.6) // unclear: a careful re-check before delivery
-    r = await decide<MessageCheck>({ model: CAREFUL, effort: 'medium', policy: POLICY, input, schema: MESSAGE_SCHEMA });
-  if (!r || r.value.decision === 'hold' || r.value.confidence < 0.6)
-    return { action: 'hold', category: r?.value.category || 'other', confidence: r?.value.confidence || 0, note: '', strike: false, model: r?.model || CAREFUL };
+  // Unsure: a careful second check, whose decision is final. Nothing is held (Rusty, 14 Nov 2026).
+  if (!r || r.value.confidence < 0.6) r = (await decide<MessageCheck>({ model: CAREFUL, effort: 'medium', policy: POLICY, input, schema: MESSAGE_SCHEMA })) || r;
+  if (!r) return { action: 'unchecked', category: 'other', confidence: 0, note: '', strike: false, model: CAREFUL };
   const v = r.value;
   if (v.decision === 'block') return { action: 'block', category: v.category, confidence: v.confidence, note: v.user_message || NOT_SENT, strike: v.strike && ['dealing', 'harassment', 'hate'].includes(v.category), model: r.model };
   // Crisis words always open the Help sheet, even if the check didn't flag them.

@@ -43,7 +43,7 @@ serve(async (me, b) => {
     action: out.action, category: out.category, confidence: out.confidence, model: out.model,
   }).select('id')) as { id: number }[];
 
-  if (out.action === 'hold') return reply({ ok: false, error: HELD });
+  if (out.action === 'unchecked') return reply({ ok: false, error: HELD });
   if (out.action === 'block' && out.category === 'under_18') {
     const step = must(await admin.rpc('flag_under_18', { m: me.id, why: 'their own message' })) as 'ask' | 'review';
     return reply({ ok: false, blocked: step === 'ask' ? AGE : AGE_REVIEW, error: 'Message not sent', ageCheck: step });

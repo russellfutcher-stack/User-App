@@ -55,6 +55,36 @@ test('HS-04 A report is sent and reviewed', async ({ page }) => {
   await reportFromProfile(page); await H.btn(page, 'Spam or scam').click();
   await expect(H.toast(page)).toHaveText("Report sent. We're reviewing it now."); await expect(sheet(page)).toHaveCount(0);
 });
+test('HS-10 One ordinary report a day, and the reporter stays private', async ({ page }) => {
+  await reportFromProfile(page);
+  await expect(sheet(page)).toContainText("The person you report isn't told who reported them.");
+  await H.btn(page, 'Spam or scam').click(); await expect(H.toast(page)).toHaveText("Report sent. We're reviewing it now.");
+  await page.getByTestId('person').nth(1).click(); await sheet(page).getByRole('button', { name: 'Report', exact: true }).click();
+  await H.btn(page, 'Harassment or hate').click();
+  await expect(H.toast(page)).toHaveText('You can make one report a day. If someone seems to be in danger or under 18, you can still report that.');
+});
+test('HS-10 Danger and under-18 reports can always be made', async ({ page }) => {
+  await reportFromProfile(page); await H.btn(page, 'Spam or scam').click();
+  await page.getByTestId('person').nth(1).click(); await sheet(page).getByRole('button', { name: 'Report', exact: true }).click();
+  await H.btn(page, 'Seems to be in danger').click();
+  await expect(H.toast(page)).toHaveText('Report sent. Because this may be serious, it is being reviewed urgently.');
+});
+test('SP-15 Each decision can be reviewed once', async ({ page }) => {
+  await openReviewFromBlocked(page); await review(page, null, 'My message about my naloxone training was blocked.');
+  await expect(page.locator('#rv-status')).toContainText('Reviewed automatically', { timeout: 6000 });
+  await H.btn(page, 'Done').click().catch(() => {}); await page.keyboard.press('Escape').catch(() => {});
+  await H.tab(page, 'Support').click(); await H.btn(page, 'Ask for a review').click();
+  await review(page, 'A message that was blocked', 'Please look at my blocked message again.');
+  await expect(page.locator('#hr-err')).toHaveText("You've already asked for a review of this decision. Each decision can be reviewed once, and that review is final.");
+});
+test('SP-15 Questions under Something else can be asked again', async ({ page }) => {
+  await H.signInDemo(page); await H.tab(page, 'Support').click();
+  for (const t of ['What data do you keep about me?', 'Where is my data stored?']) {
+    await H.btn(page, 'Ask for a review').click(); await review(page, 'Something else', t);
+    await expect(page.locator('#hr-err')).toHaveCount(0); await page.keyboard.press('Escape');
+    await H.screen(page).click({ position: { x: 5, y: 5 } }).catch(() => {});
+  }
+});
 test('HS-05 Danger reports are reviewed urgently', async ({ page }) => {
   await reportFromProfile(page); await H.btn(page, 'Seems to be in danger').click();
   await expect(H.toast(page)).toHaveText('Report sent. Because this may be serious, it is being reviewed urgently.');

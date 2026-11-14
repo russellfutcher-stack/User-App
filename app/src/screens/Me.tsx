@@ -4,7 +4,7 @@ import React, { useEffect, useState } from 'react';
 import { Text, View } from 'react-native';
 import { backend } from '../backend';
 import { useApp } from '../state/app';
-import { Btn, Card, Disclaimer, ErrorText, Field, H1, H2, H3, Label, Meter, P, Row, Select, Toggle, s as ui } from '../components/ui';
+import { Btn, Card, Disclaimer, LegalLinks, ErrorText, Field, H1, H2, H3, Label, Meter, P, Row, Select, Toggle, s as ui } from '../components/ui';
 import { COUNTRIES } from '../data/places';
 import { passHint, passStrength } from '../lib/account';
 import { AboutFields, PeerCard, ThreeChoices, VisSelect } from './profileParts';
@@ -196,6 +196,7 @@ export function Me() {
       <Security />
       <Btn block label="Sign out" onPress={signOut} />
       <Btn block variant="danger" label="Delete account" onPress={confirmDelete} />
+      <LegalLinks />
       <Disclaimer />
     </>
   );

@@ -62,6 +62,10 @@ export const EMAIL_RE = /^[^@\s]+@[^@\s]+\.[^@\s]+$/;
 export const RESET_FAILED = "That code didn't work. Check it, or ask for a new one. Codes last 15 minutes.";
 // Real members only: sample members, arbitrators and test accounts aren't counted (Rusty, 12 Nov 2026).
 export type ArbMembers = { sample: boolean; liveMembers: number; deletedAccounts: number; newThisMonth: number; samples: number; removeSamples: boolean };
+export const ONE_REPORT = "You can make one report a day. If someone seems to be in danger or under 18, you can still report that.";
+export const REVIEW_ONCE = "You've already asked for a review of this decision. Each decision can be reviewed once, and that review is final.";
+// What the arbitrator sees about each report, including who made it. Members never see who reported them (Rusty, 14 Nov 2026).
+export type ArbReport = { reporter: string; reported: string; reason: string; outcome: string; at: number };
 export type Result<T> = { ok: true; value: T } | { ok: false; error: string };
 
 // Everything the app needs from a server. `local` keeps data in this browser
@@ -118,7 +122,8 @@ export interface Backend {
   // The arbitrator: an ordinary sign-in listed as an arbitrator sees the dashboard instead of the member pages.
   isArbitrator(): Promise<boolean>;
   arbFigures(): Promise<ArbFigures>;
-  arbMembers(): Promise<ArbMembers>; // live members, deleted accounts, new this month, and the 500-member signal
+  arbMembers(): Promise<ArbMembers>;
+  arbReports(): Promise<ArbReport[]>; // the latest 50, newest first // live members, deleted accounts, new this month, and the 500-member signal
   arbCases(): Promise<ArbCase[]>;
   // The note (5+ characters) is shown to the member. Overturn lifts restrictions; Uphold on a removal removes the account; act is for 'Action changed'.
   arbDecide(id: string, outcome: ArbOutcome, note: string, act?: ArbAct): Promise<Result<null>>;

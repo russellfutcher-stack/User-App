@@ -4,7 +4,7 @@ import { Pressable, Text, View } from 'react-native';
 import { backend, Profile } from '../backend';
 import { HANDLE_RE, genHandle, passHint, passStrength } from '../lib/account';
 import { useApp } from '../state/app';
-import { B, Bullet, Btn, Card, Check, ErrorText, Field, H2, Meter, P, Pill, Section, Steps, Toggle, s as ui } from '../components/ui';
+import { LegalLinks, B, Bullet, Btn, Card, Check, ErrorText, Field, H2, Meter, P, Pill, Section, Steps, Toggle, s as ui } from '../components/ui';
 import { C } from '../theme';
 
 export const STEPS = ['rules', 'handle', 'passkey'] as const;
@@ -93,6 +93,7 @@ export function SignUp({ flow }: { flow: ReturnType<typeof useSignUp> }) {
           </Section>
           <SaltBox />
           <Toggle id="r-agree" label="I agree to the community agreement" value={d.agree} onChange={v => set({ agree: v })} />
+          <LegalLinks lead="By joining you also agree to the" />
         </Card>
       </>}
       {st === 'handle' && <>

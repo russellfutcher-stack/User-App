@@ -35,14 +35,14 @@ export const MESSAGE_SCHEMA = {
   type: 'object', additionalProperties: false,
   required: ['decision', 'category', 'confidence', 'user_message', 'strike'],
   properties: {
-    decision: { type: 'string', enum: ['deliver', 'block', 'deliver_with_help', 'hold'] },
+    decision: { type: 'string', enum: ['deliver', 'block', 'deliver_with_help'] },
     category: { type: 'string', enum: ['none', 'dealing', 'off_app_contact', 'harassment', 'hate', 'sexual', 'self_harm_risk', 'overdose_risk', 'spam', 'under_18', 'other'] },
     confidence: { type: 'number' },
     user_message: { type: 'string' },
     strike: { type: 'boolean' },
   },
 };
-export type MessageCheck = { decision: 'deliver' | 'block' | 'deliver_with_help' | 'hold'; category: string; confidence: number; user_message: string; strike: boolean };
+export type MessageCheck = { decision: 'deliver' | 'block' | 'deliver_with_help'; category: string; confidence: number; user_message: string; strike: boolean };
 
 export const REPORT_SCHEMA = {
   type: 'object', additionalProperties: false, required: ['outcome', 'confidence', 'reason', 'reporter_note'],

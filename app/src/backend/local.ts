@@ -10,7 +10,13 @@ import { roomRequestError } from '../lib/rooms';
 import { demoDecision, Decision, URGENT_REASON } from '../lib/review';
 import { CRISIS, notAllowed } from '../lib/safety';
 import { SAMPLE_CASES, SAMPLE_FIGURES } from '../data/arbitrator';
-import { AgeCheck, ARB_ACTS, ArbAct, ArbCase, ArbOutcome, Backend, Msg, Profile, Review, Room, RoomRequest, Sent, blankProfile, EMAIL_RE, RESET_FAILED } from './types';
+// Sample reports for the demo dashboard (fictional).
+const SAMPLE_REPORTS = [
+  { reporter: 'MossyOtter', reported: 'PixelHare', reason: 'Spam or scam', outcome: 'warn' },
+  { reporter: 'JuniperWren', reported: 'NightLark', reason: 'Harassment or hate', outcome: 'mute' },
+  { reporter: 'SteadyBadger', reported: 'EmberFinch', reason: 'Something else', outcome: 'no_action' },
+];
+import { AgeCheck, ARB_ACTS, ArbAct, ArbCase, ArbOutcome, Backend, Msg, Profile, Review, Room, RoomRequest, Sent, blankProfile, EMAIL_RE, RESET_FAILED, ONE_REPORT, REVIEW_ONCE } from './types';
 
 const KEY = 'user-app-v1';
 type Stored = { f: 'me' | 'them'; t: string; ts: number };
@@ -21,7 +27,8 @@ type ArbDecision = { outcome: ArbOutcome; note: string; act?: ArbAct };
 type Case = Omit<Review, 'status' | 'note' | 'by'> & { at: number; decision: Decision; arb?: ArbDecision };
 type Account = { salt: string; hash: string; passkey: boolean; profile: Profile; blocked: string[]; chats?: Record<string, Chat>; rooms?: Rooms; cases?: Case[];
   checkin?: boolean; ageCheck?: AgeCheck; ageConfirmed?: boolean; notify?: boolean; muted?: Record<string, number>;
-  email?: string; reset?: { code: string; until: number; tries: number } };
+  email?: string; reset?: { code: string; until: number; tries: number };
+  reports?: { who: string; reason: string; at: number }[]; blockedCount?: number; reviewed?: string[] };
 
 // In the demo, a review is decided about 1.5 seconds after it's sent, as in the prototype.
 const DECIDE_AFTER = 1500;
@@ -97,7 +104,7 @@ export function localBackend(): Backend {
   const refused = async (c: ReturnType<typeof check>): Promise<Sent | null> => {
     const a = await me(); if (!a) return { ok: false, error: 'Please sign in again.' };
     if (a.ageCheck) return { ok: false, error: 'Please confirm you are 18 or older to carry on.', ageCheck: a.ageCheck };
-    if (c.blocked) return { ok: false, blocked: NOT_SENT, error: 'Message not sent' };
+    if (c.blocked) { await withMe(x => { x.blockedCount = (x.blockedCount || 0) + 1; }); return { ok: false, blocked: NOT_SENT, error: 'Message not sent' }; }
     if (!c.young) return null;
     const step: AgeCheck = a.ageConfirmed ? 'review' : 'ask';
     await withMe(x => { x.ageCheck = step; });
@@ -253,11 +260,21 @@ export function localBackend(): Backend {
     },
     async report(username, reason) {
       const urgent = URGENT_REASON.test(reason);
+      const a = await me(); if (!a) return { ok: false, error: 'Please sign in again.' };
+      // One ordinary report a day; danger and under-18 reports can always be made (Rusty, 14 Nov 2026).
+      if (!urgent && (a.reports || []).some(r => !URGENT_REASON.test(r.reason) && r.at > Date.now() - 86400000)) return { ok: false, error: ONE_REPORT };
+      await withMe(x => { x.reports = [...(x.reports || []), { who: username, reason, at: Date.now() }]; });
       if (urgent) await addCase('A report I made', 'Automatic: ' + reason, true); // reviewed urgently, raised automatically
       return { ok: true, value: { urgent } };
     },
     async requestReview(topic, text) {
+      // Each decision can be reviewed once only (Rusty, 14 Nov 2026). In the demo a decision is the latest blocked message or report.
+      const a = await me(); if (!a) return { ok: false, error: 'Please sign in again.' };
+      const n = topic === 'A message that was blocked' ? a.blockedCount || 0 : topic === 'A report I made' ? (a.reports || []).length : -1;
+      const about = topic === 'Something else' || n === 0 ? null : `${topic}:${n}`;
+      if (about && (a.reviewed || []).includes(about)) return { ok: false, error: REVIEW_ONCE };
       const r = await addCase(topic, text, false);
+      if (r && about) await withMe(x => { x.reviewed = [...(x.reviewed || []), about]; });
       return r ? { ok: true, value: r } : { ok: false, error: 'Please sign in again.' };
     },
     async reviews() { const a = await me(); return (a?.cases || []).map(asReview); },
@@ -268,6 +285,12 @@ export function localBackend(): Backend {
     async muteChat(w) { await withMe(a => { a.muted = { ...a.muted, [w]: Date.now() + 8 * 3600000 }; }); },
     async isArbitrator() { return current === ARB; },
     async arbFigures() { return { ...SAMPLE_FIGURES }; },
+    async arbReports() {
+      const s = await load(); if (current !== ARB) return [];
+      const mine = Object.values(s.accounts).flatMap(a => (a.reports || []).map(r => ({ reporter: a.profile.username, reported: r.who, reason: r.reason, outcome: URGENT_REASON.test(r.reason) ? 'urgent review' : 'no_action', at: r.at })));
+      const day = 86400000, now = Date.now();
+      return [...mine.sort((x, y) => y.at - x.at), ...SAMPLE_REPORTS.map((r, i) => ({ ...r, at: now - (i + 1) * day / 3 }))];
+    },
     async arbMembers() { return { sample: true, liveMembers: 5230, deletedAccounts: 87, newThisMonth: 412, samples: 100, removeSamples: true }; },
     async arbCases() {
       const s = await load(); if (current !== ARB) return [];
