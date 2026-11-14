@@ -97,6 +97,8 @@ export interface Backend {
   messages(withUser: string): Promise<Msg[]>;
   send(withUser: string, text: string): Promise<Sent>;
   sampleReply(withUser: string): Promise<Msg | null>;
+  // Someone in the room replies to every post (Rusty, 14 Nov 2026): the latest reply after yours, if it has arrived.
+  roomReply(id: string): Promise<Msg | null>;
   deleteChat(withUser: string): Promise<Undo>;
   onChange(fn: () => void): () => void; // called when a message or post arrives; returns a stop function
   // Rooms

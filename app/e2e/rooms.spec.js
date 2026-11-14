@@ -155,3 +155,15 @@ test('R-13 Delete a room you made from its details', async ({ page }) => {
   await H.sheet(page).getByRole('button', { name: 'Yes, delete the room' }).click();
   await expect(H.toast(page)).toContainText('Room Puzzle Corner deleted.');
 });
+
+test('R-14 Someone in the room replies to your post', async ({ page }) => {
+  await open(page, 'Book Nook'); await page.fill('#msg', 'Just finished chapter 5!'); await H.btn(page, 'Post').click();
+  await expect(page.locator('#msgs').getByText('Thanks for sharing that. Good to have you here.')).toBeVisible({ timeout: 10000 });
+});
+test('R-14 The reply shows who wrote it, and stays after leaving the room', async ({ page }) => {
+  await open(page, 'Book Nook'); await page.fill('#msg', 'Hello all'); await H.btn(page, 'Post').click();
+  const reply = page.locator('#msgs').getByText('Thanks for sharing that. Good to have you here.');
+  await expect(reply).toBeVisible({ timeout: 10000 });
+  const stored = await H.stored(page); const posts = stored.accounts.quietheron.rooms.posts.r5 || [];
+  expect(posts.some(p => p.f === 'them' && p.who)).toBe(true);
+});

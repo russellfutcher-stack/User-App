@@ -93,3 +93,13 @@ test('WS-09 No passkey saved says to use the password', async ({ page }) => {
   await H.btn(page, 'Sign in with a passkey').click();
   await expect(page.locator('#li-err')).toHaveText('No passkey for User is saved on this device. Sign in with your username and password.');
 });
+
+test('WS-10 Show password shows what you typed', async ({ page }) => {
+  await page.fill('#li-p', 'quiet heron walks'); await expect(page.locator('#li-p')).toHaveAttribute('type', 'password');
+  await page.locator('#li-show').click(); await expect(page.locator('#li-p')).not.toHaveAttribute('type', 'password');
+  await expect(page.locator('#li-p')).toHaveValue('quiet heron walks');
+});
+test('WS-10 Tapping it again hides the password', async ({ page }) => {
+  await page.locator('#li-show').click(); await page.locator('#li-show').click();
+  await expect(page.locator('#li-p')).toHaveAttribute('type', 'password'); await expect(page.locator('#li-show')).toHaveAttribute('aria-checked', 'false');
+});

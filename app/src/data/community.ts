@@ -17,6 +17,13 @@ export const REPLIES: Record<string, string[]> = {
   JuniperWren: ["Hi! Thank you for saying hello.","The Family & Friends room has been a lifeline for me.","How are you doing, really?"],
   BrambleOwl: ["Hello! I've just put bread in, so I have 40 minutes to chat.","Sleep without pills is hard but it is getting a little easier.","What helps you settle at night?"],
 };
+// Mae, an automatic companion members can chat with instead of a person (Rusty, 14 Nov 2026). On the server her replies
+// are written to what was said; the demo uses these lines. She is always marked as not a real person.
+export const MAE = 'Mae';
+export const MAE_NOTE = "Mae is automatic, not a real person. She's always here to talk. If you're in danger, tap Help at the top.";
+export const MAE_REPLIES = ["Hi, I'm really glad you messaged. How are you feeling right now?", "That sounds like a lot to carry. I'm proud of you for talking about it.", "You're doing better than you think. What's one small thing that helped today?", "I'm here with you. Take your time.", "You matter, and so does how you're feeling. Tell me more if you like."];
+// Someone in the room replies to every post (Rusty, 14 Nov 2026). The demo uses these lines.
+export const ROOM_REPLIES = ['Thanks for sharing that. Good to have you here.', 'Same here this week, honestly.', 'That really helps to hear.', 'Welcome! How are you doing today?', 'I hear you. One day at a time.'];
 export const repliesFor = (username: string) => REPLIES[username] || GENERIC_REPLIES;
 
 export const ICEBREAKERS: string[] = ["What made you smile this week?","What's something you're into lately?","Dog, cat, or no pets?","What does a good evening look like for you?","What's a film or book you could revisit forever?","If you could walk anywhere tomorrow, where?"];

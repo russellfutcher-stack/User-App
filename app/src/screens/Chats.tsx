@@ -3,13 +3,12 @@ import React, { useEffect, useRef, useState } from 'react';
 import { ScrollView, Text, TextInput, View } from 'react-native';
 import { backend, ChatSummary, Msg, Sent } from '../backend';
 import type { AgeCheck } from '../backend/types';
-import { ICEBREAKERS } from '../data/community';
+import { ICEBREAKERS, MAE, MAE_NOTE } from '../data/community';
 import { useApp } from '../state/app';
 import { SwipeRow } from '../components/Swipe';
 import { B, Btn, Card, H2, H3, Label, P, Row, s as ui } from '../components/ui';
 import { C, F, R } from '../theme';
 import { HelpSheet } from './HelpSheet';
-import { SAMPLE_HANDLES } from '../data/reference';
 import { ReportSheet, ReviewSheet } from './Safety';
 
 export const timeAgo = (ts: number) => {
@@ -161,7 +160,7 @@ export function Chat({ withUser }: { withUser: string }) {
     <View style={{ flex: 1 }}>
       <ScrollView ref={scroller} id="msgs" style={{ flex: 1 }} contentContainerStyle={{ padding: 16, gap: 8 }}>
         <Sys id="chat-intro">You're both anonymous, and every message is checked for safety. Never share your real name or address.</Sys>
-        {SAMPLE_HANDLES.includes(withUser) ? <Sys id="sample-chat">{withUser} is a sample member, not a real person. Their replies are automatic, to show how User works.</Sys> : null}
+        {withUser === MAE ? <Sys id="mae-chat">{MAE_NOTE}</Sys> : null}
         <Btn variant="quiet" sm label="Safety & options" onPress={() => openSheet(<ChatOptions withUser={withUser} />)} />
         {profile.prefs.disappearing ? <Sys>Disappearing messages are on. Messages are deleted 7 days after they are sent.</Sys> : null}
         {shown.map(m => <Bubble key={m.id} m={m} />)}

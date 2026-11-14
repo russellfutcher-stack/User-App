@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Text, View } from 'react-native';
 import { backend } from '../backend';
 import { useApp } from '../state/app';
-import { B, Btn, Card, ErrorText, Field, H2, P, Row, s as ui } from '../components/ui';
+import { B, Btn, Card, Check, ErrorText, Field, H2, P, Row, s as ui } from '../components/ui';
 import { Profile } from '../backend/types';
 import { C, F } from '../theme';
 
@@ -47,7 +47,7 @@ export function AboutUser() {
 
 export function Welcome() {
   const { go, signedIn, openSheet, closeSheet, toast } = useApp();
-  const [user, setUser] = useState(''); const [pass, setPass] = useState(''); const [err, setErr] = useState('');
+  const [user, setUser] = useState(''); const [pass, setPass] = useState(''); const [err, setErr] = useState(''); const [show, setShow] = useState(false);
   const [busy, setBusy] = useState(false);
 
   const signIn = async () => {
@@ -86,7 +86,8 @@ export function Welcome() {
       <Card>
         <H2>Sign in</H2>
         <Field label="Username" id="li-h" autoComplete="username" autoCapitalize="none" placeholder="Your username" value={user} onChangeText={setUser} onSubmitEditing={signIn} />
-        <Field label="Password" id="li-p" secureTextEntry autoComplete="current-password" placeholder="Your password" value={pass} onChangeText={setPass} onSubmitEditing={signIn} />
+        <Field label="Password" id="li-p" secureTextEntry={!show} autoComplete="current-password" placeholder="Your password" value={pass} onChangeText={setPass} onSubmitEditing={signIn} />
+        <Check id="li-show" label="Show password" value={show} onChange={setShow} />
         <ErrorText id="li-err" text={err} />
         <Btn variant="primary" block label="Sign in" onPress={signIn} id="li-go" />
         <Btn block label="Sign in with a passkey" onPress={passkey} />

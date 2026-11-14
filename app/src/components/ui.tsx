@@ -1,7 +1,7 @@
 // Building blocks that copy the prototype's look: cards, buttons, chips, toggles and fields.
 import React, { ReactNode } from 'react';
 import { Platform, Pressable, StyleProp, StyleSheet, Text, TextInput, TextInputProps, TextStyle, View, ViewStyle } from 'react-native';
-import { openLegal } from '../lib/links';
+import { openLegal, siteUrl } from '../lib/links';
 import { C, F, R, soft } from '../theme';
 
 // Gradients: React Native and the web read different style names.
@@ -126,6 +126,11 @@ export const LegalLinks = ({ lead }: { lead?: string }) => (
   <Text style={[s.hint, { textAlign: 'center', fontSize: 13 }]} id="legal">
     {lead ? lead + ' ' : ''}<Text role="link" style={{ textDecorationLine: 'underline' }} onPress={() => openLegal('terms')}>Terms of Service</Text>
     {' · '}<Text role="link" style={{ textDecorationLine: 'underline' }} onPress={() => openLegal('privacy')}>Privacy Policy</Text>
+  </Text>
+);
+export const SiteLink = () => (
+  <Text style={[s.hint, { textAlign: 'center', fontSize: 13 }]} id="site-link">
+    <Text role="link" {...({ href: siteUrl(), hrefAttrs: { target: '_blank', rel: 'noopener' } } as object)} style={{ textDecorationLine: 'underline' }}>Visit the User website</Text>
   </Text>
 );
 export const Disclaimer = () => <Text style={[s.hint, { textAlign: 'center', fontSize: 13 }]}>User is peer support, not a medical or emergency service.</Text>;

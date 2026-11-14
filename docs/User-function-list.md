@@ -9,7 +9,7 @@ Prototype version 24. Every function a person can use in the prototype, each wit
 - **Saved only**: the choice is saved but has no visible effect yet.
 - **Placeholder**: the button only shows a message.
 
-Totals: Working 163, Simulated 7, Saved only 2, Placeholder 2, 175 functions in all.
+Totals: Working 167, Simulated 7, Saved only 2, Placeholder 2, 179 functions in all.
 
 ## Global
 
@@ -31,7 +31,7 @@ Totals: Working 163, Simulated 7, Saved only 2, Placeholder 2, 175 functions in 
 | G-14 | Plain safety wording | Look through every page | No mention of AI agents, staff, volunteers, moderators or Night Owls. The app says 'every message is checked for safety'. | Working | - |
 | G-15 | Sample community | Use the app | 100 fictional members (12 written by hand, 88 generated the same way every time), 21 of them peer supporters. Every room has 4 to 6 posts, and the demo account has 6 chats, 3 unread. | Working | - |
 | G-16 | Hide (quick exit) | Tap Hide | User is replaced by Google's home page; Back doesn't bring it back, and you're signed out (Rusty, 4 Nov 2026). | Working | Web app only. |
-| G-17 | Sample members are marked | View a sample member's card, profile or chat | The 100 sample members stay after launch (Rusty, 12 Nov 2026) and reply to what was said, in character from their profile (Rusty, 14 Nov 2026), but each shows a 'Sample member' tag; the profile says 'Not a real person…' and a chat with one says their replies are automatic. On the live server none of them is a peer supporter. They're removed when there are 500 real members. | Working | Real on the Supabase server; checked with app/scripts/live-matching.js. |
+| G-17 | Sample members are marked | View a sample member's card, profile or chat | The 100 sample members stay after launch (Rusty, 12 Nov 2026) and reply to what was said, in character from their profile (Rusty, 14 Nov 2026). Each has a small 'Sample' tag on their card and profile. They never bring up what they are in chats or rooms, but if sincerely asked whether they're real they say honestly that they're a sample member and their replies are automatic (Rusty, 14 Nov 2026). On the live server none of them is a peer supporter. They're removed when there are 500 real members. | Working | Real on the Supabase server; checked with app/scripts/live-matching.js. |
 
 ## Welcome & Sign in
 
@@ -46,6 +46,7 @@ Totals: Working 163, Simulated 7, Saved only 2, Placeholder 2, 175 functions in 
 | WS-07 | Forgot password | Tap 'Forgot password?' | Enter the username and the email saved on the Me page, then 'Email me a code'. A 6-digit code is emailed (it lasts 15 minutes, 5 tries); enter it with a new password to set it and sign in. The reply never says whether the username and email matched. Without a saved email: sign in with a passkey, then change the password. | Working | Real on the Supabase server (reset-password function); checked with app/scripts/live-reset-rooms.js. The demo shows the code instead of emailing it. |
 | WS-08 | Create an anonymous account | Tap it under 'New here?' | Starts sign-up at step 1. | Working | - |
 | WS-09 | Sign in with a passkey | Tap 'Sign in with a passkey' | If a passkey is saved on this device, confirm with face, fingerprint or PIN and you're signed in (simulated in the demo). If not, says to use your username and password. | Working | Real on the Supabase server (WebAuthn); checked with app/scripts/live-passkey.js. |
+| WS-10 | Show password | Tick Show password under the password box | Shows the password as typed; tick again to hide it (Rusty, 14 Nov 2026). | Working | - |
 
 ## Sign-up
 
@@ -92,7 +93,8 @@ Totals: Working 163, Simulated 7, Saved only 2, Placeholder 2, 175 functions in 
 | H-07 | Benefits and how to use | Open Home | The same 'Why people use User' and 'How to use it' as the Welcome page. | Working | - |
 | H-08 | Help is always here | Scroll to the bottom | The help card is the last card on Home, followed by the disclaimer. | Working | - |
 | H-09 | Disclaimer | Bottom of Home | 'User is peer support, not a medical or emergency service.' | Working | - |
-| H-10 | Page order | Scroll Home | Greeting, choice tiles, new messages, benefits, how to use, help card, disclaimer. No check-in and no 'Your rooms' section. | Working | - |
+| H-10 | Page order | Scroll Home | Greeting, choice tiles, new messages, benefits, how to use, help card, a link to the website, disclaimer. No check-in and no 'Your rooms' section. | Working | - |
+| H-11 | Link to the website | Scroll to the bottom of Home | 'Visit the User website' opens the public website in a new tab (Rusty, 14 Nov 2026). | Working | - |
 
 ## Me
 
@@ -148,6 +150,7 @@ Totals: Working 163, Simulated 7, Saved only 2, Placeholder 2, 175 functions in 
 | DS-15 | Search button | Change anything, tap Search | A notice shows until you tap Search. Search updates Your Matches, scrolls to the top and confirms the number found. | Working | - |
 | DS-16 | Drug use headings | Look under Drug use | Medications, Other Substances, Alcohol, nicotine & gambling. | Working | - |
 | DS-17 | Search by location | Fill in City or choose Country under Location, then tap Search | Country keeps only people in that country. City keeps people whose city starts with what was typed (any case). People are found by city only if they let you see it. Shown in the 'Finding people with' summary. | Working | Real on the Supabase server. |
+| DS-18 | Talk to Mae | Tap 'Chat with Mae' at the top of the Search page | A card offers Mae, an automatic companion, as someone to talk to instead of a person, and says 'Mae is automatic, not a real person.' Her chat repeats it. She is warm, encouraging and caring, never romantic, points to Help in a crisis, and says honestly she isn't a real person if asked. She isn't in search results or the figures, and stays when the sample members are removed (Rusty, 14 Nov 2026). | Working | On the live server Mae writes her own replies; the demo uses lines written in advance. Checked live. |
 
 ## Chats
 
@@ -158,7 +161,7 @@ Totals: Working 163, Simulated 7, Saved only 2, Placeholder 2, 175 functions in 
 | C-03 | Open a chat | Tap a conversation | Says you're anonymous and every message is checked for safety. Marks the chat as read. | Working | - |
 | C-04 | Conversation starters | Chat with fewer than 3 messages | 6 starters fill the message box. | Working | - |
 | C-05 | Send a message | Type and Send | Up to 1000 characters; empty messages ignored. | Working | Delivering messages to the other person needs a server. |
-| C-06 | Sample member replies | Send a message to a sample member | Typing indicator, then a reply. On the live server each sample member writes their own reply to what was said, in character from their profile, about 3 seconds later, even if you leave the chat; every message gets a reply, and if asked they say honestly they're a sample member (Rusty, 14 Nov 2026). The demo uses lines written in advance. | Simulated | Real on the Supabase server for sample members; checked with app/scripts/live-chats.js. Real members reply themselves. |
+| C-06 | Sample member replies | Send a message to a sample member | Typing indicator, then a reply. On the live server each sample member writes their own reply to what was said, in character from their profile, about 3 seconds later, even if you leave the chat; every message gets a reply, they never introduce themselves as a sample member, and if sincerely asked they say honestly they're a sample member and their replies are automatic (Rusty, 14 Nov 2026). The demo uses lines written in advance. | Simulated | Real on the Supabase server for sample members; checked with app/scripts/live-chats.js. Real members reply themselves. |
 | C-07 | Dealing and contact filter | Selling words, prices, links, other apps' names, drug emojis | Not sent; a red 'Message not sent' box explains why. Recovery or harm-reduction context, such as 'I used to sell, now I help others stay clean' or naloxone, is allowed unless it also has prices, links or other apps. Every message gets a decision: if the first check is unsure, a careful second check decides, and its decision is final. Nothing is held (Rusty, 14 Nov 2026). | Working | The real check is the AI Moderator on a server; the prototype uses simple rules. |
 | C-08 | Phone numbers allowed | Send a phone number | The message is sent. | Working | The real check is the AI Moderator on a server. |
 | C-09 | Crisis detection | Crisis words | Sent, then the Help sheet opens. | Working | The real check is the AI Moderator on a server. |
@@ -189,6 +192,7 @@ Totals: Working 163, Simulated 7, Saved only 2, Placeholder 2, 175 functions in 
 | R-11 | Room created | Wait about 2 seconds | Approved; room created under its type; you are joined. | Simulated | Real rooms are created by the AI Room Agent on a server. |
 | R-12 | Swipe to leave or delete a room | Swipe a room to the left in Your rooms, then tap Leave or Delete | Built-in rooms show Leave: you leave the room. Rooms you created show Delete: the room is removed. A toast offers Undo. Only rooms in Your rooms can be swiped. | Working | - |
 | R-13 | Room details and activity | In a room, tap 'Room details' | Shows the name, description, members and how many people were active (opened or posted in the room) in the last 5 minutes; room rows show '… active now'. Leave room (or Delete room, for a room you made) asks to confirm first. | Working | Real on the Supabase server; checked with app/scripts/live-reset-rooms.js. In the demo only you are counted. |
+| R-14 | Room replies | Post in a room | About 3 seconds later someone in the room replies to the post: on the live server, a sample member who has posted there, writing to what was said; in the demo, a line written in advance (Rusty, 14 Nov 2026). | Working | Checked live. |
 
 ## Support
 

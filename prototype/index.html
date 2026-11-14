@@ -643,7 +643,14 @@ function markDay(){ const k=dayKey(0); if(!S.days.includes(k)) S.days.push(k); }
 /* ---------- Helpers ---------- */
 const $ = s => document.querySelector(s);
 const esc = s => String(s).replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-const person = id => PEOPLE.find(p=>p.id===id);
+// Mae: an automatic companion, always here to talk, clearly marked as not a real person (Rusty, 14 Nov 2026).
+const MAE_NOTE='Mae is automatic, not a real person. She\'s always here to talk. If you\'re in danger, tap Help at the top.';
+const MAE={id:'mae',handle:'Mae',companion:true,peer:false,region:'Always here',active:'Online',stage:'na',tags:[],looking:['chat'],
+  bio:'I\'m Mae. I\'m here any time you want to talk: to listen, to cheer you on, and to remind you that you matter.',
+  replies:['Hi, I\'m really glad you messaged. How are you feeling right now?','That sounds like a lot to carry. I\'m proud of you for talking about it.','You\'re doing better than you think. What\'s one small thing that helped today?','I\'m here with you. Take your time.','You matter, and so does how you\'re feeling. Tell me more if you like.']};
+const ROOM_REPLIES=['Thanks for sharing that. Good to have you here.','Same here this week, honestly.','That really helps to hear.','Welcome! How are you doing today?','I hear you. One day at a time.'];
+const SITE='https://russellfutcher-stack.github.io/User-App/about/';
+const person = id => id==='mae' ? MAE : PEOPLE.find(p=>p.id===id);
 const stageLabel = id => (STAGES.find(s=>s.id===id)||{}).label||'';
 const catOf = id => TAG[id] ? TAG[id].cat : null;
 const visKey = cat => cat==='interests' ? 'interests' : cat==='mh' ? 'mh' : 'subs';
@@ -789,12 +796,13 @@ function renderHome(){
      return `<button class="person" onclick="App.openChat('${id}')"><div class="body"><span class="name">${esc(p.handle)}</span><div class="small" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(l.t)}</div></div><span class="pill amber">New</span></button>`}).join('')}</div>`:''}
    ${aboutUser('h')}
    <div class="card calm help-card"><h3>Help is always here</h3><p class="small">Tap <b>Help</b> at the top of any screen, or open the <b>Support</b> page for help services in your country, overdose information and peer supporters.</p></div>
+   <p class="small center" id="site-link"><a href="${SITE}" target="_blank" rel="noopener">Visit the User website</a></p>
    ${DISCLAIMER}`;
 }
 function personRow(p,m){
   const tagHtml=p.tags.filter(t=>catOf(t)==='interests'||m.shared.includes(t)).slice(0,4).map(t=>`<span class="tag g-${grp(t)} ${m.shared.includes(t)?'shared':''}">${esc(TAG[t].label)}</span>`).join('');
   return `<button class="person" onclick="App.profile('${p.id}')">
-    <div class="body"><div class="row"><span class="name">${esc(p.handle)}</span>${p.peer?'<span class="pill peer">Peer supporter</span>':''}<span class="pill">Sample member</span>${p.active==='Online'?'<span class="online" aria-label="online"></span>':`<span class="small muted">${esc(p.active)}</span>`}</div>
+    <div class="body"><div class="row"><span class="name">${esc(p.handle)}</span>${p.peer?'<span class="pill peer">Peer supporter</span>':''}${p.companion?'':'<span class="pill">Sample</span>'}${p.active==='Online'?'<span class="online" aria-label="online"></span>':`<span class="small muted">${esc(p.active)}</span>`}</div>
     <div class="small muted">${esc(stageLabel(p.stage))} · ${esc(place(p))}</div><div class="chips">${tagHtml}</div></div>
     <div class="match">${m.pct}%<small>match</small></div></button>`;
 }
@@ -827,6 +835,7 @@ function renderFind(){
   const changed = JSON.stringify(draft())!==JSON.stringify(S.ui.applied);
   $('#screen').innerHTML = `
    <div class="section"><h2 style="font-size:24px">Search/Find a Companion</h2></div>
+   <div class="card calm" id="mae-card"><h3>Talk to Mae</h3><p class="small">Would you rather not talk to a person right now? Mae is always here to listen, encourage you and be on your side. Mae is automatic, not a real person.</p><button class="btn primary" onclick="App.openChat('mae')">Chat with Mae</button></div>
    <div class="section" id="results" aria-live="polite"></div>
    <div class="section">
      <span class="label" id="choose">1. Choose</span>
@@ -883,7 +892,7 @@ function profileSheet(id){
   const p=person(id), m=match(p);
   const groups=PATHS.map(g=>{ const t=p.tags.filter(x=>g.cats.includes(catOf(x))); return `<div class="section"><span class="label ghead g-${g.g}">${g.name}</span><div class="chips">${t.length?t.map(x=>`<span class="tag g-${g.g} ${m.shared.includes(x)?'shared':''}">${esc(TAG[x].label)}</span>`).join(''):'<span class="small muted">Not shared</span>'}</div></div>`; }).join('');
   sheet(`<div class="row"><div class="grow" style="flex:1;min-width:0"><h2>${esc(p.handle)}</h2><div class="small muted">${esc(p.active)} · ${esc(place(p))}</div></div><div class="match">${m.pct}%<small>match</small></div></div>
-    <div class="row wrap" id="sample-note"><span class="pill">Sample member</span><span class="small">Not a real person. Sample members show how User works, and their replies are automatic.</span></div>
+    <div class="row wrap"><span class="pill" id="sample-note">Sample</span></div>
     ${p.peer?'<p class="peer-on"><span class="pill peer">Peer supporter</span> Offers to listen to people who want peer support.</p>':''}
     <p>${esc(p.bio)}</p>
     <div class="card calm"><p class="small">${esc(whyMatched(p,m))}</p></div>
@@ -914,7 +923,7 @@ function renderChat(id){
   const msgs=(S.convos[id]||[]).filter(m=>!S.prefs.disappearing||m.ts>week);
   sc.innerHTML=`<div class="msgs" id="msgs">
      <div class="bubble sys">You're both anonymous, and every message is checked for safety. Never share your real name or address. <button class="btn sm quiet" onclick="App.chatMenu('${id}')">Safety &amp; options</button></div>
-     <div class="bubble sys" id="sample-chat">${esc(p.handle)} is a sample member, not a real person. Their replies are automatic, to show how User works.</div>
+     ${p.companion?`<div class="bubble sys" id="mae-chat">${MAE_NOTE}</div>`:''}
      ${S.prefs.disappearing?'<div class="bubble sys">Disappearing messages are on. Messages are deleted 7 days after they are sent.</div>':''}
      ${msgs.map(bubble).join('')}</div>
    <div id="warn"></div>
@@ -1077,6 +1086,7 @@ function renderWelcome(){
    <form class="card signin" onsubmit="App.signIn(event)"><h2>Sign in</h2>
      <div class="field"><label for="li-h">Username</label><input class="input" id="li-h" autocomplete="username" placeholder="Your username"></div>
      <div class="field"><label for="li-p">Password</label><input class="input" id="li-p" type="password" autocomplete="current-password" placeholder="Your password"></div>
+     <label class="row small" for="li-show" style="gap:8px"><input type="checkbox" id="li-show" onchange="$('#li-p').type=this.checked?'text':'password'"> Show password</label>
      <div id="li-err" class="hint" role="alert"></div>
      <button class="btn primary block" type="submit">Sign in</button>
      <button class="btn block" type="button" onclick="App.passkeySignIn()">Sign in with a passkey</button>
@@ -1470,7 +1480,11 @@ const App = {
   room(id){ view={name:'room',id}; render(); },
   join(id){ if(!S.rooms.joined.includes(id)) S.rooms.joined.push(id); save(); render(); toast('Joined. Say hello when you\'re ready.'); },
   post(e,id){ e.preventDefault(); const inp=$('#msg'), t=inp.value.trim(); if(!t||!guard(t)) return; (S.rooms.posts[id]=S.rooms.posts[id]||[]).push({f:'me',t,ts:Date.now()}); S.stats.roomPosts++; markDay(); save(); inp.value='';
-    $('#msgs').insertAdjacentHTML('beforeend',bubble({f:'me',t})); scrollMsgs(); if(CRISIS.test(t)) setTimeout(()=>helpSheet('It sounds like things might be really hard right now. These lines are open now.'),400); },
+    $('#msgs').insertAdjacentHTML('beforeend',bubble({f:'me',t})); scrollMsgs(); if(CRISIS.test(t)) setTimeout(()=>helpSheet('It sounds like things might be really hard right now. These lines are open now.'),400);
+    // Someone in the room replies to every post (Rusty, 14 Nov 2026).
+    const r=allRooms().find(x=>x.id===id), names=[...new Set((r.seed||[]).map(([w])=>w))], who=names.length?names[Math.floor(Math.random()*names.length)]:'MossyOtter';
+    setTimeout(()=>{ const n=(S.rooms.posts[id]||[]).filter(m=>m.f==='them').length, m={f:'them',who,t:ROOM_REPLIES[n%ROOM_REPLIES.length],ts:Date.now()};
+      S.rooms.posts[id].push(m); save(); if(view.name==='room'&&view.id===id){ $('#msgs').insertAdjacentHTML('beforeend',bubble(m)); scrollMsgs(); } },2200+Math.random()*1200); },
   vis(k,v){ S.vis[k]=v; save(); toast('Visibility updated.'); },
   loc(k,v){ S.me[k]=k==='city'?v.slice(0,60):v; save(); },
   pref(k,v){ S.prefs[k]=v; save(); toast(v?'Turned on.':'Turned off.'); },

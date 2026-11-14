@@ -4,7 +4,7 @@ import * as Crypto from 'expo-crypto';
 import { SAMPLE_HANDLES } from '../data/reference';
 import { SAMPLES } from '../data/people';
 import { sampleLocation } from '../data/places';
-import { DEMO_CHATS, DEMO_JOINED, ROOMS, repliesFor } from '../data/community';
+import { DEMO_CHATS, DEMO_JOINED, MAE, MAE_REPLIES, ROOM_REPLIES, ROOMS, repliesFor } from '../data/community';
 import { score } from '../lib/match';
 import { roomRequestError } from '../lib/rooms';
 import { demoDecision, Decision, URGENT_REASON } from '../lib/review';
@@ -19,7 +19,7 @@ const SAMPLE_REPORTS = [
 import { AgeCheck, ARB_ACTS, ArbAct, ArbCase, ArbOutcome, Backend, Msg, Profile, Review, Room, RoomRequest, Sent, blankProfile, EMAIL_RE, RESET_FAILED, ONE_REPORT, REVIEW_ONCE } from './types';
 
 const KEY = 'user-app-v1';
-type Stored = { f: 'me' | 'them'; t: string; ts: number };
+type Stored = { f: 'me' | 'them'; t: string; ts: number; who?: string };
 type Chat = { msgs: Stored[]; unread: boolean };
 type MyRoom = { id: string; cat: Room['cat']; name: string; desc: string };
 type Rooms = { joined: string[]; posts: Record<string, Stored[]>; custom: MyRoom[]; requests: RoomRequest[]; seen?: Record<string, number> };
@@ -201,11 +201,11 @@ export function localBackend(): Backend {
       return out ? { ok: true, msg: out, help: c.help } : { ok: false, error: 'Please sign in again.' };
     },
     async sampleReply(w) {
-      if (!SAMPLES.some(m => m.username === w)) return null;
+      if (w !== MAE && !SAMPLES.some(m => m.username === w)) return null;
       let out: Msg | null = null;
       await withMe(a => {
         const c = chatsOf(a)[w]; if (!c || a.blocked.includes(w)) return;
-        const replies = repliesFor(w), n = c.msgs.filter(m => m.f === 'them').length;
+        const replies = w === MAE ? MAE_REPLIES : repliesFor(w), n = c.msgs.filter(m => m.f === 'them').length;
         c.msgs.push({ f: 'them', t: replies[n % replies.length], ts: Date.now() }); c.unread = true; out = msg(c.msgs[c.msgs.length - 1], c.msgs.length - 1);
       });
       changed(); return out;
@@ -229,7 +229,7 @@ export function localBackend(): Backend {
       const mine = roomsOf(a).posts[id] || [];
       const custom = roomsOf(a).custom.find(r => r.id === id);
       return [...(custom ? [{ f: 'them' as const, t: `Welcome to ${custom.name}. This room has just been created. Say hello!`, ts: 0, who: 'User' }] : []),
-        ...seed.map(([who, t]) => ({ f: 'them' as const, t, ts: 0, who })), ...mine.map(m => ({ ...m, who: undefined }))]
+        ...seed.map(([who, t]) => ({ f: 'them' as const, t, ts: 0, who })), ...mine.map(m => ({ ...m, who: m.f === 'them' ? m.who : undefined }))]
         .map((m, i) => msg(m, i, m.who));
     },
     async joinRoom(id) { await withMe(a => { const r = roomsOf(a); if (!r.joined.includes(id)) r.joined.push(id); }); },
@@ -239,6 +239,17 @@ export function localBackend(): Backend {
       let out: Msg | null = null;
       await withMe(a => { const r = roomsOf(a); const l = (r.posts[id] = r.posts[id] || []); l.push({ f: 'me', t: text, ts: Date.now() }); out = msg(l[l.length - 1], 1000 + l.length); });
       return out ? { ok: true, msg: out, help: c.help } : { ok: false, error: 'Please sign in again.' };
+    },
+    async roomReply(id) {
+      let out: Msg | null = null;
+      await withMe(a => {
+        const r = roomsOf(a), l = r.posts[id] || []; if (!l.length || l[l.length - 1].f !== 'me') return;
+        const seed = ROOMS.find(x => x.id === id)?.seed || [], names = [...new Set(seed.map(([w]) => w).filter(w => w !== 'User'))];
+        const who = names.length ? names[Math.floor(Math.random() * names.length)] : 'MossyOtter', n = l.filter(m => m.f === 'them').length;
+        l.push({ f: 'them', t: ROOM_REPLIES[n % ROOM_REPLIES.length], ts: Date.now(), who });
+      });
+      if (!out) { const p = await this.roomPosts(id); const last = p[p.length - 1]; out = last && !last.mine ? last : null; }
+      changed(); return out;
     },
     async leaveRoom(id) {
       let was: Rooms | undefined;
