@@ -17,7 +17,7 @@ const GHead = ({ text, colour }: { text: string; colour: string }) => (
   </Row>
 );
 
-function Results({ members, onNew }: { members: Member[] | null; onNew: () => void }) {
+function Results({ members }: { members: Member[] | null }) {
   const { applied, shown: count, setShown } = useApp();
   if (!members) return <P muted>Finding your matches…</P>;
   const list = search(members, applied), shown = list.slice(0, count);
@@ -28,7 +28,6 @@ function Results({ members, onNew }: { members: Member[] | null; onNew: () => vo
         {shown.map(m => <PersonRow key={m.username} m={m} />)}
         {list.length > count ? <Btn block label="Next 10 matches" onPress={() => setShown(count + PAGE)} /> : null}
       </> : <Card><P>No one matches all of those yet. Try removing a filter, or join a room to meet people more broadly.</P></Card>}
-      <Btn block label="New search" onPress={onNew} />
     </View>
   );
 }
@@ -48,16 +47,11 @@ export function Search({ toTop }: { toTop: () => void }) {
     toast(`Search updated: ${n} ${n === 1 ? 'person' : 'people'}.`);
   };
   const clear = () => { setQuery(blankQuery()); setApplied(blankQuery()); setShown(PAGE); };
-  // New search: start again with no filters, at the choices.
-  const fresh = () => {
-    clear(); toast('New search. Choose what to look for.');
-    setTimeout(() => (globalThis as { document?: Document }).document?.getElementById('choose')?.scrollIntoView({ block: 'start' }), 50);
-  };
   const any = query.f.length || query.look.length || query.peerOnly || query.city.trim() || query.country;
   return (
     <>
       <H2 style={{ fontSize: 24, lineHeight: 28 }}>Search/Find a Companion</H2>
-      <Results members={members} onNew={fresh} />
+      <Results members={members} />
       <View style={{ gap: 10 }} id="choose">
         <Label>1. Choose</Label>
         <ThreeTiles on={query.cats} onPress={toggle} />

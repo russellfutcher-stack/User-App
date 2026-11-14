@@ -18,7 +18,7 @@ export function ReportSheet({ username }: { username: string }) {
   return (
     <>
       <H2>Report {username}</H2>
-      <P small muted>Reports are anonymous and are reviewed straight away. An independent arbitrator checks decisions and can change them.</P>
+      <P small muted>The person you report isn't told who reported them. Reports are reviewed straight away, and an independent arbitrator checks decisions and can change them. You can make one report a day; reports that someone is in danger or under 18 can always be made.</P>
       <View style={{ gap: 8 }} id="report-reasons">
         {REPORT_REASONS.map(r => <Btn key={r} label={r} style={{ alignItems: 'flex-start' }} onPress={() => send(r)} />)}
       </View>

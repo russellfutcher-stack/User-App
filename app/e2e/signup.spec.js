@@ -135,3 +135,12 @@ test('SN-15 The explanation is closed at first', async ({ page }) => {
   await expect(page.locator('#salt')).toHaveCount(0);
   await expect(page.getByRole('button', { name: 'What is a salted hash?' })).toHaveAttribute('aria-expanded', 'false');
 });
+
+test('SN-16 Joining also agrees to the Terms of Service and Privacy Policy', async ({ page }) => {
+  await expect(page.locator('#legal')).toContainText('By joining you also agree to the Terms of Service · Privacy Policy');
+});
+test('SN-16 The links go to the website pages', async ({ page }) => {
+  const [popup] = await Promise.all([page.waitForEvent('popup').catch(() => null), page.locator('#legal').getByRole('link', { name: 'Terms of Service' }).click()]);
+  if (popup) await popup.waitForURL(/\/about\/terms\//, { timeout: 5000 }).catch(() => {});
+  expect(popup ? popup.url() : page.url()).toContain('/about/terms/');
+});

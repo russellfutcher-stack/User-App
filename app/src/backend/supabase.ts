@@ -283,6 +283,11 @@ export function supabaseBackend(url: string, anonKey: string): Backend {
       const { data, error } = await db.rpc('arb_figures'); must(error);
       return { ...(data as object), sample: false } as Awaited<ReturnType<Backend['arbFigures']>>;
     },
+    async arbReports() {
+      const { data, error } = await db.rpc('arb_reports'); must(error);
+      return ((data || []) as { reporter: string; reported: string; reason: string; outcome: string; created_at: string }[])
+        .map(r => ({ reporter: r.reporter, reported: r.reported, reason: r.reason, outcome: r.outcome, at: Date.parse(r.created_at) }));
+    },
     async arbMembers() {
       const { data, error } = await db.rpc('arb_members'); must(error);
       return { ...(data as object), sample: false } as Awaited<ReturnType<Backend['arbMembers']>>;

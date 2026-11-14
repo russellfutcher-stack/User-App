@@ -23,27 +23,9 @@ if (AGREEMENT.length !== 4 || !BENEFITS.length || !HOWTO.length || SERVICES.leng
 const esc = s => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 const services = s => `<div class="lines"><div class="line em"><span>Emergency</span><b>${esc(s.emergency)}</b></div>${s.lines.map(([a, b]) => `<div class="line"><span>${esc(a)}</span><b>${esc(b)}</b></div>`).join('')}</div>`;
 const privacy = ready ? `
-<section id="privacy"><h2>Privacy policy</h2>
-<p>User is run by ${esc(settings.organisation)}. Questions about your data: in User, open Support, tap Ask for a review and choose Something else. Replies come back on the Support page.</p>
-<h3>What we keep</h3>
-<ul><li>Your username and password. Your password is stored only as a salted hash, so nobody can read it.</li>
-<li>Your profile: byline, stage, what you're looking for, your interest, drug use and mental health choices, and who can see each.</li>
-<li>An email for password resets, if you add one.</li>
-<li>Your city and country, if you add them. Your country is shown to other members; your city only to the people you choose.</li>
-<li>Your chats, room posts, blocks, reports and reviews.</li>
-<li>The country you choose on the Support page, if you choose one.</li></ul>
-<p>We never ask for your real name, email address or phone number. You can choose to add an email on the Me page, used only to send you a code if you forget your password. It's never shown to anyone. Codes are sent by Resend, an email service in the United States.</p>
-<h3>Where it's kept</h3>
-<p>Members' data is stored in Australia (Sydney).</p>
-<h3>Safety checks</h3>
-<p>Every message, room post, report, review and room request is checked for safety before anyone sees it. The check is done by an automated service from Anthropic, a US company, so the text is processed outside Australia. Only the text and where it was sent (a chat or a room) are sent, never your username or profile. Anthropic doesn't use it to train its models.</p>
-<h3>How long we keep things</h3>
-<ul><li>Messages that weren't sent because they broke the community agreement: the text is deleted after 30 days. A record that something was blocked, and why, is kept without it.</li>
-<li>If you turn on disappearing messages, chat messages are deleted for both of you after 7 days.</li>
-<li>Everything else is kept until you delete it or delete your account.</li></ul>
-<h3>Your choices</h3>
-<ul><li>Choose who sees your drug use and mental health choices, and your city, on the Me page. They start as "People I chat with".</li>
-<li>Delete your account on the Me page. This permanently erases your profile, messages and everything linked to it.</li></ul>
+<section id="privacy"><h2>Privacy and terms</h2>
+<p>User is run by ${esc(settings.organisation)}. Members' data is stored in Australia (Sydney). We never ask for your real name or phone number. Every message is checked for safety by an automated service from Anthropic, a US company, which gets the text only, never your username or profile.</p>
+<p><a href="privacy/">Read the Privacy Policy</a> · <a href="terms/">Read the Terms of Service</a></p>
 </section>` : '';
 
 const html = `<!doctype html>
@@ -76,7 +58,7 @@ details summary{cursor:pointer;font-weight:700;margin:4px 0}
 <h1>User</h1>
 <p>Connection and Recovery. Anonymous peer support for people who use drugs, are in recovery, or live with a mental health condition. For adults, 18 and over.</p>
 <a class="btn" href="../">Open User</a><a class="help" href="#help">Help</a>
-<nav><a href="#about">About</a><a href="#how">How it works</a><a href="#safety">Safety</a>${ready ? '<a href="#privacy">Privacy</a>' : ''}<a href="#help">Help services</a></nav>
+<nav><a href="#about">About</a><a href="#how">How it works</a><a href="#safety">Safety</a>${ready ? '<a href="#privacy">Privacy</a>' : ''}<a href="#help">Help services</a>${ready ? '<a href="terms/">Terms</a>' : ''}</nav>
 </div></header>
 <main>
 <section id="about"><h2>Why people use User</h2>
@@ -103,10 +85,27 @@ ${['Australia', 'United Kingdom', 'United States', 'Canada', 'Ireland', 'New Zea
 <details><summary>All ${SERVICES.length} countries</summary>${SERVICES.map(s => `<h3>${esc(s.country)}</h3>${services(s)}`).join('')}</details>
 <p class="muted">Services can change. If a number doesn't work, findahelpline.com lists services worldwide.</p></section>
 </main>
-<footer>User is peer support, not a medical or emergency service.</footer>
+<footer>User is peer support, not a medical or emergency service.${ready ? ' · <a href="privacy/">Privacy Policy</a> · <a href="terms/">Terms of Service</a>' : ''}</footer>
 </body>
 </html>
 `;
 fs.mkdirSync(path.join(root, 'public/about'), { recursive: true });
+// The Terms of Service and Privacy Policy (Rusty, 14 Nov 2026), from app/site/legal, each on its own page.
+const head = html.slice(0, html.indexOf('</head>')).replace('<link rel="icon" href="../favicon-48.png" />', '<link rel="icon" href="../../favicon-48.png" />');
+for (const [slug, title] of [['terms', 'Terms of Service'], ['privacy', 'Privacy Policy']]) {
+  if (!ready) continue;
+  const body = read(`site/legal/${slug}.html`);
+  const page = head.replace(/<title>[^<]*<\/title>/, `<title>User: ${title}</title>`) + `<style>main section h1{margin:0 0 4px;font-size:28px}main section h2{margin:20px 0 6px;font-size:18px}</style></head>
+<body>
+<header><div class="in"><h1>User</h1><p>Connection and Recovery</p><a class="btn" href="../../">Open User</a><a class="help" href="../#help">Help</a>
+<nav><a href="../">About</a><a href="../privacy/">Privacy Policy</a><a href="../terms/">Terms of Service</a></nav></div></header>
+<main><section>${body}</section></main>
+<footer>User is peer support, not a medical or emergency service.</footer>
+</body>
+</html>
+`;
+  fs.mkdirSync(path.join(root, `public/about/${slug}`), { recursive: true });
+  fs.writeFileSync(path.join(root, `public/about/${slug}/index.html`), page);
+}
 fs.writeFileSync(path.join(root, 'public/about/index.html'), html);
 console.log(`Wrote public/about/index.html${ready ? '' : ' (privacy policy left out until site/settings.json is filled in)'}`);

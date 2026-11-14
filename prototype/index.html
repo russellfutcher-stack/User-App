@@ -872,7 +872,7 @@ function renderResults(){
   const shown = list.slice(0, S.ui.shown||10); // 10 at a time (Rusty, 12 Nov 2026)
   $('#results').innerHTML = `<div class="row between"><h2>Your Matches</h2><span class="pill" id="match-count">${list.length} ${list.length===1?'person':'people'}</span></div>`+
     (list.length?shown.map(({p,m})=>personRow(p,m)).join('')+(list.length>shown.length?`<button class="btn block" onclick="App.next10()">Next 10 matches</button>`:''):`<div class="card"><p>No one matches all of those yet. Try removing a filter, or join a room to meet people more broadly.</p></div>`)+
-    `<button class="btn block" onclick="App.newSearch()">New search</button>`;
+    '';
 }
 
 /* ---------- Profile sheet ---------- */
@@ -883,7 +883,7 @@ function profileSheet(id){
   const p=person(id), m=match(p);
   const groups=PATHS.map(g=>{ const t=p.tags.filter(x=>g.cats.includes(catOf(x))); return `<div class="section"><span class="label ghead g-${g.g}">${g.name}</span><div class="chips">${t.length?t.map(x=>`<span class="tag g-${g.g} ${m.shared.includes(x)?'shared':''}">${esc(TAG[x].label)}</span>`).join(''):'<span class="small muted">Not shared</span>'}</div></div>`; }).join('');
   sheet(`<div class="row"><div class="grow" style="flex:1;min-width:0"><h2>${esc(p.handle)}</h2><div class="small muted">${esc(p.active)} · ${esc(place(p))}</div></div><div class="match">${m.pct}%<small>match</small></div></div>
-    <div class="row wrap" id="sample-note"><span class="pill">Sample member</span><span class="small">Not a real person. Sample members show how User works, and their replies are written in advance.</span></div>
+    <div class="row wrap" id="sample-note"><span class="pill">Sample member</span><span class="small">Not a real person. Sample members show how User works, and their replies are automatic.</span></div>
     ${p.peer?'<p class="peer-on"><span class="pill peer">Peer supporter</span> Offers to listen to people who want peer support.</p>':''}
     <p>${esc(p.bio)}</p>
     <div class="card calm"><p class="small">${esc(whyMatched(p,m))}</p></div>
@@ -914,7 +914,7 @@ function renderChat(id){
   const msgs=(S.convos[id]||[]).filter(m=>!S.prefs.disappearing||m.ts>week);
   sc.innerHTML=`<div class="msgs" id="msgs">
      <div class="bubble sys">You're both anonymous, and every message is checked for safety. Never share your real name or address. <button class="btn sm quiet" onclick="App.chatMenu('${id}')">Safety &amp; options</button></div>
-     <div class="bubble sys" id="sample-chat">${esc(p.handle)} is a sample member, not a real person. Their replies are written in advance to show how User works.</div>
+     <div class="bubble sys" id="sample-chat">${esc(p.handle)} is a sample member, not a real person. Their replies are automatic, to show how User works.</div>
      ${S.prefs.disappearing?'<div class="bubble sys">Disappearing messages are on. Messages are deleted 7 days after they are sent.</div>':''}
      ${msgs.map(bubble).join('')}</div>
    <div id="warn"></div>
@@ -925,7 +925,7 @@ function renderChat(id){
 const bubble = m => m.f==='sys' ? `<div class="bubble sys">${esc(m.t)}</div>` : `<div class="bubble ${m.f==='me'?'me':'them'}">${m.who?`<span class="who">${esc(m.who)}</span>`:''}${esc(m.t)}</div>`;
 function scrollMsgs(){ const m=$('#msgs'); if(m) m.scrollTop=m.scrollHeight; }
 function guard(text){
-  if(blocked(text)){ $('#warn').innerHTML=`<div class="warnbox" role="alert"><b>Message not sent</b>It looks like it could be about buying, selling or sourcing drugs, or sharing payment details. User doesn't allow that, to keep everyone safe. If you're struggling with cravings, the Help button has people to talk to right now. <button class="btn sm quiet" onclick="App.humanReview('A message that was blocked')">Think this is wrong? Ask for a review</button></div>`; return false; }
+  if(blocked(text)){ S.blockedCount=(S.blockedCount||0)+1; save(); $('#warn').innerHTML=`<div class="warnbox" role="alert"><b>Message not sent</b>It looks like it could be about buying, selling or sourcing drugs, or sharing payment details. User doesn't allow that, to keep everyone safe. If you're struggling with cravings, the Help button has people to talk to right now. <button class="btn sm quiet" onclick="App.humanReview('A message that was blocked')">Think this is wrong? Ask for a review</button></div>`; return false; }
   $('#warn').innerHTML=''; return true;
 }
 
@@ -1046,7 +1046,7 @@ function renderMe(){
         :'<p class="hint">No one is blocked. You can block someone from their profile or from a chat.</p>'}</div><p class="hint">No email, phone number or real name is ever required. An email for password resets is optional.</p></div>
    <button class="btn block" onclick="App.signOut()">Sign out</button>
    <button class="btn danger block" onclick="App.confirmDelete()">Delete account</button>
-   ${DISCLAIMER}`;
+   ${LEGAL}${DISCLAIMER}`;
 }
 const toggle=(k,l,h)=>`<label class="toggle" for="t-${k}"><span>${l}${h?`<span class="th">${h}</span>`:''}</span><input type="checkbox" id="t-${k}" ${S.prefs[k]?'checked':''} onchange="App.pref('${k}',this.checked)"></label>`;
 
@@ -1066,6 +1066,7 @@ function aboutUser(k){ return `<section class="card" aria-labelledby="ben-h-${k}
        <li>Join rooms on topics that matter to you.</li>
        <li>To become a peer supporter, open the Me page and turn on 'Nominate myself as a peer supporter' under Peer support.</li>
      </ol></section>`; }
+const LEGAL='<p class="disclaimer" id="legal"><a href="../app/public/about/terms/index.html" target="_blank">Terms of Service</a> · <a href="../app/public/about/privacy/index.html" target="_blank">Privacy Policy</a></p>';
 const DISCLAIMER='<p class="disclaimer">User is peer support, not a medical or emergency service.</p>';
 function renderWelcome(){
   tabs(false); bar();
@@ -1112,7 +1113,8 @@ function renderOnboard(){
     <details class="salt"><summary>What is a salted hash?</summary>
       <p class="small">User never keeps your actual password. When you create one, we add a random string of characters called a <b>salt</b>, then run the two together through a one-way formula called a <b>hash</b>. That turns them into a long scrambled code, which is all we store.</p>
       <p class="small">When you sign in, the same steps run again and the two codes are compared. A hash can't be turned back into your password, and because everyone's salt is different, two people with the same password get different codes. So even if someone stole the stored codes, they couldn't read anyone's password.</p></details>
-    <label class="toggle" for="r-agree"><span>I agree to the community agreement</span><input type="checkbox" id="r-agree" ${d.agree?'checked':''} onchange="ob.d.agree=this.checked"></label></div>`;
+    <label class="toggle" for="r-agree"><span>I agree to the community agreement</span><input type="checkbox" id="r-agree" ${d.agree?'checked':''} onchange="ob.d.agree=this.checked"></label>
+    <p class="hint">By joining you also agree to the <a href="../app/public/about/terms/index.html" target="_blank">Terms of Service</a> and <a href="../app/public/about/privacy/index.html" target="_blank">Privacy Policy</a>.</p></div>`;
   if(st==='handle') body=`<h2>Choose a username and password</h2><p class="muted">Pick any username you like, or use a suggested one. Don't use your real name, so nothing links back to you.</p>
     <div class="field"><label for="ob-h">Username</label>
       <div class="row"><input class="input" id="ob-h" autocomplete="username" maxlength="20" value="${esc(d.handle)}" oninput="ob.d.handle=this.value.trim()"><button class="btn sm" type="button" onclick="App.suggestName()">Suggest</button></div>
@@ -1225,6 +1227,7 @@ function renderSupport(){
 // Sample figures stand in for the live service; review cases raised in this browser are shown live.
 const ARB = {
   members:{live:5230,deleted:87,newMonth:412},
+  reportList:[{reporter:'MossyOtter',reported:'PixelHare',reason:'Spam or scam',outcome:'Warning'},{reporter:'JuniperWren',reported:'NightLark',reason:'Harassment or hate',outcome:'Muted 24h'},{reporter:'SteadyBadger',reported:'EmberFinch',reason:'Something else',outcome:'No action'}],
   kpis:[['1,284','active today'],['4,912','active in the last 7 days'],['318','new members this week'],['146','peer supporters'],['1,037','members who want peer support']],
   cases:[
     {id:'HR-0991',topic:'Report: seems to be in danger',raised:'Automatic',due:'Today, 6pm',urgent:true,text:'A member wrote that they had taken too many pills. Help was shown to them straight away. The report asks for a check that the right support was offered.'},
@@ -1286,6 +1289,7 @@ function renderDashboard(){
   const cases=arbCases(), flags=cases.filter(flagged), urgent=cases.filter(c=>c.urgent||(c.auto&&c.live));
   const row=c=>`<tr class="${c.urgent||(c.auto&&c.live)?'urgent':''}"><td class="mono">${esc(c.id)}</td><td>${esc(c.topic)}${c.live?' <span class="pill">This browser</span>':''}</td><td>${esc(c.raised)}</td><td>${Math.round(c.ai.confidence*100)}%${flagged(c)?' <span class="pill amber">Flagged</span>':''}</td><td>${esc(c.due)}</td><td><span class="pill">${esc(c.status||'Being reviewed')}</span>${c.by?`<div class="small muted">by ${esc(c.by)}</div>`:''}</td><td><button class="btn sm" onclick="App.openCase('${c.id}')">Check</button></td></tr>`;
   const table=(list,label)=>`<div class="tbl"><table aria-label="${label}"><thead><tr><th>Case</th><th>About</th><th>Raised by</th><th>Confidence</th><th>Due</th><th>Decision</th><th></th></tr></thead><tbody>${list.map(row).join('')||'<tr><td colspan="7" class="muted">Nothing here.</td></tr>'}</tbody></table></div>`;
+  const queue=cases.filter(c=>c.by!=='Arbitrator'); // cases you've decided are final, so they leave the queue (Rusty, 14 Nov 2026)
   $('#screen').innerHTML=`<div class="section"><h2>Arbitrator dashboard</h2>
      <p class="small muted">How User is working, and how the AI Review Agent is deciding cases. Figures marked as samples stand in for the live service in this prototype. Members are shown by username only.</p></div>
    ${ARB.members.live>=500?`<div class="card warm" id="remove-samples"><h3>Time to remove the sample members</h3><p class="small">User has ${ARB.members.live.toLocaleString()} real members, past the 500 you set. The 100 sample members can now be removed.</p></div>`:''}
@@ -1294,12 +1298,14 @@ function renderDashboard(){
    <div class="kpis">${figs(ARB.kpis.concat([[String(flags.length),'flagged for a check'],[String(urgent.length),'urgent cases']]))}</div>
    <section class="card" aria-labelledby="dq-h"><div class="row between"><h2 id="dq-h">Review queue</h2><span class="pill amber">${flags.length} flagged</span></div>
      <p class="small muted">The AI Review Agent decides every case. Danger, under-18 and account removal cases are decided first, within minutes. When it is less than ${Math.round(AI_THRESHOLD*100)}% confident it still decides, using the safest outcome, and flags the case for you to check.</p>
-     <h3>Decided (${cases.length})</h3>${table(cases,'Decided')}
-     <p class="hint">You can check any decision and change it. Flagged and urgent cases are worth checking first.</p>
+     <h3>Decided (${queue.length})</h3>${queue.length?table(queue,'Decided'):'<p class="small muted">Nothing waiting. Every case has been finalised.</p>'}
+     <p class="hint">You can check any decision and change it. Flagged and urgent cases are worth checking first. A case leaves this list once you finalise it with your own decision; the member still sees it on their Support page.</p>
      ${figs(ARB.auto)}</section>
    <section class="card" aria-labelledby="ds-h"><h2 id="ds-h">Message safety this week <span class="pill sample">Sample</span></h2>${figs(ARB.safety)}
      <h3>Blocked messages by reason</h3>${hbars(ARB.blockedBy,'Blocked messages by reason')}</section>
    <section class="card" aria-labelledby="dr-h"><h2 id="dr-h">Reports this week <span class="pill sample">Sample</span></h2>${hbars(ARB.reports,'Reports by reason')}
+     <h3>Latest reports</h3><div class="lines" id="report-list">${(S.reports||[]).concat(ARB.reportList).slice(0,20).map(r=>`<div class="line"><span><b>${esc(r.reporter)}</b> reported <b>${esc(r.reported)}</b><span class="th">${esc(r.reason)}</span></span><span class="pill">${esc(r.outcome||'Checking')}</span></div>`).join('')}</div>
+     <p class="hint">Only you see who made a report. The person reported is never told.</p>
      <p class="hint">Reports made in this browser: ${S.reported||0}.</p></section>
    <section class="card" aria-labelledby="db-h"><h2 id="db-h">Blocking and actions <span class="pill sample">Sample</span></h2>
      ${figs([[fmt(ARB.blocks.week),'blocks this week'],[String(ARB.blocks.muted),'members muted'],[String(ARB.blocks.suspended),'members suspended'],[String(ARB.blocks.removed),'accounts removed']])}
@@ -1385,7 +1391,12 @@ const App = {
     <div id="hr-err" class="hint" role="alert"></div>
     <button class="btn primary" onclick="App.sendReview()">Request a review</button>`); },
   sendReview(){ const t=$('#hr-text').value.trim(); if(t.length<10){ $('#hr-err').textContent='Please describe what happened in at least 10 characters.'; return; }
-    const c=App.addCase($('#hr-topic').value,t,false); save();
+    // Each decision can be reviewed once only (Rusty, 14 Nov 2026): the latest blocked message or report.
+    const topic=$('#hr-topic').value, n=topic==='A message that was blocked'?(S.blockedCount||0):topic==='A report I made'?(S.reports||[]).length:-1;
+    const about=topic==='Something else'||n===0?null:topic+':'+n;
+    if(about&&(S.reviewed||[]).includes(about)){ $('#hr-err').textContent="You've already asked for a review of this decision. Each decision can be reviewed once, and that review is final."; return; }
+    if(about) (S.reviewed=S.reviewed||[]).push(about);
+    const c=App.addCase(topic,t,false); save();
     $('.sheet').innerHTML=`<div class="grab"></div><div class="success" role="status"><div class="tick" aria-hidden="true">✓</div><h2>Review requested</h2><p>Your review <b>${esc(c.id)}</b> has been sent and is being checked now.</p><p class="small muted" id="rv-status">Checking…</p></div><button class="btn primary" onclick="App.closeSheet();App.tab('support')">Done</button>`; },
   addCase(topic,text,auto){ const d=new Date(Date.now()+72*3600000);
     const c={id:'HR-'+(1000+S.cases.length+1),topic,text,auto,status:'Being reviewed',due:d.toLocaleDateString('en-GB',{weekday:'short',day:'numeric',month:'short'})};
@@ -1447,10 +1458,13 @@ const App = {
       <button class="btn" onclick="$('#sure').innerHTML=''">Cancel</button></div>`; },
   block(id){ if(!S.blocked.includes(id)) S.blocked.push(id); closeSheet(); view={name:null}; save(); render(); toast(person(id).handle+' is blocked. They can\'t see or message you.'); },
   unblock(id){ S.blocked=S.blocked.filter(x=>x!==id); save(); render(); toast(person(id).handle+' is unblocked.'); },
-  report(id){ sheet(`<h2>Report ${esc(person(id).handle)}</h2><p class="muted small">Reports are anonymous and are reviewed straight away. An independent arbitrator checks decisions and can change them.</p>
+  report(id){ S.reportTarget=person(id).handle; sheet(`<h2>Report ${esc(person(id).handle)}</h2><p class="muted small">The person you report isn't told who reported them. Reports are reviewed straight away, and an independent arbitrator checks decisions and can change them. You can make one report a day; reports that someone is in danger or under 18 can always be made.</p>
     <div class="lines">${['Offering or asking for drugs','Harassment or hate','Pressuring me to meet or share details','Seems to be in danger','Spam or scam','Under 18','Something else'].map(r=>`<button class="btn" style="text-align:left" onclick="App.reported('${r}')">${r}</button>`).join('')}</div>
     <button class="btn quiet sm" onclick="App.humanReview('A report I made')">Think a decision is wrong? Ask for a review</button>`); },
-  reported(reason){ S.reported++;
+  reported(reason){
+    const urgent=/danger|Under 18/.test(reason||''), day=Date.now()-86400000;
+    if(!urgent && (S.reports||[]).some(r=>!/danger|Under 18/.test(r.reason)&&r.at>day)){ closeSheet(); toast('You can make one report a day. If someone seems to be in danger or under 18, you can still report that.'); return; }
+    (S.reports=S.reports||[]).unshift({reporter:S.me.handle,reported:S.reportTarget||'',reason,at:Date.now()}); S.reported++;
     if(/danger|Under 18/.test(reason||'')){ App.addCase('A report I made', 'Automatic: '+reason, true); save(); closeSheet(); toast('Report sent. Because this may be serious, it is being reviewed urgently.'); return; }
     save(); closeSheet(); toast('Report sent. We\'re reviewing it now.'); },
   room(id){ view={name:'room',id}; render(); },

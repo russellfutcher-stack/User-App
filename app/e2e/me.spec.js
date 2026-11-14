@@ -243,3 +243,8 @@ test('M-25 The choice is kept after signing in again', async ({ page }) => {
   await H.signOut(page); await H.signInDemo(page); await H.tab(page, 'Me').click();
   await expect(H.toggle(page, 'Notifications on this device')).toHaveAttribute('aria-checked', 'true');
 });
+
+test('M-28 Terms of Service and Privacy Policy links on the Me page', async ({ page }) => {
+  await expect(page.locator('#legal')).toContainText('Terms of Service');
+  await expect(page.locator('#legal')).toContainText('Privacy Policy');
+});

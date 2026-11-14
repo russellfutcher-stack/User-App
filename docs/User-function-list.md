@@ -9,7 +9,7 @@ Prototype version 24. Every function a person can use in the prototype, each wit
 - **Saved only**: the choice is saved but has no visible effect yet.
 - **Placeholder**: the button only shows a message.
 
-Totals: Working 160, Simulated 7, Saved only 2, Placeholder 2, 171 functions in all.
+Totals: Working 163, Simulated 7, Saved only 2, Placeholder 2, 175 functions in all.
 
 ## Global
 
@@ -31,7 +31,7 @@ Totals: Working 160, Simulated 7, Saved only 2, Placeholder 2, 171 functions in 
 | G-14 | Plain safety wording | Look through every page | No mention of AI agents, staff, volunteers, moderators or Night Owls. The app says 'every message is checked for safety'. | Working | - |
 | G-15 | Sample community | Use the app | 100 fictional members (12 written by hand, 88 generated the same way every time), 21 of them peer supporters. Every room has 4 to 6 posts, and the demo account has 6 chats, 3 unread. | Working | - |
 | G-16 | Hide (quick exit) | Tap Hide | User is replaced by Google's home page; Back doesn't bring it back, and you're signed out (Rusty, 4 Nov 2026). | Working | Web app only. |
-| G-17 | Sample members are marked | View a sample member's card, profile or chat | The 100 sample members stay after launch (Rusty, 12 Nov 2026) and still reply, but each shows a 'Sample member' tag; the profile says 'Not a real person…' and a chat with one says their replies are written in advance. On the live server none of them is a peer supporter. They're removed when there are 500 real members. | Working | Real on the Supabase server; checked with app/scripts/live-matching.js. |
+| G-17 | Sample members are marked | View a sample member's card, profile or chat | The 100 sample members stay after launch (Rusty, 12 Nov 2026) and reply to what was said, in character from their profile (Rusty, 14 Nov 2026), but each shows a 'Sample member' tag; the profile says 'Not a real person…' and a chat with one says their replies are automatic. On the live server none of them is a peer supporter. They're removed when there are 500 real members. | Working | Real on the Supabase server; checked with app/scripts/live-matching.js. |
 
 ## Welcome & Sign in
 
@@ -66,6 +66,7 @@ Totals: Working 160, Simulated 7, Saved only 2, Placeholder 2, 171 functions in 
 | SN-13 | Skip the passkey | Tap 'Create account without a passkey' | Creates the account; a passkey can be added later on the Me page. | Working | - |
 | SN-14 | Create account | Tap Create account | Creates the account with a salted hash (32-character salt, SHA-256) and opens profile setup. | Working | Real accounts are stored on a server, with Argon2id hashing. |
 | SN-15 | What is a salted hash? | Step 1: open the box | Plain-language explanation of salts and hashes. | Working | - |
+| SN-16 | Terms and Privacy | Step 1 | Under the agreement tick: 'By joining you also agree to the Terms of Service · Privacy Policy', each a link to the website page. | Working | - |
 
 ## Profile setup
 
@@ -124,6 +125,7 @@ Totals: Working 160, Simulated 7, Saved only 2, Placeholder 2, 171 functions in 
 | M-25 | Notifications on this device | Turn on the switch under Privacy & visibility | Off at first. A neutral alert for new messages and review decisions ('You have a new message.', 'A review has been decided.'), never names or message text. Per device; on iPhone only once User is on the home screen. | Working | Real on the Supabase server (Web Push); checked with app/scripts/live-notify.js. |
 | M-26 | Location | Under My profile, fill in City and choose Country | City (up to 60 letters) and a country from the Support page's list, saved as you type. 'Who sees my city' starts as People I chat with. The country is shown to everyone on the person's card; the city only to the people chosen. Separate from the Support page's country. | Working | Real on the Supabase server (find_members hides the city unless allowed). |
 | M-27 | Email for password resets | Security: tap 'Add email' | Optional. Saved only for reset codes, never shown to anyone, and nobody can find you by it. Change or remove it at any time. A bad address is refused. | Working | Real on the Supabase server; checked with app/scripts/live-reset-rooms.js. |
+| M-28 | Terms and Privacy | Open Me | Links to the Terms of Service and the Privacy Policy on the User website. | Working | - |
 
 ## Search page
 
@@ -146,7 +148,6 @@ Totals: Working 160, Simulated 7, Saved only 2, Placeholder 2, 171 functions in 
 | DS-15 | Search button | Change anything, tap Search | A notice shows until you tap Search. Search updates Your Matches, scrolls to the top and confirms the number found. | Working | - |
 | DS-16 | Drug use headings | Look under Drug use | Medications, Other Substances, Alcohol, nicotine & gambling. | Working | - |
 | DS-17 | Search by location | Fill in City or choose Country under Location, then tap Search | Country keeps only people in that country. City keeps people whose city starts with what was typed (any case). People are found by city only if they let you see it. Shown in the 'Finding people with' summary. | Working | Real on the Supabase server. |
-| DS-18 | New search | Under the matches, tap 'New search' | Clears every filter, shows the top 10 again, says 'New search. Choose what to look for.' and scrolls to 1. Choose. (Return to Homepage was removed, Rusty, 12 Nov 2026.) | Working | - |
 
 ## Chats
 
@@ -157,8 +158,8 @@ Totals: Working 160, Simulated 7, Saved only 2, Placeholder 2, 171 functions in 
 | C-03 | Open a chat | Tap a conversation | Says you're anonymous and every message is checked for safety. Marks the chat as read. | Working | - |
 | C-04 | Conversation starters | Chat with fewer than 3 messages | 6 starters fill the message box. | Working | - |
 | C-05 | Send a message | Type and Send | Up to 1000 characters; empty messages ignored. | Working | Delivering messages to the other person needs a server. |
-| C-06 | Sample member replies | Send a message to a sample member | Typing indicator, then a reply. On the live server the reply is sent by the server about 2 seconds later, so it comes even if you leave the chat, and every message gets its own reply (Rusty, 13 Nov 2026). | Simulated | Real on the Supabase server for sample members; checked with app/scripts/live-chats.js. Real members reply themselves. |
-| C-07 | Dealing and contact filter | Selling words, prices, links, other apps' names, drug emojis | Not sent; a red 'Message not sent' box explains why. Recovery or harm-reduction context, such as 'I used to sell, now I help others stay clean' or naloxone, is allowed unless it also has prices, links or other apps. | Working | The real check is the AI Moderator on a server; the prototype uses simple rules. |
+| C-06 | Sample member replies | Send a message to a sample member | Typing indicator, then a reply. On the live server each sample member writes their own reply to what was said, in character from their profile, about 3 seconds later, even if you leave the chat; every message gets a reply, and if asked they say honestly they're a sample member (Rusty, 14 Nov 2026). The demo uses lines written in advance. | Simulated | Real on the Supabase server for sample members; checked with app/scripts/live-chats.js. Real members reply themselves. |
+| C-07 | Dealing and contact filter | Selling words, prices, links, other apps' names, drug emojis | Not sent; a red 'Message not sent' box explains why. Recovery or harm-reduction context, such as 'I used to sell, now I help others stay clean' or naloxone, is allowed unless it also has prices, links or other apps. Every message gets a decision: if the first check is unsure, a careful second check decides, and its decision is final. Nothing is held (Rusty, 14 Nov 2026). | Working | The real check is the AI Moderator on a server; the prototype uses simple rules. |
 | C-08 | Phone numbers allowed | Send a phone number | The message is sent. | Working | The real check is the AI Moderator on a server. |
 | C-09 | Crisis detection | Crisis words | Sent, then the Help sheet opens. | Working | The real check is the AI Moderator on a server. |
 | C-10 | Chat options | Tap 'Safety & options' | Safe meeting tips, Mute, Report and Block. | Working | - |
@@ -205,7 +206,8 @@ Totals: Working 160, Simulated 7, Saved only 2, Placeholder 2, 171 functions in 
 | SP-09 | Review requested | Send a valid review | 'Review requested' with a case number; about 2 seconds later it shows the decision note. | Working | Real reviews are decided on the Supabase server. |
 | SP-11 | Automatic review decision | Send any review | Every review is decided automatically. A naloxone or recovery message is overturned; an unclear one keeps the safest outcome and says it will be checked again. | Working | Real decisions come from the review check on the Supabase server. |
 | SP-10 | Arbitrator changes a decision | After the arbitrator changes it | The case shows the new decision with 'Arbitrator:' and their note. | Working | Real on the Supabase server; checked with app/scripts/live-arbitrator.js. |
-| SP-13 | A question is answered | Ask for a review with a question, for example about your data | Answered and closed straight away ('Answered automatically: …') from the privacy policy's facts. Whoever runs User gets an email alert with the case number only (Rusty, 7 Nov 2026). | Working | Real answers come from the review check on the Supabase server. |
+| SP-13 | A question is answered | Ask for a review with a question, for example about your data | Answered and closed straight away ('Answered automatically: …') from the privacy policy's facts. Whoever runs User gets an email with the case number and topic in the subject, and the username and what the member wrote in the message (Rusty, 14 Nov 2026). | Working | Real answers come from the review check on the Supabase server. |
+| SP-15 | Each decision reviewed once | Ask for a review of the same decision again | Refused: 'You've already asked for a review of this decision. Each decision can be reviewed once, and that review is final.' Questions (Something else) can be asked any time (Rusty, 14 Nov 2026). | Working | Enforced on the Supabase server too. |
 | SP-14 | The strike ladder | Open Support | Shows how strikes add up: any strike is a warning; 3 in 7 days, a 24-hour mute; 5 in 30 days, a 7-day pause; 3 for dealing in 7 days, paused while reviewed. Each counts for 30 days, and a review can take one back. | Working | - |
 
 ## Help & Safety
@@ -215,12 +217,13 @@ Totals: Working 160, Simulated 7, Saved only 2, Placeholder 2, 171 functions in 
 | HS-01 | Help sheet | Tap Help now | Emergency advice, 7 helplines, grounding, a button to the Support page and Close. | Working | - |
 | HS-02 | Help sheet: to Support | Tap 'See help services for every country' | Opens the Support page. | Working | - |
 | HS-03 | Block a person | Block from a profile or chat | Hides them from Home, Search and Chats. | Working | Blocks must be enforced on a server. |
-| HS-04 | Report a person | Tap Report, then a reason | 7 reasons. Toast: 'Report sent. We're reviewing it now.' | Simulated | Reports must reach the AI Moderator on a server. |
+| HS-04 | Report a person | Tap Report, then a reason | 7 reasons. Toast: 'Report sent. We're reviewing it now.' The person reported is never told who reported them. | Simulated | Reports must reach the AI Moderator on a server. |
 | HS-05 | Serious reports reviewed urgently | Report 'Seems to be in danger' or 'Under 18' | Toast says it's being reviewed urgently, and a review is raised automatically, marked 'raised automatically'. | Simulated | Urgent review needs the AI Review Agent on a server. |
 | HS-06 | Review from a report | Tap 'Think a decision is wrong? Ask for a review' | Opens the review form with 'A report I made' chosen. | Working | - |
 | HS-07 | Check-in after a danger report | Another member reports you as 'Seems to be in danger', then open the app | The Help sheet opens once, headed 'You don't have to hold this alone', with 'Someone here is thinking of you. If things are hard right now, these people can help.' and the helplines. It never says who reported you. | Working | Real on the Supabase server; checked with app/scripts/live-age-checkin.js. |
 | HS-08 | Age check | Say you are under 18 in a message (for example 'I'm 15'), or be reported as 'Under 18' | The message isn't sent and the account is paused: 'Please confirm your age', with a tick box 'I am 18 or older'. No tab bar; Help now still works; Sign out. Not confirmed within 7 days: the account and everything in it is removed. A report after you've confirmed doesn't pause you again. | Working | Real on the Supabase server; checked with app/scripts/live-age-checkin.js. |
 | HS-09 | Confirm your age | Tick 'I am 18 or older', then 'Confirm and continue' | Without the tick: 'Please tick the box to confirm you are 18 or older.' With it: 'Thanks. Your account is open again.' A new sign of being under 18 after confirming pauses the account while it is reviewed ('Your account is paused'). | Working | Real on the Supabase server; checked with app/scripts/live-age-checkin.js. |
+| HS-10 | One report a day | Make a second ordinary report within 24 hours | Refused: 'You can make one report a day. If someone seems to be in danger or under 18, you can still report that.' Reports that someone is in danger or under 18 can always be made (Rusty, 14 Nov 2026). | Working | Enforced on the Supabase server too. |
 
 ## Arbitrator dashboard
 
@@ -228,10 +231,11 @@ Totals: Working 160, Simulated 7, Saved only 2, Placeholder 2, 171 functions in 
 |---|---|---|---|---|---|
 | AD-01 | Arbitrator sign-in | Sign in as Arbitrator / fair review | Opens the dashboard with no tab bar. | Working | Real arbitrators are accounts listed in public.arbitrators; checked with app/scripts/live-arbitrator.js. |
 | AD-02 | Summary figures | Open the dashboard | Active today, active in 7 days, new members, peer supporters, members who want peer support, cases flagged for a check, urgent cases. | Working | Live figures on the Supabase server; samples in the demo. |
-| AD-03 | Review queue | Open the dashboard | One Decided table: every case with its decision, the agent's confidence, who decided it, and a Flagged tag when under 85%. Urgent cases are red. Live cases are marked 'This browser'. | Working | Live queue on the Supabase server. |
+| AD-03 | Review queue | Open the dashboard | One Decided table of cases still open to change: each with its decision, the agent's confidence and a Flagged tag when under 85%. Urgent cases are red. A case leaves the table once the arbitrator finalises it with their own decision (Rusty, 14 Nov 2026); the member still sees it on their Support page. | Working | Live queue on the Supabase server. |
 | AD-13 | AI Review Agent | Every case | Decides every case, including danger, under 18 and account removal. Under 85% confidence it keeps the safest outcome and flags the case. The naloxone and 'I used to sell' cases are overturned. | Working | Real decisions come from the review check on the Supabase server. |
 | AD-14 | Decisions take effect | Decide a case | Overturn lifts any mute, pause or age check and takes back the latest warning. Uphold on 'Account removal proposed' removes the account. Change the action: a warning, a 24-hour mute, a 7-day pause, lift a mute or pause, or remove the account. Removing asks to confirm (Rusty, 8 Nov 2026). | Working | Real on the Supabase server; checked with app/scripts/live-arbitrator.js. |
 | AD-15 | Members | Open the dashboard | Live members, members who deleted their account and new members this month, counting real members only. At 500 real members the arbitrator gets one email, and the dashboard says it's time to remove the sample members. | Working | Live on the Supabase server (arb_members, and the daily milestones function); samples in the demo. |
+| AD-16 | Latest reports | Open the dashboard | Who reported whom, the reason, the date and the outcome. Only the arbitrator sees who made a report; the person reported is never told (Rusty, 14 Nov 2026). | Working | Live list on the Supabase server; samples in the demo. |
 | AD-04 | Change a decision | Tap Check, write a note, choose an outcome | Shows the agent's decision and reason, and who actions apply to. Uphold, Overturn or Change the action; a note of at least 5 characters is required, shown in red if missing. The case then shows 'by Arbitrator'. | Working | - |
 | AD-05 | Decision reaches the member | Decide a case raised in this browser, then sign in as the member | The Support page shows the decision and note. | Working | Real on the Supabase server; checked with app/scripts/live-arbitrator.js. |
 | AD-06 | Message safety | Open the dashboard | Messages checked, blocked, Help shown, check time, and blocked messages by reason. | Working | Live figures on the Supabase server; samples in the demo. |

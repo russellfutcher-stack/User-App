@@ -30,8 +30,10 @@ export async function decideReview(id: string) {
   let v = r?.value, flagged = !v || v.confidence < SURE;
   if (!v) v = { decision: 'Upheld', confidence: 0, reason: 'The check could not decide.', member_note: UNSURE_NOTE };
   else if (flagged && v.decision === 'Overturned') v = { ...v, decision: 'Upheld', member_note: UNSURE_NOTE }; // keep the safest outcome
-  await admin.from('reviews').update({ status: 'Decided: ' + v.decision, decision: v.decision, confidence: v.confidence, reason: v.reason, note: v.member_note,
-    flagged, decided_by: 'automatic', decided_at: new Date().toISOString() }).eq('id', c.id);
+  // Never overwrite the arbitrator: if they finalised the case while this was being decided, theirs stands (Rusty, 14 Nov 2026).
+  const saved = must(await admin.from('reviews').update({ status: 'Decided: ' + v.decision, decision: v.decision, confidence: v.confidence, reason: v.reason, note: v.member_note,
+    flagged, decided_by: 'automatic', decided_at: new Date().toISOString() }).eq('id', c.id).or('decided_by.is.null,decided_by.neq.arbitrator').select('id')) as { id: string }[];
+  if (!saved.length) return;
   await admin.from('moderation').insert({ member: c.member, kind: 'review', target: c.id, action: v.decision, confidence: v.confidence, reason: v.reason, model: r?.model });
   // An overturned block takes back the strike it gave.
   if (v.decision === 'Overturned' && c.topic === 'A message that was blocked') {
