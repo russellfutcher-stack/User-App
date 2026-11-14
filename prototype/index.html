@@ -814,7 +814,8 @@ function renderMatches(){
   const list=PEOPLE.filter(visible).map(p=>({p,m:match(p)})).sort((a,b)=>b.m.pct-a.m.pct);
   $('#screen').innerHTML=`<div class="section"><h2>Here are your matches, ${esc(S.me.handle)}</h2>
      <p class="muted">Based on your interests, drug use, mental health and what you're looking for.${S.me.wantsPeer?' Peer supporters are marked, because you asked for peer support.':''} Tap anyone to see their profile and say hi.</p></div>
-   <div class="section" id="match-list">${list.map(({p,m})=>personRow(p,m)).join('')}</div>
+   <div class="section" id="match-list">${list.slice(0,S.ui.matchShown||10).map(({p,m})=>personRow(p,m)).join('')}
+     ${list.length>(S.ui.matchShown||10)?'<button class="btn block" onclick="App.nextMatches()">Next 10 matches</button>':''}</div>
    <button class="btn primary block" onclick="App.leaveMatches('home')">Continue to Home</button>
    <button class="btn block" onclick="App.leaveMatches('find')">Refine on the Search page</button>`;
 }
@@ -934,10 +935,10 @@ function renderRooms(){
   bar();
   const g=pathOf(S.ui.roomCat), rooms=allRooms(), mine=rooms.filter(r=>S.rooms.joined.includes(r.id));
   $('#screen').innerHTML=`<div class="section"><h2>Rooms</h2><p class="muted small">Small group chats in three choices. Every message is checked for safety.</p></div>
+    <div class="section" id="your-rooms"><span class="label">Your rooms</span>${mine.length?mine.map(r=>{ const own=r.id[0]==='c'; return swipeWrap('room',r.id,own?'Delete':'Leave',(own?'Delete ':'Leave ')+r.name,roomRow(r)); }).join('')+'<p class="hint">Swipe a room to the left to leave it. Rooms you created can be deleted.</p>':''}${mine.length?'':'<p class="muted small">You haven\'t joined any rooms yet.</p>'}</div>
      <div class="section"><span class="label">Choose a type of room</span>
     <div class="three" role="group" aria-label="Room types">${PATHS.map(p=>`<button type="button" class="path p-${p.g} room-path" aria-pressed="${S.ui.roomCat===p.key}" onclick="App.roomCat('${p.key}')"><span class="ic">${p.ic}</span><span class="pn">${dName(p)}</span><span class="pc">${rooms.filter(r=>r.cat===p.key).length} rooms</span></button>`).join('')}</div></div>
     <div class="section"><span class="label ghead g-${g.g}">${dName(g)} rooms</span>${rooms.filter(r=>r.cat===g.key).map(roomRow).join('')}</div>
-    <div class="section"><span class="label">Your rooms</span>${mine.length?mine.map(r=>{ const own=r.id[0]==='c'; return swipeWrap('room',r.id,own?'Delete':'Leave',(own?'Delete ':'Leave ')+r.name,roomRow(r)); }).join('')+'<p class="hint">Swipe a room to the left to leave it. Rooms you created can be deleted.</p>':''}${mine.length?'':'<p class="muted small">You haven\'t joined any rooms yet.</p>'}</div>
     <div class="card"><h3>Start a new room</h3><p class="small muted">Can't find the room you need? Suggest one.</p>
       <button class="btn primary" style="align-self:flex-start" onclick="App.roomRequest()">Request a new room</button>
       ${(S.rooms.requests||[]).length?`<div class="lines" aria-label="Your room requests">${S.rooms.requests.map(q=>`<div class="line"><span class="small"><b>${esc(q.name)}</b> · ${dName(pathOf(q.cat))}</span><span class="pill ${q.status==='Approved'?'':'amber'}">${esc(q.status)}</span></div>`).join('')}</div>`:''}</div>
@@ -1414,6 +1415,7 @@ const App = {
     const st='Decided: '+outcome+(act?' ('+ARB_ACTS.find(x=>x[0]===act)[2]+')':''), mine=S.cases.find(c=>c.id===id);
     if(mine){ mine.status=st; mine.note=note; mine.by='Arbitrator'; } else S.arb.decided[id]={status:st,note};
     save(); closeSheet(); renderDashboard(); toast(id+' decided: '+st.replace('Decided: ','')+'.'); },
+  nextMatches(){ S.ui.matchShown=(S.ui.matchShown||10)+10; save(); const sc=$('#screen').scrollTop; renderMatches(); $('#screen').scrollTop=sc; },
   next10(){ S.ui.shown=(S.ui.shown||10)+10; save(); renderResults(); },
   newSearch(){ App.clearAll(); toast('New search. Choose what to look for.'); setTimeout(()=>$('#choose')?.scrollIntoView({block:'start'}),50); },
   clearAll(){ S.ui.cats=['interests','drugs','mh']; S.ui.f=[]; S.ui.q=''; S.ui.look=[]; S.ui.peerOnly=false; S.ui.city=''; S.ui.country=''; S.ui.shown=10; S.ui.applied=draft(); save(); renderFind(); },
@@ -1430,7 +1432,7 @@ const App = {
     if(CRISIS.test(t)) setTimeout(()=>helpSheet('It sounds like things might be really hard right now. If you\'re thinking about ending your life or someone may have overdosed, please reach out now.'),400);
     const p=person(id); const typ=document.createElement('div'); typ.className='typing'; typ.textContent=p.handle+' is typing…';
     setTimeout(()=>{ if(view.id!==id) return; $('#msgs')?.appendChild(typ); scrollMsgs(); },700);
-    setTimeout(()=>{ typ.remove(); const n=S.convos[id].filter(m=>m.f==='them').length; const r=p.replies[n%p.replies.length];
+    setTimeout(()=>{ typ.remove(); if(!S.convos[id]) return; const n=S.convos[id].filter(m=>m.f==='them').length; const r=p.replies[n%p.replies.length];
       S.convos[id].push({f:'them',t:r,ts:Date.now()}); save(); if(view.name==='chat'&&view.id===id){ $('#msgs').insertAdjacentHTML('beforeend',bubble({f:'them',t:r})); scrollMsgs(); } else { S.unread[id]=1; save(); } },2200+Math.random()*1200); },
   chatMenu(id){ const p=person(id); sheet(`<h2>${esc(p.handle)}</h2>
     <div class="card calm"><h3>Meeting up safely</h3><p class="small">Meet in a busy public place in daylight, like a park entrance or café. Tell a friend where you'll be. Don't share your home address. Never use substances with someone you've just met. You can leave at any time.</p></div>
